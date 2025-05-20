@@ -52,8 +52,9 @@
 
         /* 전체 앱 컨테이너 높이 제한 */
         .main-container {
-           max-height: 70vh; /* Set max-height */
-           /* height property removed to allow shrinking based on content */
+           min-height: 70vh; /* Set min-height */
+           max-height: 85vh; /* Set new max-height */
+           /* height property remains removed to allow dynamic height based on content within min/max bounds */
            display: flex;
            flex-direction: column;
            overflow: hidden; /* Keep overflow hidden, assuming internal elements handle their own scrolling */
