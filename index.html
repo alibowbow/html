@@ -52,7 +52,7 @@
 
         /* 전체 앱 컨테이너 높이 제한 */
         .main-container {
-           max-height: calc(100vh - 5rem);
+           height: calc(100vh - 5rem);
            display: flex;
            flex-direction: column;
            overflow: hidden;
@@ -71,18 +71,41 @@
         .textarea-wrapper {
             display: flex;
             flex-direction: column;
-            flex-grow: 0;
+            flex-grow: 1;
             overflow: hidden;
-            margin-bottom: 1.5rem;
         }
 
         /* 텍스트 영역 스타일 */
         #textInput {
-            min-height: 200px; /* 기본 높이 */
-            max-height: 65vh; /* 최대 높이 */
+            height: 100%;
             overflow-y: auto;
             width: 100%;
             resize: none;
+            /* Tailwind class p-4 sets padding: 1rem; */
+            /* Tailwind class bg-slate-700 sets background */
+            /* Tailwind class text-slate-200 sets color */
+            /* Font is inherited from body: 'Inter', sans-serif */
+            /* Default browser line-height for textarea is often around 1.2 or 1.3, adjust if needed */
+        }
+
+        /* --- 라인 넘버 스타일 --- */
+        #lineNumberContainer {
+            width: 40px;
+            background-color: #1e293b; /* slate-800 */
+            color: #94a3b8; /* slate-400 */
+            padding: 1rem 0.5rem; /* Match textarea top padding (1rem), add right padding for numbers */
+            text-align: right;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif; /* Match textarea */
+            font-size: 1em; /* Match textarea, 1em usually refers to parent's font-size which should be default here*/
+            line-height: 1.5; /* CRUCIAL: Adjust to match textarea. Tailwind's default leading-relaxed is 1.625, normal is 1.5 */
+            user-select: none;
+        }
+
+        .line-number {
+            display: block;
+            white-space: nowrap;
+            /* font-family, font-size, line-height are inherited from #lineNumberContainer */
         }
 
         /* --- 미리보기 모달 스타일 --- */
@@ -164,7 +187,10 @@
         <main>
             <div class="textarea-wrapper">
                 <label for="textInput" class="block mb-2 text-sm font-medium text-sky-300 flex-shrink-0">내용:</label>
-                <textarea id="textInput" class="w-full p-4 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-500 transition-shadow duration-300 shadow-inner" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요..."></textarea>
+                <div style="display: flex; flex-grow: 1; overflow: hidden;">
+                    <div id="lineNumberContainer"></div>
+                    <textarea id="textInput" class="w-full p-4 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-500 transition-shadow duration-300 shadow-inner" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요..."></textarea>
+                </div>
             </div>
 
             <input type="file" id="fileInput" accept=".txt,.html" style="display: none;">
@@ -216,21 +242,69 @@
         const previewModal = document.getElementById('previewModal'); // 미리보기 모달
         const closePreviewButton = document.getElementById('closePreviewButton'); // 모달 닫기 버튼
         const previewIframe = document.getElementById('previewIframe'); // 미리보기 iframe
+        const lineNumberContainer = document.getElementById('lineNumberContainer'); // 라인 넘버 컨테이너
         let messageTimeout;
+
+        // --- 라인 넘버 기능 ---
+        function updateLineNumbers() {
+            if (!textInput || !lineNumberContainer) return; // 요소가 없으면 중단
+
+            const lines = textInput.value.split('\n');
+            const numberOfLines = lines.length;
+            
+            // 최적화를 위해 DocumentFragment 사용
+            const fragment = document.createDocumentFragment();
+
+            for (let i = 1; i <= numberOfLines; i++) {
+                const lineNumberDiv = document.createElement('div');
+                lineNumberDiv.textContent = i;
+                lineNumberDiv.className = 'line-number'; // 스타일링을 위한 클래스 추가
+                fragment.appendChild(lineNumberDiv);
+            }
+            
+            // 기존 내용을 한 번에 교체 (innerHTML 보다 효율적일 수 있음)
+            lineNumberContainer.innerHTML = ''; 
+            lineNumberContainer.appendChild(fragment);
+            
+            // 스크롤 동기화
+            lineNumberContainer.scrollTop = textInput.scrollTop;
+        }
 
         // --- 자동 높이 조절 함수 ---
         function autoResizeTextarea() {
             textInput.style.height = 'auto';
-            textInput.style.height = (textInput.scrollHeight) + 'px';
+            // textInput.style.height = (textInput.scrollHeight) + 'px'; // CSS로 높이 관리
         }
 
         // --- 이벤트 리스너 ---
-        textInput.addEventListener('input', autoResizeTextarea);
+        // textInput.addEventListener('input', autoResizeTextarea); // CSS로 높이 관리
 
         function setInitialHeight() {
-            setTimeout(autoResizeTextarea, 0);
+            // setTimeout(autoResizeTextarea, 0); // CSS로 높이 관리
         }
-        window.addEventListener('load', setInitialHeight);
+        // window.addEventListener('load', setInitialHeight); // CSS로 높이 관리
+
+        // --- 이벤트 리스너 (라인 넘버) ---
+        if (textInput && lineNumberContainer) {
+            textInput.addEventListener('input', updateLineNumbers);
+            textInput.addEventListener('scroll', () => {
+                lineNumberContainer.scrollTop = textInput.scrollTop;
+            });
+            textInput.addEventListener('keydown', (e) => {
+                // Enter 또는 Backspace/Delete 키 입력 시 즉시 업데이트
+                if (e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete') {
+                    requestAnimationFrame(updateLineNumbers);
+                }
+            });
+            
+            // 초기 로드 시 라인 넘버 업데이트
+            updateLineNumbers();
+        }
+        
+        // 파일 로드 후 라인 넘버 업데이트 (기존 코드에 추가)
+        // reader.onload 내 setInitialHeight() 호출을 updateLineNumbers()로 변경하거나 추가
+        // setInitialHeight(); -> updateLineNumbers();
+
 
         // 메시지 표시 함수
         function showMessage(message, type = 'success') {
@@ -296,7 +370,8 @@
             reader.onload = (e) => {
                 textInput.value = e.target.result;
                 showMessage(`'${file.name}' 파일을 성공적으로 불러왔습니다.`);
-                setInitialHeight();
+                // setInitialHeight(); // CSS로 높이 관리
+                updateLineNumbers(); // 파일 로드 후 라인 넘버 업데이트
                 event.target.value = null;
             };
             reader.onerror = (e) => {
