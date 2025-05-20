@@ -52,10 +52,11 @@
 
         /* 전체 앱 컨테이너 높이 제한 */
         .main-container {
-           height: calc(100vh - 5rem);
+           max-height: 70vh; /* Set max-height */
+           /* height property removed to allow shrinking based on content */
            display: flex;
            flex-direction: column;
-           overflow: hidden;
+           overflow: hidden; /* Keep overflow hidden, assuming internal elements handle their own scrolling */
         }
 
         /* 메인 콘텐츠 영역 */
