@@ -65,7 +65,7 @@
             display: flex;
             flex-direction: column;
             flex-grow: 1;
-            overflow: hidden;
+            overflow: visible; /* Allow main to expand with its content */
             min-height: 0;
         }
 
@@ -81,7 +81,7 @@
         /* 텍스트 영역 스타일 */
         #textInput {
             /* height: 100%; removed */
-            overflow-y: auto; /* Maintain vertical scrolling */
+            overflow-y: hidden; /* Prevent native vertical scrollbar, rely on auto-grow */
             overflow-x: auto; /* Enable horizontal scrolling */
             width: 100%;
             resize: none;
