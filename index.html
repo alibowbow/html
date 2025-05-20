@@ -53,11 +53,11 @@
         /* 전체 앱 컨테이너 높이 제한 */
         .main-container {
            min-height: 70vh; /* Set min-height */
-           max-height: 85vh; /* Set new max-height */
+           max-height: calc(100vh - 7rem); /* Set max-height to be near full screen with a 7rem buffer */
            /* height property remains removed to allow dynamic height based on content within min/max bounds */
            display: flex;
            flex-direction: column;
-           overflow: hidden; /* Keep overflow hidden, assuming internal elements handle their own scrolling */
+           overflow-y: auto; /* Enable vertical scrolling for the container if content exceeds max-height */
         }
 
         /* 메인 콘텐츠 영역 */
@@ -73,14 +73,14 @@
         .textarea-wrapper {
             display: flex;
             flex-direction: column;
-            flex-grow: 1;
-            overflow: hidden;
+            /* flex-grow: 1; removed */
+            /* overflow: hidden; removed */
             min-height: 0; /* Ensure it can shrink/grow properly in flex column */
         }
 
         /* 텍스트 영역 스타일 */
         #textInput {
-            height: 100%;
+            /* height: 100%; removed */
             overflow-y: auto; /* Maintain vertical scrolling */
             overflow-x: auto; /* Enable horizontal scrolling */
             width: 100%;
@@ -192,9 +192,9 @@
         <main>
             <div class="textarea-wrapper">
                 <label for="textInput" class="block mb-2 text-sm font-medium text-sky-300 flex-shrink-0">내용:</label>
-                <div style="display: flex; flex-grow: 1; overflow: hidden;">
+                <div style="display: flex; overflow: visible; align-items: flex-start;">
                     <div id="lineNumberContainer"></div>
-                    <textarea id="textInput" class="w-full p-4 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-500 transition-shadow duration-300 shadow-inner" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요..."></textarea>
+                    <textarea id="textInput" class="w-full p-4 bg-slate-600 border-2 border-slate-500 rounded-lg text-slate-200 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-500 transition-shadow duration-300 shadow-inner" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요..." rows="20"></textarea>
                 </div>
             </div>
 
@@ -276,34 +276,40 @@
         }
 
         // --- 자동 높이 조절 함수 ---
-        function autoResizeTextarea() {
-            textInput.style.height = 'auto';
-            // textInput.style.height = (textInput.scrollHeight) + 'px'; // CSS로 높이 관리
+        function autoGrowTextarea(element) {
+            if (!element) return;
+            element.style.height = 'auto'; // Reset height to correctly calculate scrollHeight
+            element.style.height = element.scrollHeight + 'px';
         }
 
         // --- 이벤트 리스너 ---
-        // textInput.addEventListener('input', autoResizeTextarea); // CSS로 높이 관리
+        // function setInitialHeight() { // This function is no longer used due to CSS changes and autoGrowTextarea
+        // }
+        // window.addEventListener('load', setInitialHeight); // This is no longer used
 
-        function setInitialHeight() {
-            // setTimeout(autoResizeTextarea, 0); // CSS로 높이 관리
-        }
-        // window.addEventListener('load', setInitialHeight); // CSS로 높이 관리
-
-        // --- 이벤트 리스너 (라인 넘버) ---
+        // --- 이벤트 리스너 (라인 넘버 및 자동 높이 조절) ---
         if (textInput && lineNumberContainer) {
-            textInput.addEventListener('input', updateLineNumbers);
+            textInput.addEventListener('input', () => {
+                autoGrowTextarea(textInput); // Grow textarea first
+                updateLineNumbers();      // Then update line numbers
+            });
             textInput.addEventListener('scroll', () => {
                 lineNumberContainer.scrollTop = textInput.scrollTop;
             });
             textInput.addEventListener('keydown', (e) => {
                 // Enter 또는 Backspace/Delete 키 입력 시 즉시 업데이트
+                // For these keys, autoGrow might need a slight delay if scrollHeight isn't updated immediately
                 if (e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete') {
-                    requestAnimationFrame(updateLineNumbers);
+                    requestAnimationFrame(() => {
+                        autoGrowTextarea(textInput);
+                        updateLineNumbers();
+                    });
                 }
             });
             
-            // 초기 로드 시 라인 넘버 업데이트
-            updateLineNumbers();
+            // 초기 로드 시 라인 넘버 및 높이 업데이트
+            autoGrowTextarea(textInput); // Set initial height based on content/rows
+            updateLineNumbers();     // Then update line numbers
         }
         
         // 파일 로드 후 라인 넘버 업데이트 (기존 코드에 추가)
@@ -375,8 +381,8 @@
             reader.onload = (e) => {
                 textInput.value = e.target.result;
                 showMessage(`'${file.name}' 파일을 성공적으로 불러왔습니다.`);
-                // setInitialHeight(); // CSS로 높이 관리
-                updateLineNumbers(); // 파일 로드 후 라인 넘버 업데이트
+                updateLineNumbers();      // Update line numbers first
+                autoGrowTextarea(textInput); // Then adjust height for new content
                 event.target.value = null;
             };
             reader.onerror = (e) => {
