@@ -53,8 +53,7 @@
         /* 전체 앱 컨테이너 높이 제한 */
         .main-container {
            min-height: 70vh; /* Set min-height */
-           max-height: calc(100vh - 7rem); /* Set max-height to be near full screen with a 7rem buffer */
-           /* height property remains removed to allow dynamic height based on content within min/max bounds */
+           max-height: calc(100vh - 4rem); /* Adjusted max-height for better fit */
            display: flex;
            flex-direction: column;
            overflow-y: auto; /* Enable vertical scrolling for the container if content exceeds max-height */
@@ -65,22 +64,22 @@
             display: flex;
             flex-direction: column;
             flex-grow: 1;
-            overflow: visible; /* Allow main to expand with its content */
-            min-height: 0;
+            overflow: hidden; /* Changed to hidden to manage internal scrolling */
+            min-height: 0; /* Ensure it can shrink/grow properly in flex column */
+            margin-bottom: 1.5rem; /* Added margin to separate from buttons */
         }
 
         /* 텍스트 영역 래퍼 */
         .textarea-wrapper {
             display: flex;
             flex-direction: column;
-            /* flex-grow: 1; removed */
-            /* overflow: hidden; removed */
+            flex-grow: 1; /* Added flex-grow to ensure it takes available space */
+            overflow: hidden; /* Added overflow hidden */
             min-height: 0; /* Ensure it can shrink/grow properly in flex column */
         }
 
         /* 텍스트 영역 스타일 */
         #textInput {
-            /* height: 100%; removed */
             overflow-y: hidden; /* Prevent native vertical scrollbar, rely on auto-grow */
             overflow-x: auto; /* Enable horizontal scrolling */
             width: 100%;
@@ -200,8 +199,7 @@
 
             <input type="file" id="fileInput" accept=".txt,.html" style="display: none;">
 
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 flex-shrink-0">
-                 <button id="loadFileButton" class="custom-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-3 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 flex-shrink-0 mt-4"> <button id="loadFileButton" class="custom-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-3 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 text-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                     불러오기
                 </button>
