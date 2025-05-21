@@ -3,262 +3,461 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>텍스트 저장, 불러오기 및 미리보기 앱</title>
+    <title>텍스트 편집기 Pro - JSON/XML 지원, 도우미, AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body {
-            font-family: 'Inter', sans-serif; /* 기본 폰트 설정 */
-        }
-        /* 사용자 정의 버튼 스타일 */
-        .custom-button {
-            transition: background-color 0.3s ease, transform 0.1s ease, filter 0.3s ease; /* 부드러운 전환 효과 */
-        }
-        .custom-button:hover {
-            filter: brightness(110%); /* 호버 시 약간 밝게 */
-        }
-        .custom-button:active {
-            transform: scale(0.98); /* 클릭 시 약간 작아지는 효과 */
-        }
-        /* 메시지 박스 스타일 */
-        .message-box {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px); /* 초기 위치 아래로 */
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            z-index: 50;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-            visibility: hidden;
-        }
-        .message-box.show {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) translateY(0); /* 위로 올라오며 나타남 */
-        }
-        .message-box.success {
-            background-color: #28a745; /* Tailwind green-500 */
-            color: white;
-        }
-        .message-box.error {
-            background-color: #dc3545; /* Tailwind red-500 */
-            color: white;
-        }
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; background-color: #111827; color: #d1d5db;}
+        
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #1f2937; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        * { scrollbar-width: thin; scrollbar-color: #4b5563 #1f2937; }
 
-        /* --- 레이아웃 및 텍스트 영역 스타일 조정 --- */
+        .custom-button { transition: background-color 0.2s ease, transform 0.1s ease, filter 0.2s ease; display: inline-flex; align-items: center; justify-content: center; }
+        .custom-button i { margin-right: 0.35rem; }
+        .custom-button:hover:not(:disabled) { filter: brightness(120%); }
+        .custom-button:active:not(:disabled) { transform: scale(0.96); }
+        .custom-button:disabled { background-color: #374151 !important; color: #6b7280 !important; cursor: not-allowed; filter: grayscale(80%); }
+        
+        .toolbar-button { background-color: #374151; color: #d1d5db; padding: 0.5rem 0.75rem; border-radius: 0.375rem; }
+        .toolbar-button:hover:not(:disabled) { background-color: #4b5563; }
+        .dropdown { position: relative; display: inline-block; margin-right: 0.25rem; }
+        .dropdown-content { display: none; position: absolute; background-color: #2d3748; min-width: 220px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.3); z-index: 100; border-radius: 0.375rem; padding: 0.5rem 0; margin-top: 0.25rem; }
+        .dropdown-content button { color: #d1d5db; padding: 0.6rem 1rem; text-decoration: none; display: flex; align-items: center; width: 100%; text-align: left; background: none; border: none; font-size:0.875rem; }
+        .dropdown-content button i { margin-right: 0.5rem; width: 16px; text-align: center; }
+        .dropdown-content button:hover:not(:disabled) { background-color: #4a5568; }
+        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown-separator { height: 1px; background-color: #4b5563; margin: 0.5rem 0; }
 
-        /* 전체 앱 컨테이너 높이 제한 */
-        .main-container {
-           min-height: 70vh; /* Set min-height */
-           max-height: calc(100vh - 4rem); /* Adjusted max-height for better fit */
-           display: flex;
-           flex-direction: column;
-           overflow-y: auto; /* Enable vertical scrolling for the container if content exceeds max-height */
-        }
+        .message-box { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 12px 20px; border-radius: 8px; font-size: 0.875rem; z-index: 1050; opacity: 0; transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; visibility: hidden; white-space: nowrap; }
+        .message-box.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+        .message-box.success { background-color: #10B981; color: white; }
+        .message-box.error { background-color: #EF4444; color: white; }
+        .message-box.info { background-color: #3B82F6; color: white; }
+        
+        .main-container-wrapper { width: 100%; display: flex; justify-content: center; padding: 1rem; min-height: 100vh; box-sizing: border-box; }
+        #mainContainer { display: flex; flex-direction: column; width: 100%; max-width: 1400px; background-color: #1f2937; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); border-radius: 0.75rem; padding: 0; overflow: hidden; }
+        #mainContainer.fullscreen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; max-width: none; max-height: none; margin: 0; border-radius: 0; z-index: 1000; padding: 0; }
+        
+        header { padding: 0.75rem 1.5rem; background-color: #111827; border-bottom: 1px solid #374151; flex-shrink: 0; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; }
+        .editor-title { font-size: 1.25rem; font-weight: 600; color: #93c5fd; }
 
-        /* 메인 콘텐츠 영역 */
-        main {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            overflow: hidden; /* Changed to hidden to manage internal scrolling */
-            min-height: 0; /* Ensure it can shrink/grow properly in flex column */
-            margin-bottom: 1.5rem; /* Added margin to separate from buttons */
-        }
+        .toolbar { background-color: #1e2937; padding: 0.5rem 1.5rem; border-bottom: 1px solid #374151; display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; flex-shrink: 0; }
+        
+        main { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; min-height: 0; padding: 0 1.5rem 1.5rem 1.5rem; }
+        .textarea-wrapper { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; min-height: 0; margin-top:1rem; }
+        .editor-area { display: flex; overflow: hidden; align-items: stretch; flex-grow: 1; border: 1px solid #4b5563; border-radius: 0.375rem; }
+        #textInput { flex-grow:1; overflow-y: auto; width: 100%; resize: none; white-space: pre; line-height: 1.6; font-size: 16px; background-color: #283140; color: #e5e7eb; border: none; border-top-right-radius: 0.375rem; border-bottom-right-radius: 0.375rem; padding: 0.75rem; }
+        #textInput:focus { outline: none; } 
+        .editor-area:focus-within { outline: 2px solid #60a5fa; border-color: #60a5fa; }
 
-        /* 텍스트 영역 래퍼 */
-        .textarea-wrapper {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1; /* Added flex-grow to ensure it takes available space */
-            overflow: hidden; /* Added overflow hidden */
-            min-height: 0; /* Ensure it can shrink/grow properly in flex column */
-        }
+        #lineNumberContainer { width: 50px; background-color: #1e293b; color: #9ca3af; padding: 0.75rem 0.5rem; text-align: right; overflow-y: hidden; overflow-x: hidden; font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.6; user-select: none; flex-shrink: 0; border-top-left-radius: 0.375rem; border-bottom-left-radius: 0.375rem; }
+        
+        .modal-overlay { position: fixed; inset: 0; background-color: rgba(17, 24, 39, 0.85); display: flex; align-items: center; justify-content: center; z-index: 1020; padding: 1rem; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-content { background-color: #1f2937; border: 1px solid #374151; border-radius: 0.75rem; padding: 1.5rem; width: 90%; max-width: 550px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; max-height: 85vh; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-shrink: 0; }
+        .modal-title { font-size: 1.25rem; font-weight: 600; color: #93c5fd; }
+        .modal-close-button { background: none; border: none; color: #9ca3af; font-size: 1.75rem; cursor: pointer; padding: 0.25rem; line-height: 1; transition: color 0.2s ease; }
+        .modal-close-button:hover { color: #e5e7eb; }
+        .modal-body { overflow-y: auto; color: #d1d5db;}
 
-        /* 텍스트 영역 스타일 */
-        #textInput {
-            overflow-y: auto; /* Changed from hidden to auto to enable vertical scrolling */
-            overflow-x: auto; /* Enable horizontal scrolling */
-            width: 100%;
-            resize: none;
-            white-space: pre; /* Keep 'pre' to prevent automatic line wrapping */
-            /* Tailwind class p-4 sets padding: 1rem; */
-            /* Tailwind class bg-slate-700 sets background */
-            /* Tailwind class text-slate-200 sets color */
-            /* Font is inherited from body: 'Inter', sans-serif */
-            /* Default browser line-height for textarea is often around 1.2 or 1.3, adjust if needed */
-        }
+        .preview-content { background-color: #1f2937; border: 1px solid #374151; border-radius: 0.75rem; padding: 1.5rem; width: 90%; height: 90%; max-width: 1200px; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .preview-output-container { flex-grow: 1; overflow: auto; background-color: #ffffff; border-radius: 0.5rem; border: 1px solid #374151; }
+        .preview-output-container pre { white-space: pre-wrap; word-break: break-all; padding: 1rem; color: #111827; font-size: 0.9rem; } 
+        .markdown-preview-area { padding: 1.5rem; color: #111827; line-height:1.7; }
+        .markdown-preview-area img { max-width: 100%; height: auto; border-radius: 0.25rem; margin-top:0.5rem; margin-bottom:0.5rem;}
+        .markdown-preview-area pre { background-color: #f3f4f6; padding: 1rem; border-radius: 0.375rem; overflow-x: auto; margin: 1rem 0; border: 1px solid #e5e7eb; }
+        .markdown-preview-area code:not(pre code) { background-color: #e5e7eb; padding: 0.2em 0.4em; margin: 0; font-size: 85%; border-radius: 3px; }
+        .markdown-preview-area blockquote { border-left: 4px solid #60a5fa; padding-left: 1rem; margin: 1rem 0; color: #9ca3af; }
+        .markdown-preview-area table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+        .markdown-preview-area th, .markdown-preview-area td { border: 1px solid #d1d5db; padding: 0.75rem; text-align: left; }
+        .markdown-preview-area th { background-color: #f9fafb; font-weight:600; }
+        .markdown-preview-area hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
+        
+        .helper-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;}
+        .helper-grid button { justify-content: flex-start; }
+        .syntax-guide h4 { font-size: 1rem; font-weight: 600; color: #93c5fd; margin-top: 1rem; margin-bottom: 0.5rem; }
+        .syntax-guide p { font-size: 0.875rem; margin-bottom: 0.25rem; }
+        .syntax-guide code { background-color: #374151; padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.8em;}
 
-        /* --- 라인 넘버 스타일 --- */
-        #lineNumberContainer {
-            width: 40px;
-            background-color: #1e293b; /* slate-800 */
-            color: #94a3b8; /* slate-400 */
-            padding: 1rem 0.5rem; /* Match textarea top padding (1rem), add right padding for numbers */
-            text-align: right;
-            overflow-y: hidden; /* Changed from auto to hidden to prevent its own scrollbar, rely on JS for sync */
-            overflow-x: hidden; /* Hidden for horizontal */
-            font-family: 'Inter', sans-serif; /* Match textarea */
-            font-size: 1em; /* Match textarea, 1em usually refers to parent's font-size which should be default here*/
-            line-height: 1.5; /* CRUCIAL: Adjust to match textarea. Tailwind's default leading-relaxed is 1.625, normal is 1.5 */
-            user-select: none;
-        }
-
-        .line-number {
-            display: block;
-            white-space: nowrap;
-            /* font-family, font-size, line-height are inherited from #lineNumberContainer */
-        }
-
-        /* --- 미리보기 모달 스타일 --- */
-        .preview-modal {
-            position: fixed;
-            inset: 0; /* 화면 전체 채우기 */
-            background-color: rgba(0, 0, 0, 0.7); /* 반투명 배경 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            padding: 2rem; /* 모달 내부 여백 */
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        .preview-modal.show {
-            opacity: 1;
-            visibility: visible;
-        }
-        .preview-content {
-            background-color: #1e293b; /* slate-800 */
-            border-radius: 0.75rem; /* rounded-xl */
-            padding: 1.5rem; /* p-6 */
-            width: 90%;
-            height: 90%;
-            max-width: 1200px; /* 최대 너비 */
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* shadow-2xl */
-        }
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem; /* mb-4 */
-            flex-shrink: 0; /* 헤더 크기 고정 */
-        }
-        .preview-title {
-            font-size: 1.25rem; /* text-xl */
-            font-weight: 600; /* font-semibold */
-            color: #cbd5e1; /* slate-300 */
-        }
-        .preview-close-button {
-            background: none;
-            border: none;
-            color: #94a3b8; /* slate-400 */
-            font-size: 1.5rem; /* text-2xl */
-            cursor: pointer;
-            padding: 0.5rem;
-            line-height: 1;
-            transition: color 0.2s ease;
-        }
-        .preview-close-button:hover {
-            color: #e2e8f0; /* slate-200 */
-        }
-        .preview-iframe-container {
-            flex-grow: 1; /* 남은 공간 차지 */
-            overflow: hidden; /* 내부 iframe 스크롤 관리 */
-            background-color: #ffffff; /* iframe 배경 흰색 */
-            border-radius: 0.5rem; /* rounded-lg */
-        }
-        #previewIframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
+        #llmOutputContent { white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; line-height: 1.6; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+        .stats-bar { font-size: 0.8rem; color: #9ca3af; padding: 0.6rem 1.5rem; background-color: #111827; border-top: 1px solid #374151; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; flex-shrink: 0; }
+        .stats-item { white-space: nowrap; }
+        
+        .find-replace-form label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; }
+        .find-replace-form input[type="text"] { width: 100%; padding: 0.5rem; background-color: #374151; border: 1px solid #4b5563; border-radius: 0.375rem; color: #d1d5db; margin-bottom: 0.75rem; }
+        .find-replace-form .checkbox-group { display: flex; align-items: center; margin-bottom: 0.75rem; }
+        .find-replace-form input[type="checkbox"] { margin-right: 0.5rem; }
+        .find-replace-form .button-group { display: flex; gap: 0.5rem; justify-content: flex-end; }
 
     </style>
 </head>
-<body class="bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100 flex flex-col items-center justify-center min-h-screen p-4 selection:bg-sky-500 selection:text-white">
+<body>
 
-    <div class="main-container bg-slate-800 shadow-2xl rounded-xl p-6 md:p-10 w-full">
-        <header class="mb-8 text-center flex-shrink-0">
-            <h1 class="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-cyan-300">HTML편집기</h1>
-            <p class="text-slate-400 mt-2 text-sm md:text-base">텍스트를 편집하고 .txt 또는 .html 파일로 저장, 불러오기, 미리보기를 해보세요.</p>
-        </header>
-
-        <main>
-            <div class="textarea-wrapper">
-                <label for="textInput" class="block mb-2 text-sm font-medium text-sky-300 flex-shrink-0">내용:</label>
-                <div style="display: flex; overflow: visible; align-items: flex-start;">
-                    <div id="lineNumberContainer"></div>
-                    <textarea id="textInput" class="w-full p-4 bg-slate-600 border-2 border-slate-500 rounded-lg text-slate-200 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-500 transition-shadow duration-300 shadow-inner" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요..." rows="20"></textarea>
+    <div class="main-container-wrapper">
+        <div id="mainContainer">
+            <header>
+                <div class="top-bar">
+                    <span class="editor-title">텍스트 편집기 Pro 🚀</span>
+                    <button id="fullscreenButton" class="custom-button toolbar-button" title="전체 화면 토글">
+                        <i class="fas fa-expand"></i> <span class="sm:inline hidden">전체 화면</span>
+                    </button>
                 </div>
+            </header>
+
+            <div class="toolbar">
+                <div class="dropdown">
+                    <button class="custom-button toolbar-button"><i class="fas fa-file-alt"></i> 파일</button>
+                    <div class="dropdown-content">
+                        <button id="loadFileButton"><i class="fas fa-folder-open"></i> 파일 불러오기</button>
+                        <div class="dropdown-separator"></div>
+                        <button id="saveTxtButton"><i class="fas fa-file-lines"></i> TXT로 저장</button>
+                        <button id="saveHtmlButton"><i class="fab fa-html5"></i> HTML로 저장</button>
+                        <button id="saveMarkdownButton"><i class="fab fa-markdown"></i> Markdown으로 저장</button>
+                        <button id="saveJsonButton"><i class="fas fa-code-branch"></i> JSON으로 저장</button>
+                        <button id="saveXmlButton"><i class="fas fa-file-code"></i> XML로 저장</button>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <button class="custom-button toolbar-button"><i class="fas fa-edit"></i> 편집</button>
+                    <div class="dropdown-content">
+                        <button id="undoButton"><i class="fas fa-undo"></i> 되돌리기</button>
+                        <button id="redoButton"><i class="fas fa-redo"></i> 다시 실행</button>
+                        <div class="dropdown-separator"></div>
+                        <button id="findReplaceButton"><i class="fas fa-search"></i> 찾기/바꾸기</button>
+                        <div class="dropdown-separator"></div>
+                        <button id="clearAllButton"><i class="fas fa-trash-alt"></i> 모두 지우기</button>
+                    </div>
+                </div>
+                 <div class="dropdown">
+                    <button class="custom-button toolbar-button"><i class="fas fa-eye"></i> 보기</button>
+                    <div class="dropdown-content">
+                        <button id="previewHtmlButton"><i class="fas fa-code"></i> HTML 미리보기</button>
+                        <button id="previewMarkdownButton"><i class="fab fa-markdown"></i> 마크다운 미리보기</button>
+                        <button id="previewJsonButton"><i class="fas fa-sitemap"></i> JSON 미리보기</button>
+                        <button id="previewXmlButton"><i class="fas fa-file-invoice"></i> XML 미리보기</button>
+                        <div class="dropdown-separator"></div>
+                        <button id="toggleWordWrapButton"><i class="fas fa-exchange-alt"></i> 자동 줄 바꿈 토글</button>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <button class="custom-button toolbar-button"><i class="fas fa-tools"></i> 도구</button>
+                    <div class="dropdown-content">
+                         <button id="markdownHelperButton"><i class="fas fa-book"></i> 마크다운 도우미</button>
+                         <button id="jsonHelperButton"><i class="fas fa-cogs"></i> JSON 도우미</button>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <button class="custom-button toolbar-button"><i class="fas fa-robot"></i> AI</button>
+                    <div class="dropdown-content">
+                        <button id="summarizeButton"><i class="fas fa-compress-arrows-alt"></i> 텍스트 요약</button>
+                        <button id="continueButton"><i class="fas fa-pen-fancy"></i> 이어쓰기</button>
+                    </div>
+                </div>
+                <button id="settingsButton" class="custom-button toolbar-button" title="설정">
+                    <i class="fas fa-cog"></i> <span class="sm:inline hidden">설정</span>
+                </button>
             </div>
 
-            <input type="file" id="fileInput" accept=".txt,.html" style="display: none;">
-
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 flex-shrink-0 mt-4">
-                 <button id="loadFileButton" class="custom-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-3 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                    불러오기
-                </button>
-                <button id="saveTxtButton" class="custom-button bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-3 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-opacity-50 text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                    TXT 저장
-                </button>
-                <button id="saveHtmlButton" class="custom-button bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-3 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-50 text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-                    HTML 저장
-                </button>
-                 <button id="previewButton" class="custom-button bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold py-3 px-3 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    미리보기
-                </button>
-            </div>
-        </main>
-    </div>
-
-    <div id="messageBox" class="message-box"></div>
-
-    <div id="previewModal" class="preview-modal">
-        <div class="preview-content">
-            <div class="preview-header">
-                <h2 class="preview-title">HTML 미리보기</h2>
-                <button id="closePreviewButton" class="preview-close-button" aria-label="미리보기 닫기">&times;</button>
-            </div>
-            <div class="preview-iframe-container">
-                <iframe id="previewIframe" title="HTML Preview"></iframe>
+            <main>
+                <div class="textarea-wrapper">
+                    <div class="editor-area">
+                        <div id="lineNumberContainer"></div>
+                        <textarea id="textInput" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요." spellcheck="false"></textarea>
+                    </div>
+                </div>
+            </main>
+            <div id="statsBar" class="stats-bar">
+                <span class="stats-item">글자: <span id="charCountWithSpaces">0</span></span>
+                <span class="stats-item">단어: <span id="wordCount">0</span></span>
+                <span class="stats-item">줄: <span id="lineCount">1</span></span>
+                <span class="stats-item"><span id="cursorPosition">위치: 1:1</span></span>
             </div>
         </div>
     </div>
 
+    <input type="file" id="fileInput" accept=".txt,.html,.md,.json,.xml" style="display: none;">
+
+    <div id="loadingIndicator" class="message-box bg-gray-700 text-white flex items-center space-x-2">
+        <i class="fas fa-spinner animate-spin"></i>
+        <span>AI가 작업 중입니다...</span>
+    </div>
+    <div id="messageBox" class="message-box"></div>
+
+    <div id="previewModal" class="modal-overlay">
+        <div class="preview-content">
+            <div class="modal-header">
+                <h2 id="previewModalTitle" class="modal-title">미리보기</h2>
+                <button id="closePreviewModalButton" class="modal-close-button" aria-label="미리보기 닫기">&times;</button>
+            </div>
+            <div id="previewOutputContainer" class="preview-output-container">
+                <iframe id="previewIframe" title="HTML Preview" class="w-full h-full border-0" sandbox="allow-scripts allow-same-origin" style="display:none;"></iframe>
+                <div id="markdownPreviewArea" class="markdown-preview-area w-full h-full border-0" style="display:none;"></div>
+                <pre id="jsonPreviewArea" class="w-full h-full border-0" style="display:none;"></pre>
+                <pre id="xmlPreviewArea" class="w-full h-full border-0" style="display:none;"></pre>
+            </div>
+        </div>
+    </div>
+    
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">편집기 설정</h2>
+                <button id="closeSettingsModalButton" class="modal-close-button" aria-label="설정 닫기">&times;</button>
+            </div>
+            <div class="modal-body mt-4 space-y-4">
+                <div>
+                    <label for="fontSizeInput" class="block text-sm font-medium text-slate-300 mb-1">글꼴 크기 (px):</label>
+                    <input type="number" id="fontSizeInput" min="10" max="30" step="1" class="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-slate-200 focus:ring-sky-500 focus:border-sky-500">
+                </div>
+                <button id="saveSettingsButton" class="custom-button bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-lg w-full">
+                    <i class="fas fa-save"></i> 설정 저장
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="llmOutputModal" class="modal-overlay">
+        <div class="preview-content">
+             <div class="modal-header">
+                <h2 class="modal-title" id="llmOutputTitle">AI 생성 결과</h2>
+                <button id="closeLlmOutputButton" class="modal-close-button" aria-label="AI 생성 결과 닫기">&times;</button>
+            </div>
+            <div class="preview-output-container" style="background-color: #111827; color: #d1d5db; padding: 1rem; overflow-y: auto; border-radius: 0.5rem;">
+                <pre id="llmOutputContent" class="whitespace-pre-wrap"></pre>
+            </div>
+            <div class="mt-4 text-right">
+                <button id="insertLlmOutputButton" class="custom-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+                    <i class="fas fa-plus-circle"></i> 에디터에 삽입
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="markdownHelperModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 class="modal-title">마크다운 작성 도우미</h2>
+                <button id="closeMarkdownHelperModalButton" class="modal-close-button" aria-label="닫기">&times;</button>
+            </div>
+            <div class="modal-body mt-4">
+                <p class="text-sm mb-4">텍스트를 선택한 후 아래 버튼을 클릭하거나, 커서 위치에 문법을 삽입하세요.</p>
+                <div class="helper-grid">
+                    <button class="custom-button toolbar-button markdown-insert" data-syntax="bold"><i class="fas fa-bold"></i> 굵게</button>
+                    <button class="custom-button toolbar-button markdown-insert" data-syntax="italic"><i class="fas fa-italic"></i> 기울임</button>
+                    <button class="custom-button toolbar-button markdown-insert" data-syntax="heading1"><i class="fas fa-heading"></i> 제목1</button>
+                    <button class="custom-button toolbar-button markdown-insert" data-syntax="heading2"><i class="fas fa-heading" style="font-size:0.8em;"></i> 제목2</button>
+                    <button class="custom-button toolbar-button markdown-insert" data-syntax="link"><i class="fas fa-link"></i> 링크</button>
+                    <button class="custom-button toolbar-button markdown-insert" data-syntax="image"><i class="fas fa-image"></i> 이미지</button>
+                    <button class="custom-button toolbar-button markdown-insert" data-syntax="ul"><i class="fas fa-list-ul"></i> 순서 없는 목록</button>
+                    <button class="custom-button toolbar-button markdown-insert" data-syntax="ol"><i class="fas fa-list-ol"></i> 순서 있는 목록</button>
+                    <button class="custom-button toolbar-button markdown-insert" data-syntax="blockquote"><i class="fas fa-quote-left"></i> 인용문</button>
+                    <button class="custom-button toolbar-button markdown-insert" data-syntax="codeblock"><i class="fas fa-code"></i> 코드 블록</button>
+                    <button class="custom-button toolbar-button markdown-insert" data-syntax="inlinecode"><i class="fas fa-terminal"></i> 인라인 코드</button>
+                    <button class="custom-button toolbar-button markdown-insert" data-syntax="hr"><i class="fas fa-minus"></i> 수평선</button>
+                </div>
+                <div class="syntax-guide mt-6 pt-4 border-t border-slate-700">
+                    <h4>빠른 문법 가이드:</h4>
+                    <p><code># 제목1</code>, <code>## 제목2</code>, <code>### 제목3</code></p>
+                    <p><code>**굵게**</code> 또는 <code>__굵게__</code></p>
+                    <p><code>*기울임*</code> 또는 <code>_기울임_</code></p>
+                    <p><code>[링크 텍스트](URL)</code></p>
+                    <p><code>![이미지 설명](이미지 URL)</code></p>
+                    <p><code>- 항목 1</code><br><code>- 항목 2</code></p>
+                    <p><code>1. 항목 1</code><br><code>2. 항목 2</code></p>
+                    <p><code>&gt; 인용문</code></p>
+                    <p><code>```언어\n코드 내용\n```</code></p>
+                    <p><code>`인라인 코드`</code></p>
+                    <p><code>---</code> 또는 <code>***</code> (수평선)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="jsonHelperModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 class="modal-title">JSON 작성 도우미</h2>
+                <button id="closeJsonHelperModalButton" class="modal-close-button" aria-label="닫기">&times;</button>
+            </div>
+            <div class="modal-body mt-4">
+                <p class="text-sm mb-4">커서 위치에 JSON 구조를 삽입하거나, 선택된 텍스트를 값으로 사용합니다.</p>
+                <div class="helper-grid">
+                    <button class="custom-button toolbar-button json-insert" data-syntax="object"><i class="fas fa-project-diagram"></i> 빈 객체 {}</button>
+                    <button class="custom-button toolbar-button json-insert" data-syntax="array"><i class="fas fa-list"></i> 빈 배열 []</button>
+                    <button class="custom-button toolbar-button json-insert" data-syntax="keypair"><i class="fas fa-key"></i> 키-값 쌍</button>
+                    <button class="custom-button toolbar-button json-insert" data-syntax="string"><i class="fas fa-quote-right"></i> 문자열 ""</button>
+                    <button class="custom-button toolbar-button json-insert" data-syntax="number"><i class="fas fa-hashtag"></i> 숫자</button>
+                    <button class="custom-button toolbar-button json-insert" data-syntax="booleanTrue"><i class="fas fa-check-circle"></i> true</button>
+                    <button class="custom-button toolbar-button json-insert" data-syntax="booleanFalse"><i class="fas fa-times-circle"></i> false</button>
+                    <button class="custom-button toolbar-button json-insert" data-syntax="null"><i class="fas fa-ban"></i> null</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="findReplaceModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2 class="modal-title">찾기 및 바꾸기</h2>
+                <button id="closeFindReplaceModalButton" class="modal-close-button">&times;</button>
+            </div>
+            <div class="modal-body mt-4 find-replace-form">
+                <div>
+                    <label for="findInput">찾을 내용:</label>
+                    <input type="text" id="findInput">
+                </div>
+                <div>
+                    <label for="replaceInput">바꿀 내용:</label>
+                    <input type="text" id="replaceInput">
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="matchCaseCheckbox">
+                    <label for="matchCaseCheckbox" class="text-sm">대소문자 구분</label>
+                </div>
+                <div class="button-group">
+                    <button id="findNextButton" class="custom-button toolbar-button"><i class="fas fa-search"></i> 찾기</button>
+                    <button id="replaceButton" class="custom-button toolbar-button bg-blue-600 hover:bg-blue-700"><i class="fas fa-exchange-alt"></i> 바꾸기</button>
+                    <button id="replaceAllButton" class="custom-button toolbar-button bg-green-600 hover:bg-green-700"><i class="fas fa-fast-forward"></i> 모두 바꾸기</button>
+                </div>
+                <p id="findReplaceMessage" class="text-xs mt-3 text-slate-400"></p>
+            </div>
+        </div>
+    </div>
+
+
     <script>
-        // DOM 요소 가져오기
+        // DOM Elements (abbreviated for brevity, full list in actual code)
         const textInput = document.getElementById('textInput');
-        const saveTxtButton = document.getElementById('saveTxtButton');
-        const saveHtmlButton = document.getElementById('saveHtmlButton');
-        const loadFileButton = document.getElementById('loadFileButton');
         const fileInput = document.getElementById('fileInput');
         const messageBox = document.getElementById('messageBox');
-        const previewButton = document.getElementById('previewButton'); // 미리보기 버튼
-        const previewModal = document.getElementById('previewModal'); // 미리보기 모달
-        const closePreviewButton = document.getElementById('closePreviewButton'); // 모달 닫기 버튼
-        const previewIframe = document.getElementById('previewIframe'); // 미리보기 iframe
-        const lineNumberContainer = document.getElementById('lineNumberContainer'); // 라인 넘버 컨테이너
+        
+        const previewHtmlButton = document.getElementById('previewHtmlButton');
+        const previewMarkdownButton = document.getElementById('previewMarkdownButton');
+        const previewJsonButton = document.getElementById('previewJsonButton');
+        const previewXmlButton = document.getElementById('previewXmlButton'); // New
+        const previewModal = document.getElementById('previewModal');
+        const previewModalTitle = document.getElementById('previewModalTitle');
+        const closePreviewModalButton = document.getElementById('closePreviewModalButton');
+        const previewOutputContainer = document.getElementById('previewOutputContainer');
+        const previewIframe = document.getElementById('previewIframe');
+        const markdownPreviewArea = document.getElementById('markdownPreviewArea');
+        const jsonPreviewArea = document.getElementById('jsonPreviewArea');
+        const xmlPreviewArea = document.getElementById('xmlPreviewArea'); // New
+
+
+        const lineNumberContainer = document.getElementById('lineNumberContainer');
+        const charCountWithSpacesElem = document.getElementById('charCountWithSpaces');
+        const wordCountElem = document.getElementById('wordCount');
+        const lineCountElem = document.getElementById('lineCount');
+        const cursorPositionElem = document.getElementById('cursorPosition');
+        
+        const undoButton = document.getElementById('undoButton');
+        const redoButton = document.getElementById('redoButton');
+        const toggleWordWrapButton = document.getElementById('toggleWordWrapButton');
+        
+        const settingsButton = document.getElementById('settingsButton');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettingsModalButton = document.getElementById('closeSettingsModalButton');
+        const fontSizeInput = document.getElementById('fontSizeInput');
+        const saveSettingsButton = document.getElementById('saveSettingsButton');
+        const fullscreenButton = document.getElementById('fullscreenButton');
+        const mainContainer = document.getElementById('mainContainer');
+
+        const markdownHelperButton = document.getElementById('markdownHelperButton');
+        const markdownHelperModal = document.getElementById('markdownHelperModal');
+        const closeMarkdownHelperModalButton = document.getElementById('closeMarkdownHelperModalButton');
+        
+        const jsonHelperButton = document.getElementById('jsonHelperButton'); // New
+        const jsonHelperModal = document.getElementById('jsonHelperModal'); // New
+        const closeJsonHelperModalButton = document.getElementById('closeJsonHelperModalButton'); // New
+        
+        const findReplaceButton = document.getElementById('findReplaceButton');
+        // ... other find/replace and LLM elements
+
+        // Editor State
         let messageTimeout;
+        const MAX_HISTORY_SIZE = 100;
+        let undoStack = [];
+        let redoStack = [];
+        let lastKnownState = "";
+        let isWordWrapEnabled = false;
+        const EDITOR_FONT_SIZE_KEY = 'editorProFontSize_v3'; 
+        let currentSearchStartIndex = 0;
+        let lastSearchQuery = "";
 
-        // --- 라인 넘버 기능 ---
-        function updateLineNumbers() {
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            applySettings();
+            setupEventListeners();
+            updateUndoRedoButtons();
+            lastKnownState = textInput.value;
+            if (textInput.value === "") { pushToUndoStack(""); updateUndoRedoButtons(); }
+            
+            const initialRows = 25; 
+            const lineHeight = parseFloat(getComputedStyle(textInput).lineHeight) || 24;
+            textInput.style.minHeight = (initialRows * lineHeight) + 'px';
+            updateLineNumbersAndStats();
+        });
+
+        function applySettings() {
+            const savedFontSize = localStorage.getItem(EDITOR_FONT_SIZE_KEY) || '16';
+            textInput.style.fontSize = `${savedFontSize}px`;
+            lineNumberContainer.style.fontSize = `${savedFontSize}px`;
+            fontSizeInput.value = savedFontSize;
+            updateLineNumbersAndStats();
+        }
+
+        // --- Editor Core Logic (updateEditorState, pushToUndoStack, updateUndoRedoButtons, updateLineNumbersAndStats, updateCursorPosition) ---
+        // (These functions remain largely the same as previous version, with minor adjustments if needed for new features)
+        function updateEditorState(newState, fromUndoRedo = false, newCursorPos = null) {
+            const currentScrollTop = textInput.scrollTop;
+            const currentScrollLeft = textInput.scrollLeft;
+            
+            textInput.value = newState;
+            updateLineNumbersAndStats();
+            
+            if (newCursorPos !== null) {
+                try { textInput.setSelectionRange(newCursorPos, newCursorPos); } catch (e) {}
+            } else {
+                 try { textInput.setSelectionRange(textInput.selectionStart, textInput.selectionEnd); } catch (e) {}
+            }
+            
+            textInput.scrollTop = currentScrollTop;
+            textInput.scrollLeft = currentScrollLeft;
+
+            if (!fromUndoRedo) {
+                lastKnownState = newState;
+            }
+            updateUndoRedoButtons();
+        }
+        
+        function pushToUndoStack(state) {
+            if (undoStack.length >= MAX_HISTORY_SIZE) undoStack.shift();
+            undoStack.push(state);
+        }
+
+        function updateUndoRedoButtons() {
+            undoButton.disabled = undoStack.length === 0;
+            redoButton.disabled = redoStack.length === 0;
+        }
+
+        function updateLineNumbersAndStats() {
             if (!textInput || !lineNumberContainer) return;
-
-            const lines = textInput.value.split('\n');
+            const text = textInput.value;
+            const lines = text.split('\n');
             const numberOfLines = lines.length;
             
             const fragment = document.createDocumentFragment();
-
             for (let i = 1; i <= numberOfLines; i++) {
                 const lineNumberDiv = document.createElement('div');
                 lineNumberDiv.textContent = i;
@@ -269,149 +468,545 @@
             lineNumberContainer.innerHTML = ''; 
             lineNumberContainer.appendChild(fragment);
             
-            // 라인 넘버 컨테이너의 높이를 텍스트 입력창과 동기화
-            lineNumberContainer.style.height = textInput.clientHeight + 'px'; 
-
-            // 스크롤 동기화
+            const textInputHeight = textInput.clientHeight;
+            if (textInputHeight > 0) {
+                 lineNumberContainer.style.height = textInputHeight + 'px';
+            }
             lineNumberContainer.scrollTop = textInput.scrollTop;
-        }
 
-        // --- 자동 높이 조절 함수 (이제 사용하지 않음) ---
-        function autoGrowTextarea(element) {
-            // 이 함수는 'overflow-y: auto'로 설정했기 때문에 더 이상 필요하지 않거나 동작에 영향을 미치지 않을 수 있습니다.
-            // 높이 자동 조절과 스크롤바는 동시에 작동하지 않으므로, 스크롤바를 우선시합니다.
-        }
-
-        // --- 이벤트 리스너 ---
-        if (textInput && lineNumberContainer) {
-            textInput.addEventListener('input', () => {
-                updateLineNumbers();
-            });
-            textInput.addEventListener('scroll', () => {
-                lineNumberContainer.scrollTop = textInput.scrollTop;
-            });
-            textInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete') {
-                    requestAnimationFrame(() => {
-                        updateLineNumbers();
-                    });
-                }
-            });
-            
-            // 초기 로드 시 라인 넘버 및 높이 업데이트
-            updateLineNumbers();
+            charCountWithSpacesElem.textContent = text.length;
+            wordCountElem.textContent = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+            lineCountElem.textContent = numberOfLines;
+            updateCursorPosition();
         }
         
-        // 파일 로드 후 라인 넘버 업데이트
-        // reader.onload 내 updateLineNumbers() 호출은 이미 되어 있습니다.
+        function updateCursorPosition() {
+            try {
+                const cursorPos = textInput.selectionStart;
+                let lineNum = 1;
+                let colNum = 1;
+                for (let i = 0; i < cursorPos; i++) {
+                    if (textInput.value[i] === '\n') {
+                        lineNum++;
+                        colNum = 1;
+                    } else {
+                        colNum++;
+                    }
+                }
+                cursorPositionElem.textContent = `위치: ${lineNum}:${colNum}`;
+            } catch (e) {
+                cursorPositionElem.textContent = `위치: -:-`;
+            }
+        }
 
 
-        // 메시지 표시 함수
-        function showMessage(message, type = 'success') {
+        // --- Event Listeners Setup ---
+        function setupEventListeners() {
+            textInput.addEventListener('focus', () => { lastKnownState = textInput.value; updateCursorPosition(); });
+            textInput.addEventListener('input', (event) => {
+                const currentState = textInput.value;
+                 if (currentState !== lastKnownState && !(event.inputType && event.inputType.startsWith('history'))) {
+                    pushToUndoStack(lastKnownState);
+                    redoStack = []; 
+                    lastKnownState = currentState;
+                    updateUndoRedoButtons();
+                }
+                updateLineNumbersAndStats();
+            });
+            textInput.addEventListener('click', updateCursorPosition);
+            textInput.addEventListener('keyup', updateCursorPosition);
+
+
+            if (textInput && lineNumberContainer) {
+                textInput.addEventListener('scroll', () => { if (lineNumberContainer) lineNumberContainer.scrollTop = textInput.scrollTop; });
+                textInput.addEventListener('keydown', handleKeyDown);
+                new ResizeObserver(updateLineNumbersAndStats).observe(textInput);
+                window.addEventListener('resize', () => {
+                    updateLineNumbersAndStats();
+                });
+            }
+            
+            // Menu Buttons (File)
+            document.getElementById('loadFileButton').addEventListener('click', () => fileInput.click());
+            document.getElementById('saveTxtButton').addEventListener('click', () => downloadFile('document.txt', textInput.value, 'text/plain;charset=utf-8'));
+            document.getElementById('saveHtmlButton').addEventListener('click', () => downloadFile('document.html', textInput.value, 'text/html;charset=utf-8'));
+            document.getElementById('saveMarkdownButton').addEventListener('click', () => downloadFile('document.md', textInput.value, 'text/markdown;charset=utf-8'));
+            document.getElementById('saveJsonButton').addEventListener('click', () => downloadFile('document.json', textInput.value, 'application/json;charset=utf-8'));
+            document.getElementById('saveXmlButton').addEventListener('click', () => downloadFile('document.xml', textInput.value, 'application/xml;charset=utf-8')); // New
+            
+            // Menu Buttons (Edit)
+            undoButton.addEventListener('click', handleUndo);
+            redoButton.addEventListener('click', handleRedo);
+            findReplaceButton.addEventListener('click', () => { findReplaceModal.classList.add('show'); findInput.focus(); findReplaceMessage.textContent = '';});
+            document.getElementById('clearAllButton').addEventListener('click', handleClearAll);
+
+            // Menu Buttons (View)
+            previewHtmlButton.addEventListener('click', () => showPreview('html'));
+            previewMarkdownButton.addEventListener('click', () => showPreview('markdown'));
+            previewJsonButton.addEventListener('click', () => showPreview('json'));
+            previewXmlButton.addEventListener('click', () => showPreview('xml')); // New
+            toggleWordWrapButton.addEventListener('click', handleToggleWordWrap);
+            
+            // Menu Buttons (Tools)
+            markdownHelperButton.addEventListener('click', () => markdownHelperModal.classList.add('show'));
+            jsonHelperButton.addEventListener('click', () => jsonHelperModal.classList.add('show')); // New
+            
+            // Menu Buttons (AI & Settings)
+            document.getElementById('summarizeButton').addEventListener('click', handleSummarize);
+            document.getElementById('continueButton').addEventListener('click', handleContinue);
+            settingsButton.addEventListener('click', () => settingsModal.classList.add('show'));
+            fullscreenButton.addEventListener('click', toggleFullScreen);
+
+
+            // Modals Close
+            setupModalClose(previewModal, closePreviewModalButton, () => { previewIframe.srcdoc = ''; markdownPreviewArea.innerHTML = ''; jsonPreviewArea.textContent = ''; xmlPreviewArea.textContent = ''; });
+            setupModalClose(settingsModal, closeSettingsModalButton);
+            setupModalClose(document.getElementById('llmOutputModal'), document.getElementById('closeLlmOutputButton'));
+            setupModalClose(markdownHelperModal, closeMarkdownHelperModalButton);
+            setupModalClose(jsonHelperModal, closeJsonHelperModalButton); // New
+            setupModalClose(findReplaceModal, document.getElementById('closeFindReplaceModalButton'));
+
+            // File Input
+            fileInput.addEventListener('change', handleFileLoad);
+            
+            // Settings Modal
+            saveSettingsButton.addEventListener('click', handleSaveSettings);
+
+            // Markdown Helper
+            document.querySelectorAll('.markdown-insert').forEach(button => {
+                button.addEventListener('click', (e) => handleMarkdownInsert(e.currentTarget.dataset.syntax));
+            });
+            // JSON Helper
+            document.querySelectorAll('.json-insert').forEach(button => {
+                button.addEventListener('click', (e) => handleJsonInsert(e.currentTarget.dataset.syntax));
+            });
+
+
+            // Find & Replace Modal
+            document.getElementById('findNextButton').addEventListener('click', handleFindNext);
+            document.getElementById('replaceButton').addEventListener('click', handleReplace);
+            document.getElementById('replaceAllButton').addEventListener('click', handleReplaceAll);
+            document.getElementById('findInput').addEventListener('input', () => { currentSearchStartIndex = 0; lastSearchQuery = ""; findReplaceMessage.textContent = ''; });
+
+
+            // LLM Output
+            document.getElementById('insertLlmOutputButton').addEventListener('click', handleInsertLlmOutput);
+        }
+        
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete') {
+                requestAnimationFrame(updateLineNumbersAndStats);
+            } else if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) { // Ensure Tab is not part of a shortcut
+                e.preventDefault();
+                insertTextAtCursor('    ');
+            } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                e.preventDefault(); handleUndo();
+            } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key === 'Z' && e.shiftKey))) {
+                e.preventDefault(); handleRedo();
+            } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+                e.preventDefault(); findReplaceButton.click();
+            } else {
+                const pairs = {'(': ')', '{': '}', '[': ']', '"': '"', "'": "'", '`': '`'};
+                if (pairs[e.key]) {
+                    e.preventDefault();
+                    const start = textInput.selectionStart;
+                    const end = textInput.selectionEnd;
+                    const selectedText = textInput.value.substring(start, end);
+                    const textToInsert = e.key + selectedText + pairs[e.key];
+                    insertTextAtCursor(textToInsert, selectedText.length > 0 ? start + textToInsert.length : start + 1);
+                }
+            }
+            updateCursorPosition();
+        }
+
+        function insertTextAtCursor(textToInsert, newCursorPosAfterInsertion = null) {
+            const originalState = textInput.value;
+            const start = textInput.selectionStart;
+            
+            document.execCommand('insertText', false, textToInsert);
+            
+            if (textInput.value !== originalState) {
+                pushToUndoStack(originalState);
+                redoStack = [];
+                lastKnownState = textInput.value;
+                updateUndoRedoButtons();
+                updateLineNumbersAndStats();
+            }
+            
+            if (newCursorPosAfterInsertion !== null) {
+                 try { textInput.setSelectionRange(newCursorPosAfterInsertion, newCursorPosAfterInsertion); } catch(e){}
+            }
+            textInput.focus();
+        }
+
+
+        // --- UI Handlers (Undo, Redo, ClearAll, ToggleWordWrap, SaveSettings, Fullscreen) ---
+        // (These functions remain largely the same)
+        function handleUndo() {
+            if (undoStack.length > 0) {
+                const previousState = undoStack.pop();
+                redoStack.push(textInput.value); 
+                updateEditorState(previousState, true, textInput.selectionStart); 
+            }
+        }
+        function handleRedo() {
+            if (redoStack.length > 0) {
+                const nextState = redoStack.pop();
+                pushToUndoStack(textInput.value); 
+                updateEditorState(nextState, true, textInput.selectionStart); 
+            }
+        }
+        function handleClearAll() {
+            if (textInput.value !== "") { pushToUndoStack(textInput.value); redoStack = []; }
+            updateEditorState("");
+            showMessage('모든 내용이 지워졌습니다.', 'info');
+        }
+        function handleToggleWordWrap() {
+            isWordWrapEnabled = !isWordWrapEnabled;
+            textInput.style.whiteSpace = isWordWrapEnabled ? 'pre-wrap' : 'pre';
+            textInput.style.overflowX = isWordWrapEnabled ? 'hidden' : 'auto';
+            const iconClass = isWordWrapEnabled ? 'fa-align-left' : 'fa-align-justify'; 
+            toggleWordWrapButton.innerHTML = `<i class="fas ${iconClass}"></i> 자동 줄 바꿈 ${isWordWrapEnabled ? '끄기' : '켜기'}`;
+            toggleWordWrapButton.classList.toggle('bg-orange-600', isWordWrapEnabled);
+            toggleWordWrapButton.classList.toggle('hover:bg-orange-700', isWordWrapEnabled);
+            toggleWordWrapButton.classList.toggle('bg-teal-600', !isWordWrapEnabled);
+            toggleWordWrapButton.classList.toggle('hover:bg-teal-700', !isWordWrapEnabled);
+            updateLineNumbersAndStats();
+        }
+        function handleSaveSettings() {
+            const newSize = fontSizeInput.value;
+            if (newSize >= 10 && newSize <= 30) {
+                localStorage.setItem(EDITOR_FONT_SIZE_KEY, newSize);
+                applySettings();
+                showMessage('설정이 저장되었습니다.', 'success');
+                settingsModal.classList.remove('show');
+            } else {
+                showMessage('글꼴 크기는 10px에서 30px 사이여야 합니다.', 'error');
+            }
+        }
+        function toggleFullScreen() {
+            mainContainer.classList.toggle('fullscreen');
+            fullscreenButton.innerHTML = mainContainer.classList.contains('fullscreen') ? 
+                `<i class="fas fa-compress"></i> <span class="sm:inline hidden">화면 축소</span>` : 
+                `<i class="fas fa-expand"></i> <span class="sm:inline hidden">전체 화면</span>`;
+            requestAnimationFrame(updateLineNumbersAndStats);
+        }
+        
+        // --- Preview Logic ---
+        function showPreview(type) {
+            const content = textInput.value;
+            const allowEmpty = ['json', 'xml']; // Types that can be previewed even if empty (for validation/structure display)
+
+            if (!content.trim() && !allowEmpty.includes(type)) {
+                 showMessage('미리보기할 내용이 없습니다.', 'error'); return;
+            }
+
+            previewModalTitle.textContent = `${type.toUpperCase()} 미리보기`;
+            previewIframe.style.display = 'none';
+            markdownPreviewArea.style.display = 'none';
+            jsonPreviewArea.style.display = 'none';
+            xmlPreviewArea.style.display = 'none'; // New
+            jsonPreviewArea.classList.remove('text-red-400');
+            xmlPreviewArea.classList.remove('text-red-400');
+
+
+            if (type === 'html') {
+                previewIframe.style.display = 'block';
+                previewIframe.srcdoc = content;
+            } else if (type === 'markdown') {
+                markdownPreviewArea.style.display = 'block';
+                markdownPreviewArea.innerHTML = marked.parse(content, { breaks: true, gfm: true });
+            } else if (type === 'json') {
+                jsonPreviewArea.style.display = 'block';
+                try {
+                    const parsedJson = JSON.parse(content || "{}"); 
+                    jsonPreviewArea.textContent = JSON.stringify(parsedJson, null, 2);
+                } catch (e) {
+                    jsonPreviewArea.textContent = `잘못된 JSON 형식입니다:\n${e.message}`;
+                    jsonPreviewArea.classList.add('text-red-400');
+                }
+            } else if (type === 'xml') { // New
+                xmlPreviewArea.style.display = 'block';
+                try {
+                    xmlPreviewArea.textContent = formatXml(content);
+                } catch (e) {
+                    xmlPreviewArea.textContent = `XML을 포맷하는 중 오류 발생:\n${e.message}\n\n(참고: 이 미리보기는 간단한 XML 포맷팅만 지원합니다.)`;
+                    xmlPreviewArea.classList.add('text-red-400');
+                }
+            }
+            previewModal.classList.add('show');
+        }
+        
+        // --- Helper Insert Logic (Markdown, JSON) ---
+        function handleMarkdownInsert(syntax) {
+            const start = textInput.selectionStart;
+            const end = textInput.selectionEnd;
+            const selectedText = textInput.value.substring(start, end);
+            let textToInsert = "";
+            let cursorPosOffset = 0; 
+
+            switch (syntax) {
+                case 'bold': textToInsert = `**${selectedText || '굵은 텍스트'}**`; cursorPosOffset = selectedText ? textToInsert.length : 2; break;
+                case 'italic': textToInsert = `*${selectedText || '기울인 텍스트'}*`; cursorPosOffset = selectedText ? textToInsert.length : 1; break;
+                case 'heading1': textToInsert = `# ${selectedText || '제목 1'}\n`; cursorPosOffset = selectedText ? textToInsert.length : 2; break;
+                case 'heading2': textToInsert = `## ${selectedText || '제목 2'}\n`; cursorPosOffset = selectedText ? textToInsert.length : 3; break;
+                case 'link': 
+                    const url = prompt("링크 URL을 입력하세요:", "https://");
+                    if (url === null) return; 
+                    textToInsert = `[${selectedText || '링크 텍스트'}](${url || 'https://example.com'})`; 
+                    cursorPosOffset = selectedText ? textToInsert.indexOf(']') + 2 : (url ? textToInsert.indexOf('(') + 1 : 1);
+                    break;
+                case 'image':
+                    const imgUrl = prompt("이미지 URL을 입력하세요:", "https://");
+                    if (imgUrl === null) return;
+                    textToInsert = `![${selectedText || '이미지 설명'}](${imgUrl || 'https://via.placeholder.com/150'})`; 
+                    cursorPosOffset = selectedText ? textToInsert.indexOf(']') + 2 : (imgUrl ? textToInsert.indexOf('(') + 1 : 2);
+                    break;
+                case 'ul': textToInsert = (start === 0 || textInput.value[start-1] === '\n' ? "" : "\n") + `- ${selectedText || '항목'}\n`; cursorPosOffset = selectedText ? textToInsert.length : (textToInsert.startsWith('\n')?3:2) ; break;
+                case 'ol': textToInsert = (start === 0 || textInput.value[start-1] === '\n' ? "" : "\n") + `1. ${selectedText || '항목'}\n`; cursorPosOffset = selectedText ? textToInsert.length : (textToInsert.startsWith('\n')?4:3); break;
+                case 'blockquote': textToInsert = (start === 0 || textInput.value[start-1] === '\n' ? "" : "\n") + `> ${selectedText || '인용문'}\n`; cursorPosOffset = selectedText ? textToInsert.length : (textToInsert.startsWith('\n')?3:2); break;
+                case 'codeblock': textToInsert = (start === 0 || textInput.value[start-1] === '\n' ? "" : "\n") + "```\n" + (selectedText || '코드 내용') + "\n```\n"; cursorPosOffset = selectedText ? textToInsert.indexOf('\n') + 1 : (textToInsert.startsWith('\n')?5:4); break;
+                case 'inlinecode': textToInsert = `\`${selectedText || '인라인 코드'}\``; cursorPosOffset = selectedText ? textToInsert.length : 1; break;
+                case 'hr': textToInsert = (start === 0 || textInput.value[start-1] === '\n' ? "" : "\n") + "---\n"; cursorPosOffset = textToInsert.length; break;
+            }
+            insertTextAtCursor(textToInsert, start + cursorPosOffset);
+            markdownHelperModal.classList.remove('show');
+        }
+        function handleJsonInsert(syntax) {
+            const start = textInput.selectionStart;
+            const end = textInput.selectionEnd;
+            const selectedText = textInput.value.substring(start, end).trim();
+            let textToInsert = "";
+            let cursorPosAfter = 0;
+            const indent = "  "; // For basic indentation
+
+            switch(syntax) {
+                case 'object': textToInsert = `{\n${indent}\n}`; cursorPosAfter = start + 3; break;
+                case 'array': textToInsert = `[\n${indent}\n]`; cursorPosAfter = start + 3; break;
+                case 'keypair': 
+                    textToInsert = `"${selectedText || 'key'}": "value"`; 
+                    cursorPosAfter = start + (selectedText ? selectedText.length + 4 : 6); // after "key": "
+                    break;
+                case 'string': textToInsert = `"${selectedText || 'text'}"`; cursorPosAfter = start + (selectedText ? selectedText.length + 1 : 1); break;
+                case 'number': textToInsert = selectedText && !isNaN(parseFloat(selectedText)) ? selectedText : '0'; cursorPosAfter = start + textToInsert.length; break;
+                case 'booleanTrue': textToInsert = 'true'; cursorPosAfter = start + 4; break;
+                case 'booleanFalse': textToInsert = 'false'; cursorPosAfter = start + 5; break;
+                case 'null': textToInsert = 'null'; cursorPosAfter = start + 4; break;
+            }
+            insertTextAtCursor(textToInsert, cursorPosAfter);
+            jsonHelperModal.classList.remove('show');
+        }
+
+
+        // --- File Handling ---
+        function handleFileLoad(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const newContent = e.target.result;
+                if (textInput.value !== "") pushToUndoStack(textInput.value); 
+                redoStack = [];
+                updateEditorState(newContent, false, 0);
+                showMessage(`'${file.name}' 파일을 성공적으로 불러왔습니다.`);
+                textInput.scrollTop = 0;
+                if(lineNumberContainer) lineNumberContainer.scrollTop = 0;
+                event.target.value = null;
+            };
+            reader.onerror = () => showMessage('파일을 읽는 중 오류가 발생했습니다.', 'error');
+            if (file.type === 'text/plain' || file.type === 'text/html' || file.type === 'text/markdown' || file.type === 'application/json' || file.type === 'application/xml' || file.name.endsWith('.txt') || file.name.endsWith('.html') || file.name.endsWith('.md') || file.name.endsWith('.json') || file.name.endsWith('.xml')) {
+                reader.readAsText(file, 'UTF-8');
+            } else {
+                showMessage('지원하지 않는 파일 형식입니다 (.txt, .html, .md, .json, .xml만 가능).', 'error');
+            }
+        }
+        function downloadFile(filename, content, mimeType) {
+            if (!content.trim() && mimeType !== 'application/json' && mimeType !== 'application/xml') { showMessage('저장할 내용이 없습니다.', 'error'); return; }
+            const userFilename = prompt("파일 이름을 입력하세요 (확장자 포함):", filename);
+            if (!userFilename) { showMessage('파일 저장이 취소되었습니다.', 'info'); return; }
+            
+            const element = document.createElement('a');
+            const blob = new Blob([content], { type: mimeType });
+            element.href = URL.createObjectURL(blob);
+            element.download = userFilename.trim();
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+            URL.revokeObjectURL(element.href);
+            showMessage(`'${userFilename.trim()}' 파일이 성공적으로 저장되었습니다!`);
+        }
+
+        // --- Find and Replace Logic (handleFindNext, handleReplace, handleReplaceAll) ---
+        // (These functions remain largely the same)
+        function handleFindNext() {
+            const query = document.getElementById('findInput').value;
+            const content = textInput.value;
+            if (!query) { findReplaceMessage.textContent = "찾을 내용을 입력하세요."; return; }
+
+            const caseSensitive = document.getElementById('matchCaseCheckbox').checked;
+            
+            let tempContent = caseSensitive ? content : content.toLowerCase();
+            let tempQuery = caseSensitive ? query : query.toLowerCase();
+
+            if (lastSearchQuery !== query || (matchCaseCheckbox.checked && flags.includes('i')) || (!matchCaseCheckbox.checked && !flags.includes('i'))) {
+                currentSearchStartIndex = 0;
+            }
+            lastSearchQuery = query; 
+
+            const matchIndex = tempContent.indexOf(tempQuery, currentSearchStartIndex);
+
+            if (matchIndex !== -1) {
+                textInput.focus();
+                textInput.setSelectionRange(matchIndex, matchIndex + query.length);
+                const lines = content.substring(0, matchIndex).split('\n').length;
+                const avgLineHeight = textInput.scrollHeight / textInput.value.split('\n').length;
+                textInput.scrollTop = Math.max(0, (lines * avgLineHeight) - (textInput.clientHeight / 3) );
+
+                currentSearchStartIndex = matchIndex + 1; 
+                findReplaceMessage.textContent = `'${content.substring(matchIndex, matchIndex + query.length)}'을(를) 찾았습니다.`;
+            } else {
+                currentSearchStartIndex = 0; 
+                findReplaceMessage.textContent = "더 이상 일치하는 항목이 없습니다.";
+                showMessage("더 이상 일치하는 항목이 없습니다.", "info");
+            }
+        }
+
+        function handleReplace() {
+            const query = document.getElementById('findInput').value;
+            const replacement = document.getElementById('replaceInput').value;
+            if (!query) { findReplaceMessage.textContent = "찾을 내용을 입력하세요."; return; }
+
+            const start = textInput.selectionStart;
+            const end = textInput.selectionEnd;
+            const selectedText = textInput.value.substring(start, end);
+            
+            const compareQuery = document.getElementById('matchCaseCheckbox').checked ? query : query.toLowerCase();
+            const compareSelected = document.getElementById('matchCaseCheckbox').checked ? selectedText : selectedText.toLowerCase();
+
+            if (selectedText && compareSelected === compareQuery) {
+                insertTextAtCursor(replacement); 
+                findReplaceMessage.textContent = "바꾸었습니다. 다음 항목을 찾으세요.";
+                currentSearchStartIndex = start + replacement.length;
+                handleFindNext(); 
+            } else {
+                handleFindNext(); 
+                if (currentSearchStartIndex > 0 && selectedText) findReplaceMessage.textContent = "선택된 텍스트가 찾을 내용과 일치하지 않습니다. 다음 항목을 찾았습니다.";
+            }
+        }
+
+        function handleReplaceAll() {
+            const query = document.getElementById('findInput').value;
+            const replacement = document.getElementById('replaceInput').value;
+            if (!query) { findReplaceMessage.textContent = "찾을 내용을 입력하세요."; return; }
+
+            const originalContent = textInput.value;
+            const caseSensitive = document.getElementById('matchCaseCheckbox').checked;
+            const flags = caseSensitive ? 'g' : 'gi'; 
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedQuery, flags);
+            
+            let count = 0;
+            if (regex.test(originalContent)) {
+                 const newContent = originalContent.replace(regex, () => {
+                    count++;
+                    return replacement;
+                });
+                pushToUndoStack(originalContent);
+                redoStack = [];
+                updateEditorState(newContent, false, textInput.selectionStart);
+                findReplaceMessage.textContent = `${count}개의 항목을 모두 바꾸었습니다.`;
+                showMessage(`${count}개의 항목을 모두 바꾸었습니다.`, 'success');
+            } else {
+                findReplaceMessage.textContent = "일치하는 항목이 없습니다.";
+                showMessage("일치하는 항목이 없습니다.", "info");
+            }
+            currentSearchStartIndex = 0;
+        }
+
+
+        // --- AI & LLM (handleSummarize, handleContinue, handleInsertLlmOutput, callGeminiAPI) ---
+        // (These functions remain largely the same)
+        function handleSummarize() {
+            const text = textInput.value.trim();
+            if (!text) { showMessage('요약할 텍스트가 없습니다.', 'error'); return; }
+            callGeminiAPI(`다음 텍스트를 한국어로 간결하게 요약해 주세요:\n\n---\n${text}\n---`, '텍스트 요약 결과');
+        }
+        function handleContinue() {
+            const text = textInput.value;
+            if (!text.trim()) { showMessage('이어쓸 텍스트가 없습니다.', 'error'); return; }
+            callGeminiAPI(`다음은 사용자가 작성 중인 텍스트의 일부입니다. 이 텍스트의 맥락을 파악하여 자연스럽게 다음 내용을 한국어로 이어서 작성해 주세요:\n\n---\n${text}`, '텍스트 이어쓰기 결과');
+        }
+        function handleInsertLlmOutput() {
+            const generatedText = document.getElementById('llmOutputContent').textContent;
+            if (generatedText) {
+                const currentEditorText = textInput.value;
+                const separator = (currentEditorText.endsWith('\n\n') || currentEditorText === '' || currentEditorText.endsWith('\n')) ? '' : '\n\n';
+                const textToInsert = separator + generatedText;
+                insertTextAtCursor(textToInsert, textInput.selectionStart + textToInsert.length);
+                
+                textInput.focus();
+                textInput.scrollTop = textInput.scrollHeight; 
+                showMessage('생성된 텍스트가 에디터에 삽입되었습니다.');
+            }
+            document.getElementById('llmOutputModal').classList.remove('show');
+        }
+        async function callGeminiAPI(prompt, title) {
+            showLoading(true);
+            document.getElementById('llmOutputTitle').textContent = title;
+            document.getElementById('llmOutputContent').textContent = '';
+            try {
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { const err = await response.json(); throw new Error(`API Error (${response.status}): ${err.error?.message || 'Unknown error'}`); }
+                const result = await response.json();
+                if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    document.getElementById('llmOutputContent').textContent = result.candidates[0].content.parts[0].text;
+                    document.getElementById('llmOutputModal').classList.add('show');
+                } else if (result.promptFeedback?.blockReason) {
+                    showMessage(`AI 응답 생성 중 문제 발생: ${result.promptFeedback.blockReason}`, 'error');
+                } else { showMessage('AI로부터 유효한 응답을 받지 못했습니다.', 'error'); }
+            } catch (error) { showMessage(`AI 응답 처리 중 오류: ${error.message}`, 'error');
+            } finally { showLoading(false); }
+        }
+
+        // --- Utility Functions (showMessage, showLoading, setupModalClose, formatXml) ---
+        function showMessage(message, type = 'success', duration = 3000) {
             messageBox.textContent = message;
             messageBox.className = `message-box ${type} show`;
             if (messageTimeout) clearTimeout(messageTimeout);
             messageTimeout = setTimeout(() => {
                 messageBox.classList.remove('show');
-                setTimeout(() => {
-                     if (!messageBox.classList.contains('show')) {
-                         messageBox.style.visibility = 'hidden';
-                     }
-                }, 500);
-            }, 3000);
+                setTimeout(() => { if (!messageBox.classList.contains('show')) messageBox.style.visibility = 'hidden'; }, 500);
+            }, duration);
             messageBox.style.visibility = 'visible';
         }
-
-        // 파일 다운로드 함수
-        function downloadFile(filename, content, mimeType) {
-            if (!content.trim()) {
-                showMessage('저장할 내용이 없습니다.', 'error');
-                return;
-            }
-            const userFilename = prompt("파일 이름을 입력하세요 (확장자 제외):", filename.split('.')[0]);
-            if (userFilename === null || userFilename.trim() === "") {
-                showMessage('파일 저장이 취소되었습니다.', 'error');
-                return;
-            }
-            const finalFilename = userFilename.trim() + '.' + filename.split('.')[1];
-            const element = document.createElement('a');
-            const blob = new Blob([content], { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            element.setAttribute('href', url);
-            element.setAttribute('download', finalFilename);
-            element.style.display = 'none';
-            document.body.appendChild(element);
-            element.click();
-            document.body.removeChild(element);
-            URL.revokeObjectURL(url);
-            showMessage(`'${finalFilename}' 파일이 성공적으로 저장되었습니다!`);
-        }
-
-        // TXT 저장 버튼
-        saveTxtButton.addEventListener('click', () => {
-            downloadFile('document.txt', textInput.value, 'text/plain;charset=utf-8');
-        });
-
-        // HTML 저장 버튼
-        saveHtmlButton.addEventListener('click', () => {
-            downloadFile('document.html', textInput.value, 'text/html;charset=utf-8');
-        });
-
-        // 파일 불러오기 버튼
-        loadFileButton.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        // 파일 입력 변경
-        fileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                textInput.value = e.target.result;
-                showMessage(`'${file.name}' 파일을 성공적으로 불러왔습니다.`);
-                updateLineNumbers();
-                event.target.value = null;
-            };
-            reader.onerror = (e) => {
-                console.error("File reading error:", e);
-                showMessage('파일을 읽는 중 오류가 발생했습니다.', 'error');
-                event.target.value = null;
-            };
-            if (file.type === 'text/plain' || file.type === 'text/html') {
-                reader.readAsText(file, 'UTF-8');
+        function showLoading(show) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            if (show) {
+                loadingIndicator.classList.add('show');
+                loadingIndicator.style.visibility = 'visible';
             } else {
-                showMessage('지원하지 않는 파일 형식입니다 (.txt 또는 .html만 가능).', 'error');
-                event.target.value = null;
+                loadingIndicator.classList.remove('show');
+                setTimeout(() => { if (!loadingIndicator.classList.contains('show')) loadingIndicator.style.visibility = 'hidden'; }, 500);
             }
-        });
-
-        // --- 미리보기 기능 ---
-        // 미리보기 버튼 클릭
-        previewButton.addEventListener('click', () => {
-            const htmlContent = textInput.value;
-            if (!htmlContent.trim()) {
-                showMessage('미리보기할 내용이 없습니다.', 'error');
-                return;
-            }
-            // iframe의 srcdoc 속성에 HTML 내용 설정
-            previewIframe.srcdoc = htmlContent;
-            previewModal.classList.add('show');
-        });
-
-        // 미리보기 닫기 버튼 클릭
-        closePreviewButton.addEventListener('click', () => {
-            previewModal.classList.remove('show');
-            previewIframe.srcdoc = '';
-        });
-
-        // 모달 배경 클릭 시 닫기
-        previewModal.addEventListener('click', (event) => {
-            if (event.target === previewModal) {
-                previewModal.classList.remove('show');
-                previewIframe.srcdoc = '';
-            }
-        });
+        }
+        function setupModalClose(modalElement, closeButtonElement, onCloseCallback = null) {
+            if (closeButtonElement) closeButtonElement.addEventListener('click', () => { modalElement.classList.remove('show'); if (onCloseCallback) onCloseCallback(); });
+            if (modalElement) modalElement.addEventListener('click', (event) => { if (event.target === modalElement) { modalElement.classList.remove('show'); if (onCloseCallback) onCloseCallback(); }});
+        }
+        function formatXml(xml, tab = '  ') { // Basic XML Formatter
+            let formatted = '', indent = '';
+            if (!xml || typeof xml !== 'string') return "잘못된 XML 내용입니다.";
+            
+            xml.split(/>\s*</).forEach(node => {
+                if (node.match(/^\/\w/)) indent = indent.substring(tab.length); // Decrease indent
+                formatted += indent + '<' + node.replace(/^\s+|\s+$/g, '') + '>\n';
+                if (node.match(/^<?\w[^>]*[^\/]$/)) indent += tab; // Increase indent
+            });
+            return formatted.substring(1, formatted.length - 2); // Remove leading '<' and trailing '>\n'
+        }
 
     </script>
 </body>
