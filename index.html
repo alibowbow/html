@@ -252,68 +252,58 @@
 
         // --- 라인 넘버 기능 ---
         function updateLineNumbers() {
-            if (!textInput || !lineNumberContainer) return; // 요소가 없으면 중단
+            if (!textInput || !lineNumberContainer) return;
 
             const lines = textInput.value.split('\n');
             const numberOfLines = lines.length;
             
-            // 최적화를 위해 DocumentFragment 사용
             const fragment = document.createDocumentFragment();
 
             for (let i = 1; i <= numberOfLines; i++) {
                 const lineNumberDiv = document.createElement('div');
                 lineNumberDiv.textContent = i;
-                lineNumberDiv.className = 'line-number'; // 스타일링을 위한 클래스 추가
+                lineNumberDiv.className = 'line-number';
                 fragment.appendChild(lineNumberDiv);
             }
             
-            // 기존 내용을 한 번에 교체 (innerHTML 보다 효율적일 수 있음)
             lineNumberContainer.innerHTML = ''; 
             lineNumberContainer.appendChild(fragment);
             
+            // 라인 넘버 컨테이너의 높이를 텍스트 입력창과 동기화
+            lineNumberContainer.style.height = textInput.clientHeight + 'px'; 
+
             // 스크롤 동기화
             lineNumberContainer.scrollTop = textInput.scrollTop;
         }
 
-        // --- 자동 높이 조절 함수 ---
+        // --- 자동 높이 조절 함수 (이제 사용하지 않음) ---
         function autoGrowTextarea(element) {
             // 이 함수는 'overflow-y: auto'로 설정했기 때문에 더 이상 필요하지 않거나 동작에 영향을 미치지 않을 수 있습니다.
             // 높이 자동 조절과 스크롤바는 동시에 작동하지 않으므로, 스크롤바를 우선시합니다.
-            // 따라서 이 함수는 사실상 더 이상 작동하지 않거나 원하는 동작이 아닐 수 있습니다.
-            // 만약 높이 자동 조절이 여전히 필요하다면, overflow-y: auto 대신 height: auto;와 scrollHeight를 사용해야 합니다.
-            // 현재 요구사항(스크롤이 되게)에 맞게 autoGrowTextarea는 주석 처리하거나 제거할 수 있습니다.
-            // element.style.height = 'auto'; // Reset height to correctly calculate scrollHeight
-            // element.style.height = element.scrollHeight + 'px';
         }
 
-        // --- 이벤트 리스너 (라인 넘버 및 자동 높이 조절) ---
+        // --- 이벤트 리스너 ---
         if (textInput && lineNumberContainer) {
             textInput.addEventListener('input', () => {
-                // autoGrowTextarea(textInput); // 자동 높이 조절은 이제 필요하지 않거나 다른 방식으로 작동해야 합니다.
-                updateLineNumbers();      // 라인 넘버만 업데이트합니다.
+                updateLineNumbers();
             });
             textInput.addEventListener('scroll', () => {
                 lineNumberContainer.scrollTop = textInput.scrollTop;
             });
             textInput.addEventListener('keydown', (e) => {
-                // Enter 또는 Backspace/Delete 키 입력 시 즉시 업데이트
-                // For these keys, autoGrow might need a slight delay if scrollHeight isn't updated immediately
                 if (e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete') {
                     requestAnimationFrame(() => {
-                        // autoGrowTextarea(textInput); // 자동 높이 조절은 이제 필요하지 않습니다.
                         updateLineNumbers();
                     });
                 }
             });
             
             // 초기 로드 시 라인 넘버 및 높이 업데이트
-            // autoGrowTextarea(textInput); // 초기 높이 조절은 더 이상 필요하지 않습니다.
-            updateLineNumbers();     // 라인 넘버만 업데이트합니다.
+            updateLineNumbers();
         }
         
-        // 파일 로드 후 라인 넘버 업데이트 (기존 코드에 추가)
-        // reader.onload 내 setInitialHeight() 호출을 updateLineNumbers()로 변경하거나 추가
-        // setInitialHeight(); -> updateLineNumbers();
+        // 파일 로드 후 라인 넘버 업데이트
+        // reader.onload 내 updateLineNumbers() 호출은 이미 되어 있습니다.
 
 
         // 메시지 표시 함수
@@ -380,8 +370,7 @@
             reader.onload = (e) => {
                 textInput.value = e.target.result;
                 showMessage(`'${file.name}' 파일을 성공적으로 불러왔습니다.`);
-                updateLineNumbers();      // Update line numbers first
-                // autoGrowTextarea(textInput); // 높이 조절은 스크롤과 충돌할 수 있으므로 제거합니다.
+                updateLineNumbers();
                 event.target.value = null;
             };
             reader.onerror = (e) => {
@@ -407,21 +396,20 @@
             }
             // iframe의 srcdoc 속성에 HTML 내용 설정
             previewIframe.srcdoc = htmlContent;
-            previewModal.classList.add('show'); // 모달 보이기
+            previewModal.classList.add('show');
         });
 
         // 미리보기 닫기 버튼 클릭
         closePreviewButton.addEventListener('click', () => {
-            previewModal.classList.remove('show'); // 모달 숨기기
-            previewIframe.srcdoc = ''; // iframe 내용 비우기 (선택 사항)
+            previewModal.classList.remove('show');
+            previewIframe.srcdoc = '';
         });
 
-        // 모달 배경 클릭 시 닫기 (선택 사항)
+        // 모달 배경 클릭 시 닫기
         previewModal.addEventListener('click', (event) => {
-            // 클릭된 요소가 모달 배경 자체인지 확인 (내부 콘텐츠 제외)
             if (event.target === previewModal) {
                 previewModal.classList.remove('show');
-                previewIframe.srcdoc = ''; // iframe 내용 비우기 (선택 사항)
+                previewIframe.srcdoc = '';
             }
         });
 
