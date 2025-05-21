@@ -80,11 +80,11 @@
 
         /* 텍스트 영역 스타일 */
         #textInput {
-            overflow-y: hidden; /* Prevent native vertical scrollbar, rely on auto-grow */
+            overflow-y: auto; /* Prevent native vertical scrollbar, rely on auto-grow */
             overflow-x: auto; /* Enable horizontal scrolling */
             width: 100%;
             resize: none;
-            white-space: pre; /* Prevent line wrapping */
+            white-space: pre-wrap; /* Prevent line wrapping */
             /* Tailwind class p-4 sets padding: 1rem; */
             /* Tailwind class bg-slate-700 sets background */
             /* Tailwind class text-slate-200 sets color */
