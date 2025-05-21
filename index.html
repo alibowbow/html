@@ -80,11 +80,12 @@
 
         /* 텍스트 영역 스타일 */
         #textInput {
-            overflow-y: auto; /* Prevent native vertical scrollbar, rely on auto-grow */
+            /* height: 100%; removed */
+            overflow-y: auto; /* Changed from hidden to auto to enable vertical scrolling */
             overflow-x: auto; /* Enable horizontal scrolling */
             width: 100%;
             resize: none;
-            white-space: pre-wrap; /* Prevent line wrapping */
+            white-space: pre; /* Keep 'pre' to prevent automatic line wrapping */
             /* Tailwind class p-4 sets padding: 1rem; */
             /* Tailwind class bg-slate-700 sets background */
             /* Tailwind class text-slate-200 sets color */
@@ -199,7 +200,8 @@
 
             <input type="file" id="fileInput" accept=".txt,.html" style="display: none;">
 
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 flex-shrink-0 mt-4"> <button id="loadFileButton" class="custom-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-3 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 flex-shrink-0 mt-4">
+                 <button id="loadFileButton" class="custom-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-3 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 text-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                     불러오기
                 </button>
@@ -275,21 +277,20 @@
 
         // --- 자동 높이 조절 함수 ---
         function autoGrowTextarea(element) {
-            if (!element) return;
-            element.style.height = 'auto'; // Reset height to correctly calculate scrollHeight
-            element.style.height = element.scrollHeight + 'px';
+            // 이 함수는 'overflow-y: auto'로 설정했기 때문에 더 이상 필요하지 않거나 동작에 영향을 미치지 않을 수 있습니다.
+            // 높이 자동 조절과 스크롤바는 동시에 작동하지 않으므로, 스크롤바를 우선시합니다.
+            // 따라서 이 함수는 사실상 더 이상 작동하지 않거나 원하는 동작이 아닐 수 있습니다.
+            // 만약 높이 자동 조절이 여전히 필요하다면, overflow-y: auto 대신 height: auto;와 scrollHeight를 사용해야 합니다.
+            // 현재 요구사항(스크롤이 되게)에 맞게 autoGrowTextarea는 주석 처리하거나 제거할 수 있습니다.
+            // element.style.height = 'auto'; // Reset height to correctly calculate scrollHeight
+            // element.style.height = element.scrollHeight + 'px';
         }
-
-        // --- 이벤트 리스너 ---
-        // function setInitialHeight() { // This function is no longer used due to CSS changes and autoGrowTextarea
-        // }
-        // window.addEventListener('load', setInitialHeight); // This is no longer used
 
         // --- 이벤트 리스너 (라인 넘버 및 자동 높이 조절) ---
         if (textInput && lineNumberContainer) {
             textInput.addEventListener('input', () => {
-                autoGrowTextarea(textInput); // Grow textarea first
-                updateLineNumbers();      // Then update line numbers
+                // autoGrowTextarea(textInput); // 자동 높이 조절은 이제 필요하지 않거나 다른 방식으로 작동해야 합니다.
+                updateLineNumbers();      // 라인 넘버만 업데이트합니다.
             });
             textInput.addEventListener('scroll', () => {
                 lineNumberContainer.scrollTop = textInput.scrollTop;
@@ -299,15 +300,15 @@
                 // For these keys, autoGrow might need a slight delay if scrollHeight isn't updated immediately
                 if (e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete') {
                     requestAnimationFrame(() => {
-                        autoGrowTextarea(textInput);
+                        // autoGrowTextarea(textInput); // 자동 높이 조절은 이제 필요하지 않습니다.
                         updateLineNumbers();
                     });
                 }
             });
             
             // 초기 로드 시 라인 넘버 및 높이 업데이트
-            autoGrowTextarea(textInput); // Set initial height based on content/rows
-            updateLineNumbers();     // Then update line numbers
+            // autoGrowTextarea(textInput); // 초기 높이 조절은 더 이상 필요하지 않습니다.
+            updateLineNumbers();     // 라인 넘버만 업데이트합니다.
         }
         
         // 파일 로드 후 라인 넘버 업데이트 (기존 코드에 추가)
@@ -380,7 +381,7 @@
                 textInput.value = e.target.result;
                 showMessage(`'${file.name}' 파일을 성공적으로 불러왔습니다.`);
                 updateLineNumbers();      // Update line numbers first
-                autoGrowTextarea(textInput); // Then adjust height for new content
+                // autoGrowTextarea(textInput); // 높이 조절은 스크롤과 충돌할 수 있으므로 제거합니다.
                 event.target.value = null;
             };
             reader.onerror = (e) => {
