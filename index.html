@@ -1,1013 +1,2631 @@
-<!DOCTYPE html>
-<html lang="ko">
+<!DOCTYPE html><html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>텍스트 편집기 Pro - JSON/XML 지원, 도우미, AI</title>
+    <title>텍스트 편집기 Pro - 새 창 미리보기, AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        body { font-family: 'Inter', sans-serif; overflow-x: hidden; background-color: #111827; color: #d1d5db;}
-        
-        ::-webkit-scrollbar { width: 10px; height: 10px; }
-        ::-webkit-scrollbar-track { background: #1f2937; border-radius: 5px; }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-        * { scrollbar-width: thin; scrollbar-color: #4b5563 #1f2937; }
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+    :root {
+        --bg-primary: #111827; /* Dark: Main background */
+        --bg-secondary: #1f2937; /* Dark: Card, modal, editor background */
+        --bg-tertiary: #283140; /* Dark: Input fields, code block bg */
+        --text-primary: #d1d5db; /* Dark: Main text */
+        --text-secondary: #9ca3af; /* Dark: Subdued text, icons */
+        --text-accent: #93c5fd; /* Dark: Titles, highlighted text */
+        --border-color: #374151; /* Dark: Borders */
+        --border-focus: #60a5fa; /* Dark: Focus rings */
+        --button-bg: #374151; /* Dark: Default button background */
+        --button-hover: #4b5563; /* Dark: Button hover */
+        --button-active: #4a5568; /* Dark: Button active */
+        --button-disabled: #374151; /* Dark: Disabled button background */
+        --success-color: #10B981; /* Green for success messages */
+        --error-color: #EF4444; /* Red for error messages */
+        --info-color: #3B82F6; /* Blue for info messages */
+        --purple-accent: #8B5CF6; /* Purple for AI features or special buttons */
+        --scrollbar-track: #1f2937;
+        --scrollbar-thumb: #4b5563;
+    }
 
-        .custom-button { transition: background-color 0.2s ease, transform 0.1s ease, filter 0.2s ease; display: inline-flex; align-items: center; justify-content: center; }
-        .custom-button i { margin-right: 0.35rem; }
-        .custom-button:hover:not(:disabled) { filter: brightness(120%); }
-        .custom-button:active:not(:disabled) { transform: scale(0.96); }
-        .custom-button:disabled { background-color: #374151 !important; color: #6b7280 !important; cursor: not-allowed; filter: grayscale(80%); }
-        
-        .toolbar-button { background-color: #374151; color: #d1d5db; padding: 0.5rem 0.75rem; border-radius: 0.375rem; }
-        .toolbar-button:hover:not(:disabled) { background-color: #4b5563; }
-        .dropdown { position: relative; display: inline-block; margin-right: 0.25rem; }
-        .dropdown-content { display: none; position: absolute; background-color: #2d3748; min-width: 220px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.3); z-index: 100; border-radius: 0.375rem; padding: 0.5rem 0; margin-top: 0.25rem; }
-        .dropdown-content button { color: #d1d5db; padding: 0.6rem 1rem; text-decoration: none; display: flex; align-items: center; width: 100%; text-align: left; background: none; border: none; font-size:0.875rem; }
-        .dropdown-content button i { margin-right: 0.5rem; width: 16px; text-align: center; }
-        .dropdown-content button:hover:not(:disabled) { background-color: #4a5568; }
-        .dropdown:hover .dropdown-content { display: block; }
-        .dropdown-separator { height: 1px; background-color: #4b5563; margin: 0.5rem 0; }
+    .light-theme {
+        --bg-primary: #f3f4f6; /* Light: Main background */
+        --bg-secondary: #ffffff; /* Light: Card, modal, editor background */
+        --bg-tertiary: #f9fafb; /* Light: Input fields, code block bg */
+        --text-primary: #111827; /* Light: Main text */
+        --text-secondary: #4b5563; /* Light: Subdued text, icons */
+        --text-accent: #1e40af; /* Light: Titles, highlighted text */
+        --border-color: #d1d5db; /* Light: Borders */
+        --border-focus: #3b82f6; /* Light: Focus rings */
+        --button-bg: #e5e7eb; /* Light: Default button background */
+        --button-hover: #d1d5db; /* Light: Button hover */
+        --button-active: #9ca3af; /* Light: Button active */
+        --button-disabled: #e5e7eb; /* Light: Disabled button background */
+        --success-color: #059669;
+        --error-color: #dc2626;
+        --info-color: #2563eb;
+        --purple-accent: #7c3aed;
+        --scrollbar-track: #f3f4f6;
+        --scrollbar-thumb: #d1d5db;
+    }
+    
+    body { 
+        font-family: 'Inter', sans-serif; 
+        overflow-x: hidden; 
+        background-color: var(--bg-primary); 
+        color: var(--text-primary);
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--button-hover); }
+    * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); }
 
-        .message-box { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 12px 20px; border-radius: 8px; font-size: 0.875rem; z-index: 1050; opacity: 0; transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; visibility: hidden; white-space: nowrap; }
-        .message-box.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
-        .message-box.success { background-color: #10B981; color: white; }
-        .message-box.error { background-color: #EF4444; color: white; }
-        .message-box.info { background-color: #3B82F6; color: white; }
-        
-        .main-container-wrapper { width: 100%; display: flex; justify-content: center; padding: 1rem; min-height: 100vh; box-sizing: border-box; }
-        #mainContainer { display: flex; flex-direction: column; width: 100%; max-width: 1400px; background-color: #1f2937; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); border-radius: 0.75rem; padding: 0; overflow: hidden; }
-        #mainContainer.fullscreen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; max-width: none; max-height: none; margin: 0; border-radius: 0; z-index: 1000; padding: 0; }
-        
-        header { padding: 0.75rem 1.5rem; background-color: #111827; border-bottom: 1px solid #374151; flex-shrink: 0; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; }
-        .editor-title { font-size: 1.25rem; font-weight: 600; color: #93c5fd; }
+    .custom-button { 
+        transition: all 0.2s ease; 
+        display: inline-flex; 
+        align-items: center; 
+        justify-content: center;
+        background-color: var(--button-bg);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color); /* Subtle border for definition */
+    }
+    .custom-button i { margin-right: 0.35rem; }
+    .custom-button:hover:not(:disabled) { background-color: var(--button-hover); filter: brightness(110%); }
+    .custom-button:active:not(:disabled) { transform: scale(0.96); background-color: var(--button-active); }
+    .custom-button:disabled { 
+        background-color: var(--button-disabled) !important; 
+        color: var(--text-secondary) !important; 
+        cursor: not-allowed; 
+        filter: grayscale(80%); 
+        border-color: var(--border-color) !important;
+    }
+    
+    .toolbar-button { 
+        background-color: var(--button-bg); 
+        color: var(--text-primary); 
+        padding: 0.5rem 0.75rem; 
+        border-radius: 0.375rem; 
+    }
+    .toolbar-button:hover:not(:disabled) { background-color: var(--button-hover); }
+    
+    .dropdown { position: relative; display: inline-block; margin-right: 0.25rem; }
+    .dropdown-content { 
+        display: none; 
+        position: absolute; 
+        background-color: var(--bg-secondary); 
+        min-width: 220px; 
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.3); 
+        z-index: 100; 
+        border-radius: 0.375rem; 
+        padding: 0.5rem 0; 
+        margin-top: 0.25rem; 
+        max-height: 70vh; 
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+    }
+    .dropdown-content button { 
+        color: var(--text-primary); 
+        padding: 0.6rem 1rem; 
+        text-decoration: none; 
+        display: flex; 
+        align-items: center; 
+        width: 100%; 
+        text-align: left; 
+        background: none; 
+        border: none; 
+        font-size:0.875rem; 
+    }
+    .dropdown-content button i { margin-right: 0.5rem; width: 16px; text-align: center; color: var(--text-secondary); }
+    .dropdown-content button:hover:not(:disabled) { background-color: var(--button-active); }
+    .dropdown:hover .dropdown-content { display: block; }
+    .dropdown-separator { height: 1px; background-color: var(--border-color); margin: 0.5rem 0; }
 
-        .toolbar { background-color: #1e2937; padding: 0.5rem 1.5rem; border-bottom: 1px solid #374151; display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; flex-shrink: 0; }
-        
-        main { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; min-height: 0; padding: 0 1.5rem 1.5rem 1.5rem; }
-        .textarea-wrapper { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; min-height: 0; margin-top:1rem; }
-        .editor-area { display: flex; overflow: hidden; align-items: stretch; flex-grow: 1; border: 1px solid #4b5563; border-radius: 0.375rem; }
-        #textInput { flex-grow:1; overflow-y: auto; width: 100%; resize: none; white-space: pre; line-height: 1.6; font-size: 16px; background-color: #283140; color: #e5e7eb; border: none; border-top-right-radius: 0.375rem; border-bottom-right-radius: 0.375rem; padding: 0.75rem; }
-        #textInput:focus { outline: none; } 
-        .editor-area:focus-within { outline: 2px solid #60a5fa; border-color: #60a5fa; }
+    .message-box { 
+        position: fixed; 
+        bottom: 20px; 
+        left: 50%; 
+        transform: translateX(-50%) translateY(100px); 
+        padding: 12px 20px; 
+        border-radius: 8px; 
+        font-size: 0.875rem; 
+        z-index: 1050; 
+        opacity: 0; 
+        transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; 
+        visibility: hidden; 
+        white-space: nowrap; 
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .message-box.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+    .message-box.success { background-color: var(--success-color); color: white; }
+    .message-box.error { background-color: var(--error-color); color: white; }
+    .message-box.info { background-color: var(--info-color); color: white; }
+    
+    .main-container-wrapper { 
+        width: 100%; 
+        display: flex; 
+        justify-content: center; 
+        padding: 1rem; 
+        min-height: 100vh; 
+        box-sizing: border-box; 
+    }
+    #mainContainer { 
+        display: flex; 
+        flex-direction: column; 
+        width: 100%; 
+        max-width: 1400px; 
+        background-color: var(--bg-secondary); 
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); 
+        border-radius: 0.75rem; 
+        padding: 0; 
+        overflow: hidden; 
+        transition: all 0.3s ease;
+    }
+    #mainContainer.fullscreen { 
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        width: 100vw; 
+        height: 100vh; 
+        max-width: none; 
+        max-height: none; 
+        margin: 0; 
+        border-radius: 0; 
+        z-index: 1000; 
+        padding: 0; 
+    }
+    
+    header { 
+        padding: 0.75rem 1.5rem; 
+        background-color: var(--bg-primary); 
+        border-bottom: 1px solid var(--border-color); 
+        flex-shrink: 0; 
+    }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; }
+    .editor-title { font-size: 1.25rem; font-weight: 600; color: var(--text-accent); }
+    .top-bar-actions { display: flex; gap: 0.5rem; }
 
-        #lineNumberContainer { width: 50px; background-color: #1e293b; color: #9ca3af; padding: 0.75rem 0.5rem; text-align: right; overflow-y: hidden; overflow-x: hidden; font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.6; user-select: none; flex-shrink: 0; border-top-left-radius: 0.375rem; border-bottom-left-radius: 0.375rem; }
-        
-        .modal-overlay { position: fixed; inset: 0; background-color: rgba(17, 24, 39, 0.85); display: flex; align-items: center; justify-content: center; z-index: 1020; padding: 1rem; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
-        .modal-overlay.show { opacity: 1; visibility: visible; }
-        .modal-content { background-color: #1f2937; border: 1px solid #374151; border-radius: 0.75rem; padding: 1.5rem; width: 90%; max-width: 550px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; max-height: 85vh; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-shrink: 0; }
-        .modal-title { font-size: 1.25rem; font-weight: 600; color: #93c5fd; }
-        .modal-close-button { background: none; border: none; color: #9ca3af; font-size: 1.75rem; cursor: pointer; padding: 0.25rem; line-height: 1; transition: color 0.2s ease; }
-        .modal-close-button:hover { color: #e5e7eb; }
-        .modal-body { overflow-y: auto; color: #d1d5db;}
+    .toolbar { 
+        background-color: var(--bg-secondary); 
+        padding: 0.5rem 1.5rem; 
+        border-bottom: 1px solid var(--border-color); 
+        display: flex; 
+        flex-wrap: wrap; 
+        gap: 0.25rem; 
+        align-items: center; 
+        flex-shrink: 0; 
+    }
+    
+    main { 
+        display: flex; 
+        flex-direction: column; 
+        flex-grow: 1; 
+        overflow: hidden; 
+        min-height: 0; 
+        padding: 0 1.5rem 1.5rem 1.5rem; 
+    }
+    .textarea-wrapper { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; min-height: 0; margin-top:1rem; }
+    .editor-area { 
+        display: flex; 
+        overflow: hidden; 
+        align-items: stretch; 
+        flex-grow: 1; 
+        border: 1px solid var(--border-color); 
+        border-radius: 0.375rem; 
+    }
+    #textInput { 
+        flex-grow: 1; 
+        overflow-y: auto; 
+        width: 100%; 
+        resize: none; 
+        white-space: pre; 
+        line-height: 1.6; 
+        font-size: 16px; 
+        background-color: var(--bg-tertiary); 
+        color: var(--text-primary); 
+        border: none; 
+        border-top-right-radius: 0.375rem; 
+        border-bottom-right-radius: 0.375rem; 
+        padding: 0.75rem; 
+        font-family: 'JetBrains Mono', monospace;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    #textInput:focus { outline: none; } 
+    .editor-area:focus-within { outline: 2px solid var(--border-focus); border-color: var(--border-focus); }
+    .editor-area.highlight-find-match #textInput::selection { background-color: rgba(234, 179, 8, 0.3) !important; }
 
-        .preview-content { background-color: #1f2937; border: 1px solid #374151; border-radius: 0.75rem; padding: 1.5rem; width: 90%; height: 90%; max-width: 1200px; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-        .preview-output-container { flex-grow: 1; overflow: auto; background-color: #ffffff; border-radius: 0.5rem; border: 1px solid #374151; }
-        .preview-output-container pre { white-space: pre-wrap; word-break: break-all; padding: 1rem; color: #111827; font-size: 0.9rem; } 
-        .markdown-preview-area { padding: 1.5rem; color: #111827; line-height:1.7; }
-        .markdown-preview-area img { max-width: 100%; height: auto; border-radius: 0.25rem; margin-top:0.5rem; margin-bottom:0.5rem;}
-        .markdown-preview-area pre { background-color: #f3f4f6; padding: 1rem; border-radius: 0.375rem; overflow-x: auto; margin: 1rem 0; border: 1px solid #e5e7eb; }
-        .markdown-preview-area code:not(pre code) { background-color: #e5e7eb; padding: 0.2em 0.4em; margin: 0; font-size: 85%; border-radius: 3px; }
-        .markdown-preview-area blockquote { border-left: 4px solid #60a5fa; padding-left: 1rem; margin: 1rem 0; color: #9ca3af; }
-        .markdown-preview-area table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
-        .markdown-preview-area th, .markdown-preview-area td { border: 1px solid #d1d5db; padding: 0.75rem; text-align: left; }
-        .markdown-preview-area th { background-color: #f9fafb; font-weight:600; }
-        .markdown-preview-area hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
-        
-        .helper-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;}
-        .helper-grid button { justify-content: flex-start; }
-        .syntax-guide h4 { font-size: 1rem; font-weight: 600; color: #93c5fd; margin-top: 1rem; margin-bottom: 0.5rem; }
-        .syntax-guide p { font-size: 0.875rem; margin-bottom: 0.25rem; }
-        .syntax-guide code { background-color: #374151; padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.8em;}
+    #lineNumberContainer { 
+        width: 50px; 
+        background-color: var(--bg-secondary); 
+        color: var(--text-secondary); 
+        padding: 0.75rem 0.5rem; 
+        text-align: right; 
+        overflow-y: hidden; 
+        overflow-x: hidden; 
+        font-family: 'JetBrains Mono', monospace; 
+        font-size: 16px; 
+        line-height: 1.6; 
+        user-select: none; 
+        flex-shrink: 0; 
+        border-top-left-radius: 0.375rem; 
+        border-bottom-left-radius: 0.375rem; 
+        transition: background-color 0.3s ease;
+    }
+    
+    .modal-overlay { 
+        position: fixed; 
+        inset: 0; 
+        background-color: rgba(17, 24, 39, 0.85); 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        z-index: 1020; 
+        padding: 1rem; 
+        opacity: 0; 
+        visibility: hidden; 
+        transition: opacity 0.3s ease, visibility 0.3s ease; 
+    }
+    .modal-overlay.show { opacity: 1; visibility: visible; }
+    .modal-content { 
+        background-color: var(--bg-secondary); 
+        border: 1px solid var(--border-color); 
+        border-radius: 0.75rem; 
+        padding: 1.5rem; 
+        width: 90%; 
+        max-width: 550px; 
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
+        display: flex; 
+        flex-direction: column; 
+        max-height: 85vh; 
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-shrink: 0; }
+    .modal-title { font-size: 1.25rem; font-weight: 600; color: var(--text-accent); }
+    .modal-close-button { 
+        background: none; 
+        border: none; 
+        color: var(--text-secondary); 
+        font-size: 1.75rem; 
+        cursor: pointer; 
+        padding: 0.25rem; 
+        line-height: 1; 
+        transition: color 0.2s ease; 
+    }
+    .modal-close-button:hover { color: var(--text-primary); }
+    .modal-body { overflow-y: auto; color: var(--text-primary);}
+    
+    /* Preview content styling */
+    .preview-content { 
+        background-color: var(--bg-secondary); 
+        border: 1px solid var(--border-color); 
+        border-radius: 0.75rem; 
+        padding: 1.5rem; 
+        width: 90%; 
+        height: 90%; 
+        max-width: 1200px; 
+        display: flex; 
+        flex-direction: column; 
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    .preview-output-container { 
+        flex-grow: 1; 
+        overflow: auto; 
+        background-color: var(--bg-tertiary); 
+        border-radius: 0.5rem; 
+        border: 1px solid var(--border-color); 
+        transition: background-color 0.3s ease;
+    }
+    .preview-output-container pre { 
+        white-space: pre-wrap; 
+        word-break: break-all; 
+        padding: 1rem; 
+        color: var(--text-primary); 
+        font-size: 0.9rem;
+        transition: color 0.3s ease;
+    } 
+    
+    .helper-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); 
+        gap: 0.75rem; 
+        margin-bottom: 1rem;
+    }
+    .helper-grid button { justify-content: flex-start; }
+    .syntax-guide h4 { font-size: 1rem; font-weight: 600; color: var(--text-accent); margin-top: 1rem; margin-bottom: 0.5rem; }
+    .syntax-guide p { font-size: 0.875rem; margin-bottom: 0.25rem; }
+    .syntax-guide code { 
+        background-color: var(--button-bg); 
+        padding: 0.1em 0.3em; 
+        border-radius: 3px; 
+        font-size: 0.8em;
+        font-family: 'JetBrains Mono', monospace;
+    }
 
-        #llmOutputContent { white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; line-height: 1.6; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin { animation: spin 1s linear infinite; }
-        .stats-bar { font-size: 0.8rem; color: #9ca3af; padding: 0.6rem 1.5rem; background-color: #111827; border-top: 1px solid #374151; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; flex-shrink: 0; }
-        .stats-item { white-space: nowrap; }
-        
-        .find-replace-form label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; }
-        .find-replace-form input[type="text"] { width: 100%; padding: 0.5rem; background-color: #374151; border: 1px solid #4b5563; border-radius: 0.375rem; color: #d1d5db; margin-bottom: 0.75rem; }
-        .find-replace-form .checkbox-group { display: flex; align-items: center; margin-bottom: 0.75rem; }
-        .find-replace-form input[type="checkbox"] { margin-right: 0.5rem; }
-        .find-replace-form .button-group { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    #llmOutputContent { 
+        white-space: pre-wrap; 
+        word-break: break-word; 
+        font-size: 0.95rem; 
+        line-height: 1.6; 
+    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .animate-spin { animation: spin 1s linear infinite; }
+    
+    .stats-bar { 
+        font-size: 0.8rem; 
+        color: var(--text-secondary); 
+        padding: 0.6rem 1.5rem; 
+        background-color: var(--bg-primary); 
+        border-top: 1px solid var(--border-color); 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        flex-wrap: wrap; 
+        gap: 1rem; 
+        flex-shrink: 0; 
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    .stats-item { white-space: nowrap; }
+    
+    .find-replace-form label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: var(--text-primary); }
+    .find-replace-form input[type="text"] { 
+        width: 100%; 
+        padding: 0.5rem; 
+        background-color: var(--bg-tertiary); 
+        border: 1px solid var(--border-color); 
+        border-radius: 0.375rem; 
+        color: var(--text-primary); 
+        margin-bottom: 0.75rem; 
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    }
+    .find-replace-form input[type="text"]:focus {
+        outline: none;
+        border-color: var(--border-focus);
+    }
+    .find-replace-form .checkbox-group { display: flex; align-items: center; margin-bottom: 0.75rem; }
+    .find-replace-form input[type="checkbox"] { margin-right: 0.5rem; }
+    .find-replace-form .button-group { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    
+    /* Settings form styles */
+    .settings-form label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: var(--text-primary); }
+    .settings-form select, 
+    .settings-form input[type="number"],
+    .settings-form input[type="text"] { 
+        width: 100%; 
+        padding: 0.5rem; 
+        background-color: var(--bg-tertiary); 
+        border: 1px solid var(--border-color); 
+        border-radius: 0.375rem; 
+        color: var(--text-primary); 
+        margin-bottom: 1rem; 
+        transition: all 0.3s ease;
+    }
+    .settings-form select:focus,
+    .settings-form input:focus {
+        outline: none;
+        border-color: var(--border-focus);
+    }
+    .settings-form .checkbox-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .settings-form .checkbox-container input[type="checkbox"] {
+        margin-right: 0.5rem;
+    }
+    
+    /* Tab styling */
+    .tab-container {
+        display: flex;
+        overflow-x: auto;
+        background-color: var(--bg-primary);
+        border-bottom: 1px solid var(--border-color);
+        padding: 0 0.5rem;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        transition: background-color 0.3s ease;
+    }
+    .tab-container::-webkit-scrollbar {
+        display: none;
+    }
+    .tab {
+        padding: 0.5rem 1rem;
+        border-top-left-radius: 0.375rem;
+        border-top-right-radius: 0.375rem;
+        margin: 0.25rem 0.25rem 0 0;
+        background-color: var(--bg-secondary);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+        border-bottom: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+    }
+    .tab.active {
+        background-color: var(--bg-secondary); /* Active tab should match editor area for seamless look */
+        color: var(--text-accent);
+        border-bottom: 1px solid var(--bg-secondary); /* Hide bottom border by matching color */
+        margin-bottom: -1px; /* Pull active tab slightly down to overlap border */
+    }
+    .tab-title {
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .tab .close-tab {
+        margin-left: 0.5rem;
+        font-size: 0.8rem;
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+        padding: 0.2rem; /* Easier to click */
+        border-radius: 50%;
+    }
+    .tab .close-tab:hover {
+        opacity: 1;
+        background-color: var(--button-hover);
+    }
+    .tab:hover:not(.active) { /* Don't change active tab bg on hover */
+        background-color: var(--button-hover);
+    }
+    .new-tab-button {
+        padding: 0.5rem;
+        margin: 0.25rem 0 0 0.25rem;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.2s ease;
+        border-radius: 0.25rem;
+    }
+    .new-tab-button:hover {
+        color: var(--text-accent);
+        background-color: var(--button-hover);
+    }
 
-    </style>
+    /* Keyboard shortcut modal */
+    .shortcut-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .shortcut-table th, .shortcut-table td {
+        padding: 0.5rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .shortcut-table th {
+        font-weight: 600;
+        color: var(--text-accent);
+    }
+    .kbd {
+        display: inline-block;
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: 3px;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.75rem;
+        padding: 0.1rem 0.4rem;
+        margin: 0 0.2rem;
+    }
+
+    /* Loading spinner with pulsating effect */
+    .ai-loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100px;
+    }
+    .ai-loading-spinner {
+        position: relative;
+        width: 50px;
+        height: 50px;
+    }
+    .ai-loading-spinner:before,
+    .ai-loading-spinner:after {
+        content: '';
+        position: absolute;
+        border-radius: 50%;
+        animation: pulse 2s ease-in-out infinite;
+        background-color: var(--purple-accent); /* Use accent color */
+    }
+    .ai-loading-spinner:before {
+        width: 100%;
+        height: 100%;
+        opacity: 0.2; /* Lighter pulse */
+        animation-delay: 0.2s;
+    }
+    .ai-loading-spinner:after {
+        width: 75%;
+        height: 75%;
+        opacity: 0.4; /* Darker pulse */
+        top: 12.5%;
+        left: 12.5%;
+    }
+    @keyframes pulse {
+        0%, 100% { transform: scale(0.8); opacity: 0.5; }
+        50% { transform: scale(1); opacity: 1; }
+    }
+    .ai-loading-text {
+        margin-top: 1rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    /* Highlight search matches */
+    .highlight-match {
+        background-color: rgba(234, 179, 8, 0.3);
+        outline: 1px solid rgba(234, 179, 8, 0.5);
+    }
+
+    /* Mobile responsiveness improvements */
+    @media (max-width: 768px) { /* Adjusted breakpoint for toolbar items */
+         .toolbar {
+            padding: 0.3rem 0.7rem;
+            gap: 0.15rem;
+            justify-content: space-around; /* Better distribution on small screens */
+        }
+        .custom-button {
+            padding: 0.4rem 0.5rem;
+            font-size: 0.8rem;
+        }
+        .custom-button .sm\:inline.hidden { /* Hide text in buttons on small screens */
+             display: none !important;
+        }
+         .custom-button i {
+            margin-right: 0; /* Remove margin when text is hidden */
+        }
+        .dropdown-content {
+            min-width: 180px;
+        }
+        header {
+            padding: 0.5rem 0.7rem;
+        }
+        main {
+            padding: 0 0.7rem 0.7rem 0.7rem;
+        }
+        .stats-bar {
+            padding: 0.4rem 0.7rem;
+            font-size: 0.7rem;
+            flex-direction: column; /* Stack stats items on small screens */
+            align-items: flex-start;
+        }
+        .modal-content {
+            width: 95%;
+            padding: 1rem;
+        }
+        .editor-title {
+            font-size: 1.1rem;
+        }
+        .top-bar-actions .custom-button {
+            padding: 0.4rem; /* Smaller icon buttons */
+        }
+    }
+
+    /* Drag and drop area styling */
+    .drag-over {
+        outline: 3px dashed var(--border-focus);
+        outline-offset: -10px;
+        background-color: rgba(var(--border-focus-rgb, 96, 165, 250), 0.05); /* Use RGB for opacity */
+    }
+    /* Helper for drag-over background */
+    .light-theme .drag-over { --border-focus-rgb: 59, 130, 246; }
+    body:not(.light-theme) .drag-over { --border-focus-rgb: 96, 165, 250; }
+    
+    /* Auto-save indicator */
+    .autosave-indicator {
+        display: flex;
+        align-items: center;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+    .autosave-indicator i {
+        margin-right: 0.25rem;
+    }
+    .autosave-indicator.saving i {
+        animation: spin 1s linear infinite;
+    }
+    .autosave-indicator.saved i {
+        color: var(--success-color);
+    }
+</style>
+
 </head>
 <body>
-
     <div class="main-container-wrapper">
         <div id="mainContainer">
             <header>
                 <div class="top-bar">
                     <span class="editor-title">텍스트 편집기 Pro 🚀</span>
-                    <button id="fullscreenButton" class="custom-button toolbar-button" title="전체 화면 토글">
-                        <i class="fas fa-expand"></i> <span class="sm:inline hidden">전체 화면</span>
-                    </button>
+                    <div class="top-bar-actions">
+                        <button id="themeToggleButton" class="custom-button toolbar-button" title="테마 변경 (현재 어두운 테마)">
+                            <i class="fas fa-moon"></i>
+                        </button>
+                        <button id="keyboardShortcutsButton" class="custom-button toolbar-button" title="단축키 안내">
+                            <i class="fas fa-keyboard"></i>
+                        </button>
+                        <button id="fullscreenButton" class="custom-button toolbar-button" title="전체 화면 토글">
+                            <i class="fas fa-expand"></i> <span class="sm:inline hidden">전체 화면</span>
+                        </button>
+                    </div>
                 </div>
-            </header>
+            </header><div class="tab-container">
+            <button class="new-tab-button" title="새 탭 (Ctrl+T)"><i class="fas fa-plus"></i></button>
+        </div>
 
-            <div class="toolbar">
-                <div class="dropdown">
-                    <button class="custom-button toolbar-button"><i class="fas fa-file-alt"></i> 파일</button>
-                    <div class="dropdown-content">
-                        <button id="loadFileButton"><i class="fas fa-folder-open"></i> 파일 불러오기</button>
-                        <div class="dropdown-separator"></div>
-                        <button id="saveTxtButton"><i class="fas fa-file-lines"></i> TXT로 저장</button>
-                        <button id="saveHtmlButton"><i class="fab fa-html5"></i> HTML로 저장</button>
-                        <button id="saveMarkdownButton"><i class="fab fa-markdown"></i> Markdown으로 저장</button>
-                        <button id="saveJsonButton"><i class="fas fa-code-branch"></i> JSON으로 저장</button>
-                        <button id="saveXmlButton"><i class="fas fa-file-code"></i> XML로 저장</button>
-                    </div>
+        <div class="toolbar">
+            <div class="dropdown">
+                <button class="custom-button toolbar-button"><i class="fas fa-file-alt"></i> 파일</button>
+                <div class="dropdown-content">
+                    <button id="newFileButton"><i class="fas fa-file"></i> 새 파일 <span class="kbd ml-auto">Ctrl+N</span></button>
+                    <button id="loadFileButton"><i class="fas fa-folder-open"></i> 파일 불러오기</button>
+                    <div class="dropdown-separator"></div>
+                    <button id="saveTxtButton"><i class="fas fa-file-lines"></i> TXT로 저장 <span class="kbd ml-auto">Ctrl+S</span></button>
+                    <button id="saveHtmlButton"><i class="fab fa-html5"></i> HTML로 저장</button>
+                    <button id="saveMarkdownButton"><i class="fab fa-markdown"></i> Markdown으로 저장</button>
+                    <button id="saveJsonButton"><i class="fas fa-code-branch"></i> JSON으로 저장</button>
+                    <button id="saveXmlButton"><i class="fas fa-file-code"></i> XML로 저장</button>
+                    <button id="saveCsvButton"><i class="fas fa-file-csv"></i> CSV로 저장</button>
+                    <button id="saveJsButton"><i class="fab fa-js-square"></i> JS로 저장</button>
+                    <button id="saveCssButton"><i class="fab fa-css3-alt"></i> CSS로 저장</button>
                 </div>
-                <div class="dropdown">
-                    <button class="custom-button toolbar-button"><i class="fas fa-edit"></i> 편집</button>
-                    <div class="dropdown-content">
-                        <button id="undoButton"><i class="fas fa-undo"></i> 되돌리기</button>
-                        <button id="redoButton"><i class="fas fa-redo"></i> 다시 실행</button>
-                        <div class="dropdown-separator"></div>
-                        <button id="findReplaceButton"><i class="fas fa-search"></i> 찾기/바꾸기</button>
-                        <div class="dropdown-separator"></div>
-                        <button id="clearAllButton"><i class="fas fa-trash-alt"></i> 모두 지우기</button>
-                    </div>
-                </div>
-                 <div class="dropdown">
-                    <button class="custom-button toolbar-button"><i class="fas fa-eye"></i> 보기</button>
-                    <div class="dropdown-content">
-                        <button id="previewHtmlButton"><i class="fas fa-code"></i> HTML 미리보기</button>
-                        <button id="previewMarkdownButton"><i class="fab fa-markdown"></i> 마크다운 미리보기</button>
-                        <button id="previewJsonButton"><i class="fas fa-sitemap"></i> JSON 미리보기</button>
-                        <button id="previewXmlButton"><i class="fas fa-file-invoice"></i> XML 미리보기</button>
-                        <div class="dropdown-separator"></div>
-                        <button id="toggleWordWrapButton"><i class="fas fa-exchange-alt"></i> 자동 줄 바꿈 토글</button>
-                    </div>
-                </div>
-                <div class="dropdown">
-                    <button class="custom-button toolbar-button"><i class="fas fa-tools"></i> 도구</button>
-                    <div class="dropdown-content">
-                         <button id="markdownHelperButton"><i class="fas fa-book"></i> 마크다운 도우미</button>
-                         <button id="jsonHelperButton"><i class="fas fa-cogs"></i> JSON 도우미</button>
-                    </div>
-                </div>
-                <div class="dropdown">
-                    <button class="custom-button toolbar-button"><i class="fas fa-robot"></i> AI</button>
-                    <div class="dropdown-content">
-                        <button id="summarizeButton"><i class="fas fa-compress-arrows-alt"></i> 텍스트 요약</button>
-                        <button id="continueButton"><i class="fas fa-pen-fancy"></i> 이어쓰기</button>
-                    </div>
-                </div>
-                <button id="settingsButton" class="custom-button toolbar-button" title="설정">
-                    <i class="fas fa-cog"></i> <span class="sm:inline hidden">설정</span>
-                </button>
             </div>
-
-            <main>
-                <div class="textarea-wrapper">
-                    <div class="editor-area">
-                        <div id="lineNumberContainer"></div>
-                        <textarea id="textInput" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요." spellcheck="false"></textarea>
-                    </div>
+            <div class="dropdown">
+                <button class="custom-button toolbar-button"><i class="fas fa-edit"></i> 편집</button>
+                <div class="dropdown-content">
+                    <button id="undoButton"><i class="fas fa-undo"></i> 되돌리기 <span class="kbd ml-auto">Ctrl+Z</span></button>
+                    <button id="redoButton"><i class="fas fa-redo"></i> 다시 실행 <span class="kbd ml-auto">Ctrl+Y</span></button>
+                    <div class="dropdown-separator"></div>
+                    <button id="cutButton"><i class="fas fa-cut"></i> 잘라내기 <span class="kbd ml-auto">Ctrl+X</span></button>
+                    <button id="copyButton"><i class="fas fa-copy"></i> 복사 <span class="kbd ml-auto">Ctrl+C</span></button>
+                    <button id="pasteButton"><i class="fas fa-paste"></i> 붙여넣기 <span class="kbd ml-auto">Ctrl+V</span></button>
+                    <div class="dropdown-separator"></div>
+                    <button id="findReplaceButton"><i class="fas fa-search"></i> 찾기/바꾸기 <span class="kbd ml-auto">Ctrl+F</span></button>
+                    <div class="dropdown-separator"></div>
+                    <button id="selectAllButton"><i class="fas fa-object-group"></i> 모두 선택 <span class="kbd ml-auto">Ctrl+A</span></button>
+                    <button id="clearAllButton"><i class="fas fa-trash-alt"></i> 모두 지우기</button>
                 </div>
-            </main>
-            <div id="statsBar" class="stats-bar">
-                <span class="stats-item">글자: <span id="charCountWithSpaces">0</span></span>
-                <span class="stats-item">단어: <span id="wordCount">0</span></span>
-                <span class="stats-item">줄: <span id="lineCount">1</span></span>
-                <span class="stats-item"><span id="cursorPosition">위치: 1:1</span></span>
+            </div>
+            <div class="dropdown">
+                <button class="custom-button toolbar-button"><i class="fas fa-eye"></i> 보기</button>
+                <div class="dropdown-content">
+                    <button id="previewHtmlButton"><i class="fas fa-code"></i> HTML 미리보기</button>
+                    <button id="previewMarkdownButton"><i class="fab fa-markdown"></i> 마크다운 미리보기</button>
+                    <button id="previewJsonButton"><i class="fas fa-sitemap"></i> JSON 미리보기</button>
+                    <button id="previewXmlButton"><i class="fas fa-file-invoice"></i> XML 미리보기</button>
+                    <button id="previewCsvButton"><i class="fas fa-table"></i> CSV 미리보기</button>
+                    <button id="previewJsButton"><i class="fab fa-js-square"></i> JS 미리보기</button>
+                    <button id="previewCssButton"><i class="fab fa-css3-alt"></i> CSS 미리보기</button>
+                    <div class="dropdown-separator"></div>
+                    <button id="toggleWordWrapButton"><i class="fas fa-exchange-alt"></i> 자동 줄 바꿈 토글</button>
+                    <button id="toggleLineNumbersButton"><i class="fas fa-list-ol"></i> 줄 번호 토글</button>
+                </div>
+            </div>
+            <div class="dropdown">
+                <button class="custom-button toolbar-button"><i class="fas fa-tools"></i> 도구</button>
+                <div class="dropdown-content">
+                    <button id="markdownHelperButton"><i class="fas fa-book"></i> 마크다운 도우미</button>
+                    <button id="jsonHelperButton"><i class="fas fa-cogs"></i> JSON 도우미</button>
+                    <button id="xmlHelperButton"><i class="fas fa-file-alt"></i> XML 도우미</button>
+                    <button id="csvHelperButton"><i class="fas fa-th-list"></i> CSV 도우미</button>
+                    <div class="dropdown-separator"></div>
+                    <button id="formatJsonButton"><i class="fas fa-indent"></i> JSON 포맷팅</button>
+                    <button id="formatXmlButton"><i class="fas fa-code"></i> XML 포맷팅</button>
+                    <button id="formatCsvButton"><i class="fas fa-table"></i> CSV 테이블 변환</button>
+                    <div class="dropdown-separator"></div>
+                    <button id="countStatsButton"><i class="fas fa-chart-bar"></i> 상세 통계</button>
+                </div>
+            </div>
+            <div class="dropdown">
+                <button class="custom-button toolbar-button"><i class="fas fa-robot"></i> AI</button>
+                <div class="dropdown-content">
+                    <button id="summarizeButton"><i class="fas fa-compress-arrows-alt"></i> 텍스트 요약</button>
+                    <button id="continueButton"><i class="fas fa-pen-fancy"></i> 이어쓰기</button>
+                    <button id="grammarCheckButton"><i class="fas fa-spell-check"></i> 문법 검사</button>
+                    <button id="translateButton"><i class="fas fa-language"></i> 번역</button>
+                    <button id="changeStyleButton"><i class="fas fa-paint-brush"></i> 스타일 변환</button>
+                </div>
+            </div>
+            <button id="settingsButton" class="custom-button toolbar-button" title="설정 (Ctrl+,)">
+                <i class="fas fa-cog"></i> <span class="sm:inline hidden">설정</span>
+            </button>
+
+            <div class="ml-auto autosave-indicator">
+                <i class="fas fa-save"></i>
+                <span id="autosaveStatus">자동 저장됨</span>
             </div>
         </div>
-    </div>
 
-    <input type="file" id="fileInput" accept=".txt,.html,.md,.json,.xml" style="display: none;">
-
-    <div id="loadingIndicator" class="message-box bg-gray-700 text-white flex items-center space-x-2">
-        <i class="fas fa-spinner animate-spin"></i>
-        <span>AI가 작업 중입니다...</span>
-    </div>
-    <div id="messageBox" class="message-box"></div>
-
-    <div id="previewModal" class="modal-overlay">
-        <div class="preview-content">
-            <div class="modal-header">
-                <h2 id="previewModalTitle" class="modal-title">미리보기</h2>
-                <button id="closePreviewModalButton" class="modal-close-button" aria-label="미리보기 닫기">&times;</button>
+        <main>
+            <div class="textarea-wrapper">
+                <div class="editor-area">
+                    <div id="lineNumberContainer"></div>
+                    <textarea id="textInput" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요. 파일을 끌어다 놓을 수도 있습니다." spellcheck="false"></textarea>
+                </div>
             </div>
-            <div id="previewOutputContainer" class="preview-output-container">
-                <iframe id="previewIframe" title="HTML Preview" class="w-full h-full border-0" sandbox="allow-scripts allow-same-origin" style="display:none;"></iframe>
-                <div id="markdownPreviewArea" class="markdown-preview-area w-full h-full border-0" style="display:none;"></div>
-                <pre id="jsonPreviewArea" class="w-full h-full border-0" style="display:none;"></pre>
-                <pre id="xmlPreviewArea" class="w-full h-full border-0" style="display:none;"></pre>
-            </div>
+        </main>
+
+        <div id="statsBar" class="stats-bar">
+            <span class="stats-item">글자: <span id="charCountWithSpaces">0</span></span>
+            <span class="stats-item">단어: <span id="wordCount">0</span></span>
+            <span class="stats-item">줄: <span id="lineCount">1</span></span>
+            <span class="stats-item"><span id="cursorPosition">위치: 1:1</span></span>
         </div>
     </div>
-    
-    <div id="settingsModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">편집기 설정</h2>
-                <button id="closeSettingsModalButton" class="modal-close-button" aria-label="설정 닫기">&times;</button>
+</div>
+
+<input type="file" id="fileInput" accept=".txt,.html,.md,.json,.xml,.csv,.js,.css" style="display: none;">
+
+<div id="messageBox" class="message-box"></div>
+
+<div id="settingsModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">편집기 설정</h2>
+            <button id="closeSettingsModalButton" class="modal-close-button" aria-label="설정 닫기">&times;</button>
+        </div>
+        <div class="modal-body mt-4 settings-form">
+            <div>
+                <label for="fontSizeInput">글꼴 크기 (px):</label>
+                <input type="number" id="fontSizeInput" min="10" max="30" step="1" value="16">
             </div>
-            <div class="modal-body mt-4 space-y-4">
+            <div>
+                <label for="fontFamilySelect">글꼴 패밀리:</label>
+                <select id="fontFamilySelect">
+                    <option value="'JetBrains Mono', monospace">JetBrains Mono (기본)</option>
+                    <option value="'Consolas', monospace">Consolas</option>
+                    <option value="'Courier New', monospace">Courier New</option>
+                    <option value="'Fira Code', monospace">Fira Code</option>
+                    <option value="'Roboto Mono', monospace">Roboto Mono</option>
+                </select>
+            </div>
+            <div>
+                <label for="tabSizeInput">탭 크기 (공백 수):</label>
+                <input type="number" id="tabSizeInput" min="2" max="8" step="1" value="4">
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" id="autoSaveCheckbox" checked>
+                <label for="autoSaveCheckbox">자동 저장 활성화 (로컬)</label>
+            </div>
+            <div>
+                <label for="autoSaveIntervalInput">자동 저장 간격 (초):</label>
+                <input type="number" id="autoSaveIntervalInput" min="5" max="300" step="5" value="30">
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" id="lineNumbersCheckbox" checked>
+                <label for="lineNumbersCheckbox">줄 번호 표시</label>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" id="wordWrapCheckbox">
+                <label for="wordWrapCheckbox">자동 줄 바꿈</label>
+            </div>
+            <button id="saveSettingsButton" class="custom-button bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-lg w-full mt-2">
+                <i class="fas fa-save"></i> 설정 저장
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="keyboardShortcutsModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2 class="modal-title">키보드 단축키</h2>
+            <button id="closeKeyboardShortcutsButton" class="modal-close-button" aria-label="닫기">&times;</button>
+        </div>
+        <div class="modal-body mt-4">
+            <table class="shortcut-table">
+                <thead>
+                    <tr>
+                        <th>기능</th>
+                        <th>단축키</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>새 파일 (새 탭)</td>
+                        <td><span class="kbd">Ctrl</span> + <span class="kbd">N</span> 또는 <span class="kbd">Ctrl</span> + <span class="kbd">T</span></td>
+                    </tr>
+                     <tr>
+                        <td>파일 불러오기</td>
+                        <td>(버튼 사용)</td>
+                    </tr>
+                    <tr>
+                        <td>파일 저장 (TXT)</td>
+                        <td><span class="kbd">Ctrl</span> + <span class="kbd">S</span></td>
+                    </tr>
+                    <tr>
+                        <td>되돌리기</td>
+                        <td><span class="kbd">Ctrl</span> + <span class="kbd">Z</span></td>
+                    </tr>
+                    <tr>
+                        <td>다시 실행</td>
+                        <td><span class="kbd">Ctrl</span> + <span class="kbd">Y</span></td>
+                    </tr>
+                    <tr>
+                        <td>잘라내기</td>
+                        <td><span class="kbd">Ctrl</span> + <span class="kbd">X</span></td>
+                    </tr>
+                    <tr>
+                        <td>복사</td>
+                        <td><span class="kbd">Ctrl</span> + <span class="kbd">C</span></td>
+                    </tr>
+                    <tr>
+                        <td>붙여넣기</td>
+                        <td><span class="kbd">Ctrl</span> + <span class="kbd">V</span></td>
+                    </tr>
+                    <tr>
+                        <td>찾기/바꾸기</td>
+                        <td><span class="kbd">Ctrl</span> + <span class="kbd">F</span></td>
+                    </tr>
+                    <tr>
+                        <td>모두 선택</td>
+                        <td><span class="kbd">Ctrl</span> + <span class="kbd">A</span></td>
+                    </tr>
+                    <tr>
+                        <td>현재 탭 닫기</td>
+                        <td><span class="kbd">Ctrl</span> + <span class="kbd">W</span></td>
+                    </tr>
+                     <tr>
+                        <td>들여쓰기</td>
+                        <td><span class="kbd">Tab</span></td>
+                    </tr>
+                     <tr>
+                        <td>내어쓰기</td>
+                        <td><span class="kbd">Shift</span> + <span class="kbd">Tab</span></td>
+                    </tr>
+                    <tr>
+                        <td>전체 화면</td>
+                        <td><span class="kbd">F11</span></td>
+                    </tr>
+                    <tr>
+                        <td>설정</td>
+                        <td><span class="kbd">Ctrl</span> + <span class="kbd">,</span></td>
+                    </tr>
+                     <tr>
+                        <td>단축키 안내</td>
+                        <td>(버튼 사용)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="llmOutputModal" class="modal-overlay">
+    <div class="preview-content"> 
+        <div class="modal-header">
+            <h2 class="modal-title" id="llmOutputTitle">AI 생성 결과</h2>
+            <button id="closeLlmOutputButton" class="modal-close-button" aria-label="AI 생성 결과 닫기">&times;</button>
+        </div>
+        <div class="preview-output-container" style="padding: 1rem; overflow-y: auto; border-radius: 0.5rem;">
+            <div id="llmLoadingContainer" class="ai-loading-container">
+                <div class="ai-loading-spinner"></div>
+                <div class="ai-loading-text">AI가 작업 중입니다... (시뮬레이션)</div>
+            </div>
+            <pre id="llmOutputContent" class="whitespace-pre-wrap" style="display: none;"></pre>
+        </div>
+        <div class="mt-4 text-right">
+            <button id="insertLlmOutputButton" class="custom-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+                <i class="fas fa-plus-circle"></i> 에디터에 삽입
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="translateModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 class="modal-title">텍스트 번역</h2>
+            <button id="closeTranslateModalButton" class="modal-close-button" aria-label="닫기">&times;</button>
+        </div>
+        <div class="modal-body mt-4 settings-form">
+            <div>
+                <label for="targetLanguageSelect">대상 언어:</label>
+                <select id="targetLanguageSelect">
+                    <option value="en">영어</option>
+                    <option value="ja">일본어</option>
+                    <option value="zh">중국어</option>
+                    <option value="es">스페인어</option>
+                    <option value="fr">프랑스어</option>
+                    <option value="de">독일어</option>
+                    <option value="ru">러시아어</option>
+                    <option value="ar">아랍어</option>
+                     <option value="ko">한국어</option>
+                </select>
+            </div>
+            <button id="startTranslateButton" class="custom-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg w-full mt-4">
+                <i class="fas fa-language"></i> 번역 시작
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="styleModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 class="modal-title">스타일 변환</h2>
+            <button id="closeStyleModalButton" class="modal-close-button" aria-label="닫기">&times;</button>
+        </div>
+        <div class="modal-body mt-4 settings-form">
+            <div>
+                <label for="styleTypeSelect">변환할 스타일:</label>
+                <select id="styleTypeSelect">
+                    <option value="formal">공식적/격식체</option>
+                    <option value="casual">비격식체/회화체</option>
+                    <option value="academic">학술적</option>
+                    <option value="creative">창의적</option>
+                    <option value="technical">기술적</option>
+                    <option value="simple">단순화</option>
+                    <option value="elaborate">자세하게</option>
+                    <option value="bullet">항목별 요약 (불렛 포인트)</option>
+                </select>
+            </div>
+            <button id="startStyleChangeButton" class="custom-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg w-full mt-4">
+                <i class="fas fa-paint-brush"></i> 스타일 변환 시작
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="statsModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">텍스트 상세 통계</h2>
+            <button id="closeStatsModalButton" class="modal-close-button" aria-label="닫기">&times;</button>
+        </div>
+        <div class="modal-body mt-4">
+            <div id="statsContent" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label for="fontSizeInput" class="block text-sm font-medium text-slate-300 mb-1">글꼴 크기 (px):</label>
-                    <input type="number" id="fontSizeInput" min="10" max="30" step="1" class="w-full p-2 bg-slate-700 border border-slate-600 rounded-md text-slate-200 focus:ring-sky-500 focus:border-sky-500">
-                </div>
-                <button id="saveSettingsButton" class="custom-button bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-lg w-full">
-                    <i class="fas fa-save"></i> 설정 저장
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div id="llmOutputModal" class="modal-overlay">
-        <div class="preview-content">
-             <div class="modal-header">
-                <h2 class="modal-title" id="llmOutputTitle">AI 생성 결과</h2>
-                <button id="closeLlmOutputButton" class="modal-close-button" aria-label="AI 생성 결과 닫기">&times;</button>
-            </div>
-            <div class="preview-output-container" style="background-color: #111827; color: #d1d5db; padding: 1rem; overflow-y: auto; border-radius: 0.5rem;">
-                <pre id="llmOutputContent" class="whitespace-pre-wrap"></pre>
-            </div>
-            <div class="mt-4 text-right">
-                <button id="insertLlmOutputButton" class="custom-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">
-                    <i class="fas fa-plus-circle"></i> 에디터에 삽입
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div id="markdownHelperModal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 700px;">
-            <div class="modal-header">
-                <h2 class="modal-title">마크다운 작성 도우미</h2>
-                <button id="closeMarkdownHelperModalButton" class="modal-close-button" aria-label="닫기">&times;</button>
-            </div>
-            <div class="modal-body mt-4">
-                <p class="text-sm mb-4">텍스트를 선택한 후 아래 버튼을 클릭하거나, 커서 위치에 문법을 삽입하세요.</p>
-                <div class="helper-grid">
-                    <button class="custom-button toolbar-button markdown-insert" data-syntax="bold"><i class="fas fa-bold"></i> 굵게</button>
-                    <button class="custom-button toolbar-button markdown-insert" data-syntax="italic"><i class="fas fa-italic"></i> 기울임</button>
-                    <button class="custom-button toolbar-button markdown-insert" data-syntax="heading1"><i class="fas fa-heading"></i> 제목1</button>
-                    <button class="custom-button toolbar-button markdown-insert" data-syntax="heading2"><i class="fas fa-heading" style="font-size:0.8em;"></i> 제목2</button>
-                    <button class="custom-button toolbar-button markdown-insert" data-syntax="link"><i class="fas fa-link"></i> 링크</button>
-                    <button class="custom-button toolbar-button markdown-insert" data-syntax="image"><i class="fas fa-image"></i> 이미지</button>
-                    <button class="custom-button toolbar-button markdown-insert" data-syntax="ul"><i class="fas fa-list-ul"></i> 순서 없는 목록</button>
-                    <button class="custom-button toolbar-button markdown-insert" data-syntax="ol"><i class="fas fa-list-ol"></i> 순서 있는 목록</button>
-                    <button class="custom-button toolbar-button markdown-insert" data-syntax="blockquote"><i class="fas fa-quote-left"></i> 인용문</button>
-                    <button class="custom-button toolbar-button markdown-insert" data-syntax="codeblock"><i class="fas fa-code"></i> 코드 블록</button>
-                    <button class="custom-button toolbar-button markdown-insert" data-syntax="inlinecode"><i class="fas fa-terminal"></i> 인라인 코드</button>
-                    <button class="custom-button toolbar-button markdown-insert" data-syntax="hr"><i class="fas fa-minus"></i> 수평선</button>
-                </div>
-                <div class="syntax-guide mt-6 pt-4 border-t border-slate-700">
-                    <h4>빠른 문법 가이드:</h4>
-                    <p><code># 제목1</code>, <code>## 제목2</code>, <code>### 제목3</code></p>
-                    <p><code>**굵게**</code> 또는 <code>__굵게__</code></p>
-                    <p><code>*기울임*</code> 또는 <code>_기울임_</code></p>
-                    <p><code>[링크 텍스트](URL)</code></p>
-                    <p><code>![이미지 설명](이미지 URL)</code></p>
-                    <p><code>- 항목 1</code><br><code>- 항목 2</code></p>
-                    <p><code>1. 항목 1</code><br><code>2. 항목 2</code></p>
-                    <p><code>&gt; 인용문</code></p>
-                    <p><code>```언어\n코드 내용\n```</code></p>
-                    <p><code>`인라인 코드`</code></p>
-                    <p><code>---</code> 또는 <code>***</code> (수평선)</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div id="jsonHelperModal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header">
-                <h2 class="modal-title">JSON 작성 도우미</h2>
-                <button id="closeJsonHelperModalButton" class="modal-close-button" aria-label="닫기">&times;</button>
-            </div>
-            <div class="modal-body mt-4">
-                <p class="text-sm mb-4">커서 위치에 JSON 구조를 삽입하거나, 선택된 텍스트를 값으로 사용합니다.</p>
-                <div class="helper-grid">
-                    <button class="custom-button toolbar-button json-insert" data-syntax="object"><i class="fas fa-project-diagram"></i> 빈 객체 {}</button>
-                    <button class="custom-button toolbar-button json-insert" data-syntax="array"><i class="fas fa-list"></i> 빈 배열 []</button>
-                    <button class="custom-button toolbar-button json-insert" data-syntax="keypair"><i class="fas fa-key"></i> 키-값 쌍</button>
-                    <button class="custom-button toolbar-button json-insert" data-syntax="string"><i class="fas fa-quote-right"></i> 문자열 ""</button>
-                    <button class="custom-button toolbar-button json-insert" data-syntax="number"><i class="fas fa-hashtag"></i> 숫자</button>
-                    <button class="custom-button toolbar-button json-insert" data-syntax="booleanTrue"><i class="fas fa-check-circle"></i> true</button>
-                    <button class="custom-button toolbar-button json-insert" data-syntax="booleanFalse"><i class="fas fa-times-circle"></i> false</button>
-                    <button class="custom-button toolbar-button json-insert" data-syntax="null"><i class="fas fa-ban"></i> null</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <div id="findReplaceModal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 450px;">
-            <div class="modal-header">
-                <h2 class="modal-title">찾기 및 바꾸기</h2>
-                <button id="closeFindReplaceModalButton" class="modal-close-button">&times;</button>
-            </div>
-            <div class="modal-body mt-4 find-replace-form">
-                <div>
-                    <label for="findInput">찾을 내용:</label>
-                    <input type="text" id="findInput">
+                    <h3 class="text-md font-semibold mb-2 text-text-accent">기본 통계</h3>
+                    <p>글자 (공백 포함): <span id="statsCharsWithSpaces" class="font-medium">0</span></p>
+                    <p>글자 (공백 제외): <span id="statsCharsWithoutSpaces" class="font-medium">0</span></p>
+                    <p>단어: <span id="statsWords" class="font-medium">0</span></p>
+                    <p>문장: <span id="statsSentences" class="font-medium">0</span></p>
+                    <p>단락: <span id="statsParagraphs" class="font-medium">0</span></p>
+                    <p>줄: <span id="statsLines" class="font-medium">0</span></p>
                 </div>
                 <div>
-                    <label for="replaceInput">바꿀 내용:</label>
-                    <input type="text" id="replaceInput">
+                    <h3 class="text-md font-semibold mb-2 text-text-accent">읽기 통계</h3>
+                    <p>평균 단어 길이: <span id="statsAvgWordLength" class="font-medium">0</span></p>
+                    <p>평균 문장 길이 (단어 수): <span id="statsAvgSentenceLength" class="font-medium">0</span></p>
+                    <p>추정 읽기 시간: <span id="statsReadingTime" class="font-medium">0</span>분</p>
                 </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="matchCaseCheckbox">
-                    <label for="matchCaseCheckbox" class="text-sm">대소문자 구분</label>
-                </div>
-                <div class="button-group">
-                    <button id="findNextButton" class="custom-button toolbar-button"><i class="fas fa-search"></i> 찾기</button>
-                    <button id="replaceButton" class="custom-button toolbar-button bg-blue-600 hover:bg-blue-700"><i class="fas fa-exchange-alt"></i> 바꾸기</button>
-                    <button id="replaceAllButton" class="custom-button toolbar-button bg-green-600 hover:bg-green-700"><i class="fas fa-fast-forward"></i> 모두 바꾸기</button>
-                </div>
-                <p id="findReplaceMessage" class="text-xs mt-3 text-slate-400"></p>
+            </div>
+            <div class="mt-6">
+                <h3 class="text-md font-semibold mb-2 text-text-accent">가장 많이 사용된 단어 (상위 10개)</h3>
+                <div id="statsWordFrequency" class="text-sm max-h-48 overflow-y-auto"></div>
             </div>
         </div>
     </div>
+</div>
+
+<div id="markdownHelperModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2 class="modal-title">마크다운 작성 도우미</h2>
+            <button id="closeMarkdownHelperModalButton" class="modal-close-button" aria-label="닫기">&times;</button>
+        </div>
+        <div class="modal-body mt-4">
+            <p class="text-sm mb-4">텍스트를 선택한 후 아래 버튼을 클릭하거나, 커서 위치에 문법을 삽입하세요.</p>
+            <div class="helper-grid">
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="bold"><i class="fas fa-bold"></i> 굵게</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="italic"><i class="fas fa-italic"></i> 기울임</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="heading1"><i class="fas fa-heading"></i> 제목1</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="heading2"><i class="fas fa-heading" style="font-size:0.8em;"></i> 제목2</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="link"><i class="fas fa-link"></i> 링크</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="image"><i class="fas fa-image"></i> 이미지</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="ul"><i class="fas fa-list-ul"></i> 순서 없는 목록</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="ol"><i class="fas fa-list-ol"></i> 순서 있는 목록</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="blockquote"><i class="fas fa-quote-left"></i> 인용문</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="codeblock"><i class="fas fa-code"></i> 코드 블록</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="inlinecode"><i class="fas fa-terminal"></i> 인라인 코드</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="hr"><i class="fas fa-minus"></i> 수평선</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="table"><i class="fas fa-table"></i> 테이블</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="strikethrough"><i class="fas fa-strikethrough"></i> 취소선</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="tasklist"><i class="fas fa-tasks"></i> 작업 목록</button>
+                <button class="custom-button toolbar-button markdown-insert" data-syntax="footnote"><i class="fas fa-sticky-note"></i> 각주</button>
+            </div>
+            <div class="syntax-guide mt-6 pt-4 border-t border-border-color">
+                <h4 class="text-text-accent">빠른 문법 가이드:</h4>
+                <p><code># 제목1</code>, <code>## 제목2</code>, <code>### 제목3</code></p>
+                <p><code>**굵게**</code> 또는 <code>__굵게__</code></p>
+                <p><code>*기울임*</code> 또는 <code>_기울임_</code></p>
+                <p><code>~~취소선~~</code></p>
+                <p><code>[링크 텍스트](URL)</code></p>
+                <p><code>![이미지 설명](이미지 URL)</code></p>
+                <p><code>- 항목 1</code><br><code>- 항목 2</code></p>
+                <p><code>1. 항목 1</code><br><code>2. 항목 2</code></p>
+                <p><code>- [ ] 미완료 작업</code><br><code>- [x] 완료된 작업</code></p>
+                <p><code>&gt; 인용문</code></p>
+                <p><code>```언어\n코드 내용\n```</code></p>
+                <p><code>`인라인 코드`</code></p>
+                <p><code>---</code> 또는 <code>***</code> (수평선)</p>
+                <p><code>| 제목1 | 제목2 |\n| --- | --- |\n| 내용1 | 내용2 |</code> (테이블)</p>
+                <p><code>텍스트[^1]\n\n[^1]: 각주 내용</code> (각주)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="jsonHelperModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 class="modal-title">JSON 작성 도우미</h2>
+            <button id="closeJsonHelperModalButton" class="modal-close-button" aria-label="닫기">&times;</button>
+        </div>
+        <div class="modal-body mt-4">
+            <p class="text-sm mb-4">커서 위치에 JSON 구조를 삽입하거나, 선택된 텍스트를 값으로 사용합니다.</p>
+            <div class="helper-grid">
+                <button class="custom-button toolbar-button json-insert" data-syntax="object"><i class="fas fa-project-diagram"></i> 빈 객체 {}</button>
+                <button class="custom-button toolbar-button json-insert" data-syntax="array"><i class="fas fa-list"></i> 빈 배열 []</button>
+                <button class="custom-button toolbar-button json-insert" data-syntax="keypair"><i class="fas fa-key"></i> 키-값 쌍</button>
+                <button class="custom-button toolbar-button json-insert" data-syntax="string"><i class="fas fa-quote-right"></i> 문자열 ""</button>
+                <button class="custom-button toolbar-button json-insert" data-syntax="number"><i class="fas fa-hashtag"></i> 숫자</button>
+                <button class="custom-button toolbar-button json-insert" data-syntax="booleanTrue"><i class="fas fa-check-circle"></i> true</button>
+                <button class="custom-button toolbar-button json-insert" data-syntax="booleanFalse"><i class="fas fa-times-circle"></i> false</button>
+                <button class="custom-button toolbar-button json-insert" data-syntax="nullValue"><i class="fas fa-ban"></i> null (값)</button> <button class="custom-button toolbar-button json-insert" data-syntax="complexObject"><i class="fas fa-sitemap"></i> 복합 객체</button>
+                <button class="custom-button toolbar-button json-insert" data-syntax="arrayOfObjects"><i class="fas fa-layer-group"></i> 객체 배열</button>
+            </div>
+            <div class="syntax-guide mt-6 pt-4 border-t border-border-color">
+                <h4 class="text-text-accent">JSON 문법 규칙:</h4>
+                <p>- 데이터는 이름/값 쌍으로 구성됩니다.</p>
+                <p>- 데이터는 쉼표로 구분됩니다.</p>
+                <p>- 중괄호 {}는 객체를 보유합니다.</p>
+                <p>- 대괄호 []는 배열을 보유합니다.</p>
+                <p>- 모든 속성 이름(키)은 큰따옴표로 묶어야 합니다.</p>
+                <p>- 문자열 값도 큰따옴표로 묶어야 합니다.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="xmlHelperModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 class="modal-title">XML 작성 도우미</h2>
+            <button id="closeXmlHelperModalButton" class="modal-close-button" aria-label="닫기">&times;</button>
+        </div>
+        <div class="modal-body mt-4">
+            <p class="text-sm mb-4">커서 위치에 XML 구조를 삽입하거나, 선택된 텍스트를 내용/값으로 사용합니다.</p>
+            <div class="helper-grid">
+                <button class="custom-button toolbar-button xml-insert" data-syntax="element"><i class="fas fa-tag"></i> 요소</button>
+                <button class="custom-button toolbar-button xml-insert" data-syntax="attribute"><i class="fas fa-at"></i> 속성 (요소 내)</button>
+                <button class="custom-button toolbar-button xml-insert" data-syntax="comment"><i class="fas fa-comment-dots"></i> 주석</button>
+                <button class="custom-button toolbar-button xml-insert" data-syntax="cdata"><i class="fas fa-file-alt"></i> CDATA</button>
+                <button class="custom-button toolbar-button xml-insert" data-syntax="declaration"><i class="fas fa-info-circle"></i> XML 선언</button>
+                <button class="custom-button toolbar-button xml-insert" data-syntax="emptyElement"><i class="fas fa-bookmark"></i> 빈 요소</button>
+                <button class="custom-button toolbar-button xml-insert" data-syntax="namespace"><i class="fas fa-sitemap"></i> 네임스페이스 (요소 내)</button>
+                <button class="custom-button toolbar-button xml-insert" data-syntax="template"><i class="fas fa-file-code"></i> 기본 템플릿</button>
+            </div>
+            <div class="syntax-guide mt-6 pt-4 border-t border-border-color">
+                <h4 class="text-text-accent">XML 구문 규칙:</h4>
+                <p>- 모든 XML 요소는 닫는 태그가 있어야 합니다 (예: <code>&lt;tag&gt;내용&lt;/tag&gt;</code>).</p>
+                <p>- 빈 요소는 <code>&lt;tag/&gt;</code> 형식으로 닫을 수 있습니다.</p>
+                <p>- XML 태그는 대소문자를 구분합니다.</p>
+                <p>- 모든 XML 요소는 적절하게 중첩되어야 합니다.</p>
+                <p>- 모든 XML 문서는 유일한 루트 요소가 있어야 합니다.</p>
+                <p>- 속성 값은 항상 따옴표로 묶어야 합니다 (예: <code>attribute="value"</code>).</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="csvHelperModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 class="modal-title">CSV 작성 도우미</h2>
+            <button id="closeCsvHelperModalButton" class="modal-close-button" aria-label="닫기">&times;</button>
+        </div>
+        <div class="modal-body mt-4">
+            <p class="text-sm mb-4">커서 위치에 CSV 구분자 또는 구조를 삽입합니다. 선택된 텍스트는 적절히 처리됩니다.</p>
+            <div class="helper-grid">
+                <button class="custom-button toolbar-button csv-insert" data-syntax="comma"><i class="fas fa-grip-lines-vertical"></i> 쉼표 ( , )</button>
+                <button class="custom-button toolbar-button csv-insert" data-syntax="newline"><i class="fas fa-level-down-alt"></i> 새 줄 (Enter)</button>
+                <button class="custom-button toolbar-button csv-insert" data-syntax="wrapInQuotes"><i class="fas fa-quote-left"></i> 따옴표로 감싸기</button>
+                <button class="custom-button toolbar-button csv-insert" data-syntax="newFieldQuoted"><i class="fas fa-plus-square"></i> 새 필드 (",값")</button>
+                <button class="custom-button toolbar-button csv-insert" data-syntax="sampleHeader"><i class="fas fa-heading"></i> 샘플 헤더</button>
+                <button class="custom-button toolbar-button csv-insert" data-syntax="sampleRow"><i class="fas fa-stream"></i> 샘플 데이터 행</button>
+                <button class="custom-button toolbar-button csv-insert" data-syntax="createTable"><i class="fas fa-table"></i> 표 생성 (2x2)</button>
+                <button class="custom-button toolbar-button csv-insert" data-syntax="template"><i class="fas fa-file-csv"></i> 기본 템플릿</button>
+            </div>
+            <div class="syntax-guide mt-6 pt-4 border-t border-border-color">
+                <h4 class="text-text-accent">CSV 작성 규칙:</h4>
+                <p>- 각 레코드(행)는 새 줄로 구분합니다.</p>
+                <p>- 각 필드는 쉼표(,)로 구분합니다.</p>
+                <p>- 필드 내에 쉼표, 줄바꿈 문자, 또는 큰따옴표가 포함된 경우, 해당 필드는 큰따옴표(")로 감싸야 합니다.</p>
+                <p>- 필드 내에 큰따옴표 자체가 포함된 경우, 두 개의 큰따옴표("")로 이스케이프 처리합니다.</p>
+                <p>예: <code>이름,나이,"주소, 상세","메모(""중요"")"</code></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="findReplaceModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h2 class="modal-title">찾기 및 바꾸기</h2>
+            <button id="closeFindReplaceModalButton" class="modal-close-button">&times;</button>
+        </div>
+        <div class="modal-body mt-4 find-replace-form">
+            <div>
+                <label for="findInput">찾을 내용:</label>
+                <input type="text" id="findInput">
+            </div>
+            <div>
+                <label for="replaceInput">바꿀 내용:</label>
+                <input type="text" id="replaceInput">
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="matchCaseCheckbox">
+                <label for="matchCaseCheckbox" class="text-sm">대소문자 구분</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="wholeWordCheckbox">
+                <label for="wholeWordCheckbox" class="text-sm">단어 단위로 찾기</label>
+            </div>
+             <div class="checkbox-group">
+                <input type="checkbox" id="regexCheckbox">
+                <label for="regexCheckbox" class="text-sm">정규 표현식 사용</label>
+            </div>
+            <div class="button-group mt-2">
+                <button id="findNextButton" class="custom-button toolbar-button"><i class="fas fa-search"></i> 다음 찾기</button>
+                <button id="replaceButton" class="custom-button toolbar-button bg-blue-600 hover:bg-blue-700 text-white"><i class="fas fa-exchange-alt"></i> 바꾸기</button>
+                <button id="replaceAllButton" class="custom-button toolbar-button bg-green-600 hover:bg-green-700 text-white"><i class="fas fa-fast-forward"></i> 모두 바꾸기</button>
+            </div>
+            <p id="findReplaceMessage" class="text-xs mt-3 text-text-secondary"></p>
+        </div>
+    </div>
+</div>
+
+<div id="confirmModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2 class="modal-title" id="confirmModalTitle">확인</h2>
+            <button id="closeConfirmModalButton" class="modal-close-button" aria-label="닫기">&times;</button>
+        </div>
+        <div class="modal-body mt-4">
+            <p id="confirmModalMessage" class="text-sm">정말 진행하시겠습니까?</p>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="confirmModalCancelButton" class="custom-button toolbar-button">취소</button>
+                <button id="confirmModalOkButton" class="custom-button toolbar-button bg-red-600 hover:bg-red-700 text-white">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 
-    <script>
-        // DOM Elements (abbreviated for brevity, full list in actual code)
+<script>
+    // 모든 코드는 DOMContentLoaded 이벤트 후에 실행
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configure marked to use highlight.js
+        // Ensure hljs is available (loaded before this script or this DOMContentLoaded block)
+        if (typeof hljs !== 'undefined') {
+            marked.setOptions({
+              highlight: function(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language, ignoreIllegals: true }).value;
+              }
+            });
+        } else {
+            console.error("highlight.js not loaded for marked.js configuration.");
+        }
+
+        // 탭 관리 시스템
+        let tabs = []; // Start with no tabs, create one on init
+        let activeTabId = null;
+        
+        // 에디터 상태 관리
+        let editorState = {
+            undoStack: [],
+            redoStack: [],
+            lastSavedStates: {}, // Per-tab last saved state for modified check
+            findMatches: [],
+            currentMatchIndex: -1,
+            wordWrap: false,
+            showLineNumbers: true,
+            fontSize: 16,
+            fontFamily: "'JetBrains Mono', monospace",
+            tabSize: 4,
+            autoSave: true,
+            autoSaveInterval: 30000, // 30초
+            autoSaveTimerId: null,
+            cursorPosition: { line: 1, column: 1 }
+        };
+        
+        // DOM Elements 참조 (주요 요소들)
         const textInput = document.getElementById('textInput');
         const fileInput = document.getElementById('fileInput');
         const messageBox = document.getElementById('messageBox');
-        
-        const previewHtmlButton = document.getElementById('previewHtmlButton');
-        const previewMarkdownButton = document.getElementById('previewMarkdownButton');
-        const previewJsonButton = document.getElementById('previewJsonButton');
-        const previewXmlButton = document.getElementById('previewXmlButton'); // New
-        const previewModal = document.getElementById('previewModal');
-        const previewModalTitle = document.getElementById('previewModalTitle');
-        const closePreviewModalButton = document.getElementById('closePreviewModalButton');
-        const previewOutputContainer = document.getElementById('previewOutputContainer');
-        const previewIframe = document.getElementById('previewIframe');
-        const markdownPreviewArea = document.getElementById('markdownPreviewArea');
-        const jsonPreviewArea = document.getElementById('jsonPreviewArea');
-        const xmlPreviewArea = document.getElementById('xmlPreviewArea'); // New
-
-
         const lineNumberContainer = document.getElementById('lineNumberContainer');
-        const charCountWithSpacesElem = document.getElementById('charCountWithSpaces');
-        const wordCountElem = document.getElementById('wordCount');
-        const lineCountElem = document.getElementById('lineCount');
-        const cursorPositionElem = document.getElementById('cursorPosition');
-        
-        const undoButton = document.getElementById('undoButton');
-        const redoButton = document.getElementById('redoButton');
-        const toggleWordWrapButton = document.getElementById('toggleWordWrapButton');
-        
-        const settingsButton = document.getElementById('settingsButton');
-        const settingsModal = document.getElementById('settingsModal');
-        const closeSettingsModalButton = document.getElementById('closeSettingsModalButton');
-        const fontSizeInput = document.getElementById('fontSizeInput');
-        const saveSettingsButton = document.getElementById('saveSettingsButton');
-        const fullscreenButton = document.getElementById('fullscreenButton');
         const mainContainer = document.getElementById('mainContainer');
-
-        const markdownHelperButton = document.getElementById('markdownHelperButton');
-        const markdownHelperModal = document.getElementById('markdownHelperModal');
-        const closeMarkdownHelperModalButton = document.getElementById('closeMarkdownHelperModalButton');
+        const tabContainer = document.querySelector('.tab-container');
+        const themeToggleButton = document.getElementById('themeToggleButton');
         
-        const jsonHelperButton = document.getElementById('jsonHelperButton'); // New
-        const jsonHelperModal = document.getElementById('jsonHelperModal'); // New
-        const closeJsonHelperModalButton = document.getElementById('closeJsonHelperModalButton'); // New
+        // 찾기/바꾸기 모달 요소
+        const findReplaceModal = document.getElementById('findReplaceModal');
+        const findInput = document.getElementById('findInput');
+        const replaceInput = document.getElementById('replaceInput');
+        const matchCaseCheckbox = document.getElementById('matchCaseCheckbox');
+        const wholeWordCheckbox = document.getElementById('wholeWordCheckbox');
+        const regexCheckbox = document.getElementById('regexCheckbox');
+        const findNextButton = document.getElementById('findNextButton');
+        const replaceButton = document.getElementById('replaceButton');
+        const replaceAllButton = document.getElementById('replaceAllButton');
+        const findReplaceMessage = document.getElementById('findReplaceMessage');
         
-        const findReplaceButton = document.getElementById('findReplaceButton');
-        // ... other find/replace and LLM elements
+        // Generic Confirm Modal Elements
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmModalTitle = document.getElementById('confirmModalTitle');
+        const confirmModalMessage = document.getElementById('confirmModalMessage');
+        const confirmModalOkButton = document.getElementById('confirmModalOkButton');
+        const confirmModalCancelButton = document.getElementById('confirmModalCancelButton');
+        const closeConfirmModalButton = document.getElementById('closeConfirmModalButton');
+        let confirmModalResolve = null;
 
-        // Editor State
-        let messageTimeout;
-        const MAX_HISTORY_SIZE = 100;
-        let undoStack = [];
-        let redoStack = [];
-        let lastKnownState = "";
-        let isWordWrapEnabled = false;
-        const EDITOR_FONT_SIZE_KEY = 'editorProFontSize_v3'; 
-        let currentSearchStartIndex = 0;
-        let lastSearchQuery = "";
-
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
-            applySettings();
+        // --- 초기화 함수 ---
+        function initializeEditor() {
+            loadSettings(); // Load saved settings first
+            createNewTab(true); // Create initial tab
+            renderTabs();
+            switchToTab(tabs[0].id); // Activate the first tab
+            updateLineNumbers();
+            updateStats();
+            updateAutosaveStatus('idle');
             setupEventListeners();
-            updateUndoRedoButtons();
-            lastKnownState = textInput.value;
-            if (textInput.value === "") { pushToUndoStack(""); updateUndoRedoButtons(); }
-            
-            const initialRows = 25; 
-            const lineHeight = parseFloat(getComputedStyle(textInput).lineHeight) || 24;
-            textInput.style.minHeight = (initialRows * lineHeight) + 'px';
-            updateLineNumbersAndStats();
-        });
-
-        function applySettings() {
-            const savedFontSize = localStorage.getItem(EDITOR_FONT_SIZE_KEY) || '16';
-            textInput.style.fontSize = `${savedFontSize}px`;
-            lineNumberContainer.style.fontSize = `${savedFontSize}px`;
-            fontSizeInput.value = savedFontSize;
-            updateLineNumbersAndStats();
+            setupKeyboardShortcuts();
+            setupDragAndDrop();
+            applySettingsToUI(); // Apply loaded/default settings to UI elements
         }
 
-        // --- Editor Core Logic (updateEditorState, pushToUndoStack, updateUndoRedoButtons, updateLineNumbersAndStats, updateCursorPosition) ---
-        // (These functions remain largely the same as previous version, with minor adjustments if needed for new features)
-        function updateEditorState(newState, fromUndoRedo = false, newCursorPos = null) {
-            const currentScrollTop = textInput.scrollTop;
-            const currentScrollLeft = textInput.scrollLeft;
-            
-            textInput.value = newState;
-            updateLineNumbersAndStats();
-            
-            if (newCursorPos !== null) {
-                try { textInput.setSelectionRange(newCursorPos, newCursorPos); } catch (e) {}
-            } else {
-                 try { textInput.setSelectionRange(textInput.selectionStart, textInput.selectionEnd); } catch (e) {}
-            }
-            
-            textInput.scrollTop = currentScrollTop;
-            textInput.scrollLeft = currentScrollLeft;
+        // --- 테마 관리 ---
+        themeToggleButton.addEventListener('click', function() {
+            document.body.classList.toggle('light-theme');
+            const isDarkTheme = !document.body.classList.contains('light-theme');
+            themeToggleButton.innerHTML = isDarkTheme ? 
+                '<i class="fas fa-moon"></i>' : 
+                '<i class="fas fa-sun"></i>';
+            themeToggleButton.title = `테마 변경 (현재 ${isDarkTheme ? '어두운' : '밝은'} 테마)`;
+            localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light');
+            showMessage('테마가 변경되었습니다.', 'info');
+            // Update highlight.js theme in preview windows if any are open (more complex)
+            // For simplicity, new previews will use the current theme.
+        });
+        
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+                themeToggleButton.innerHTML = '<i class="fas fa-sun"></i>';
+                themeToggleButton.title = '테마 변경 (현재 밝은 테마)';
+                // Update highlight.js stylesheet link for previews if needed
+                document.querySelector('link[href*="highlight.js"][href*="atom-one-dark.min.css"]')?.setAttribute('href', 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css');
 
-            if (!fromUndoRedo) {
-                lastKnownState = newState;
+            } else {
+                document.body.classList.remove('light-theme'); // Default to dark
+                themeToggleButton.innerHTML = '<i class="fas fa-moon"></i>';
+                themeToggleButton.title = '테마 변경 (현재 어두운 테마)';
+                document.querySelector('link[href*="highlight.js"][href*="github.min.css"]')?.setAttribute('href', 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css');
             }
-            updateUndoRedoButtons();
         }
         
-        function pushToUndoStack(state) {
-            if (undoStack.length >= MAX_HISTORY_SIZE) undoStack.shift();
-            undoStack.push(state);
+        // --- 탭 시스템 ---
+        function renderTabs() {
+            const tabElements = Array.from(tabContainer.querySelectorAll('.tab'));
+            const newTabButton = tabContainer.querySelector('.new-tab-button');
+            
+            tabElements.forEach(tab => tab.remove()); 
+            
+            tabs.forEach(tab => {
+                const tabElement = document.createElement('div');
+                tabElement.className = `tab${tab.id === activeTabId ? ' active' : ''}`;
+                tabElement.dataset.tabId = tab.id;
+                
+                const tabTitle = document.createElement('span');
+                tabTitle.className = 'tab-title';
+                tabTitle.textContent = tab.modified ? `${tab.title} *` : tab.title;
+                tabTitle.title = tab.path || tab.title; 
+                
+                const closeButton = document.createElement('span');
+                closeButton.className = 'close-tab';
+                closeButton.innerHTML = '<i class="fas fa-times"></i>';
+                closeButton.title = "탭 닫기 (Ctrl+W)";
+                
+                tabElement.appendChild(tabTitle);
+                tabElement.appendChild(closeButton);
+                
+                tabContainer.insertBefore(tabElement, newTabButton);
+            });
+            
+            addTabEventListeners();
         }
-
-        function updateUndoRedoButtons() {
-            undoButton.disabled = undoStack.length === 0;
-            redoButton.disabled = redoStack.length === 0;
+        
+        function addTabEventListeners() {
+            document.querySelectorAll('.tab-container .tab').forEach(tabElement => {
+                tabElement.addEventListener('click', function(e) {
+                    if (!e.target.closest('.close-tab')) {
+                        switchToTab(this.dataset.tabId);
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.tab-container .close-tab').forEach(closeBtn => {
+                closeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); 
+                    const tabId = this.closest('.tab').dataset.tabId;
+                    closeTab(tabId);
+                });
+            });
         }
+        
+        function switchToTab(tabId) {
+            const currentTabObj = tabs.find(t => t.id === activeTabId);
+            if (activeTabId === tabId && currentTabObj && textInput.value === currentTabObj.content) return;
+            
+            if (activeTabId && currentTabObj) {
+                currentTabObj.content = textInput.value;
+                currentTabObj.undoStack = [...editorState.undoStack];
+                currentTabObj.redoStack = [...editorState.redoStack];
+                currentTabObj.cursorPos = { start: textInput.selectionStart, end: textInput.selectionEnd };
+            }
+            
+            activeTabId = tabId;
+            const newActiveTab = tabs.find(tab => tab.id === tabId);
+            
+            if (newActiveTab) {
+                textInput.value = newActiveTab.content;
+                editorState.undoStack = [...(newActiveTab.undoStack || [])];
+                editorState.redoStack = [...(newActiveTab.redoStack || [])];
+                editorState.lastSavedStates[tabId] = newActiveTab.lastSavedContent || newActiveTab.content;
+                
+                if (newActiveTab.cursorPos) {
+                    textInput.selectionStart = newActiveTab.cursorPos.start;
+                    textInput.selectionEnd = newActiveTab.cursorPos.end;
+                } else {
+                     textInput.selectionStart = textInput.selectionEnd = 0;
+                }
+            } else { 
+                textInput.value = "";
+                editorState.undoStack = [];
+                editorState.redoStack = [];
+            }
+            
+            renderTabs();
+            updateLineNumbers();
+            updateStats();
+            updateCursorPosition(); 
+            textInput.focus();
+            setTabModified(activeTabId, textInput.value !== (editorState.lastSavedStates[activeTabId] || ''));
+        }
+        
+        function createNewTab(isInitial = false) {
+            const tabId = `tab-${Date.now()}`;
+            const newTab = {
+                id: tabId,
+                title: '제목 없음',
+                content: '',
+                path: null,
+                modified: false,
+                undoStack: [],
+                redoStack: [],
+                lastSavedContent: '', 
+                cursorPos: {start: 0, end: 0}
+            };
+            tabs.push(newTab);
+            editorState.lastSavedStates[tabId] = ''; // Initialize last saved state
+            
+            if (!isInitial || tabs.length === 1) { 
+                switchToTab(tabId);
+            } else {
+                renderTabs(); 
+            }
+            return tabId;
+        }
+        
+        async function closeTab(tabId) {
+            const tabIndex = tabs.findIndex(tab => tab.id === tabId);
+            if (tabIndex === -1) return;
+            
+            const tabToClose = tabs[tabIndex];
+            
+            if (tabToClose.modified) {
+                const userConfirmed = await showConfirmDialog(
+                    '저장되지 않은 변경 사항',
+                    `"${tabToClose.title}" 문서의 변경 사항이 저장되지 않았습니다. 저장하지 않고 닫으시겠습니까?`
+                );
+                if (!userConfirmed) {
+                    return;
+                }
+            }
+            
+            if (tabs.length === 1) {
+                tabs[0].title = '제목 없음';
+                tabs[0].content = '';
+                tabs[0].path = null;
+                tabs[0].modified = false;
+                tabs[0].undoStack = [];
+                tabs[0].redoStack = [];
+                tabs[0].lastSavedContent = '';
+                tabs[0].cursorPos = {start: 0, end: 0};
+                textInput.value = '';
+                editorState.lastSavedStates[tabs[0].id] = '';
+                editorState.undoStack = []; 
+                editorState.redoStack = [];
+                renderTabs();
+                updateLineNumbers();
+                updateStats();
+                return;
+            }
+            
+            tabs.splice(tabIndex, 1);
+            delete editorState.lastSavedStates[tabId]; 
+            
+            if (activeTabId === tabId) {
+                const newActiveTabIndex = Math.max(0, tabIndex > 0 ? tabIndex - 1 : 0); 
+                activeTabId = null; 
+                if (tabs.length > 0) {
+                    switchToTab(tabs[newActiveTabIndex].id);
+                } else {
+                    // This case should ideally not be reached if last tab is handled above
+                    // but as a fallback, create a new tab.
+                    createNewTab();
+                }
+            } else {
+                renderTabs(); 
+            }
+        }
+        
+        function renameTab(tabId, newTitle) {
+            const tab = tabs.find(t => t.id === tabId);
+            if (tab) {
+                tab.title = newTitle;
+                renderTabs();
+            }
+        }
+        
+        function setTabModified(tabId, isModified) {
+            const tab = tabs.find(t => t.id === tabId);
+            if (tab && tab.modified !== isModified) {
+                tab.modified = isModified;
+                renderTabs();
+                if (isModified && editorState.autoSave) {
+                    startAutoSaveTimer();
+                }
+            }
+        }
+        
+        // --- 자동 저장 ---
+        function startAutoSaveTimer() {
+            if (editorState.autoSaveTimerId) {
+                clearTimeout(editorState.autoSaveTimerId);
+            }
+            if (editorState.autoSave && activeTabId) {
+                const currentTab = tabs.find(tab => tab.id === activeTabId);
+                if (currentTab && currentTab.modified) {
+                    updateAutosaveStatus('saving');
+                    editorState.autoSaveTimerId = setTimeout(() => {
+                        localStorage.setItem(`autosave_${currentTab.id}_content`, currentTab.content);
+                        localStorage.setItem(`autosave_${currentTab.id}_title`, currentTab.title);
+                        localStorage.setItem(`autosave_${currentTab.id}_path`, currentTab.path || '');
 
-        function updateLineNumbersAndStats() {
-            if (!textInput || !lineNumberContainer) return;
+                        showMessage(`"${currentTab.title}" 자동 저장됨 (로컬)`, 'info');
+                        updateAutosaveStatus('saved');
+                        setTimeout(() => updateAutosaveStatus('idle'), 3000);
+                    }, editorState.autoSaveInterval);
+                } else {
+                     updateAutosaveStatus('idle'); 
+                }
+            } else {
+                 updateAutosaveStatus('idle'); 
+            }
+        }
+        
+        function updateAutosaveStatus(status) {
+            const autosaveStatusEl = document.getElementById('autosaveStatus');
+            const autosaveIndicator = document.querySelector('.autosave-indicator');
+            if (!autosaveStatusEl || !autosaveIndicator) return;
+
+            autosaveIndicator.classList.remove('saving', 'saved');
+            
+            if (status === 'saving') {
+                autosaveIndicator.classList.add('saving');
+                autosaveStatusEl.textContent = '저장 중...';
+            } else if (status === 'saved') {
+                autosaveIndicator.classList.add('saved');
+                autosaveStatusEl.textContent = '자동 저장됨';
+            } else { 
+                autosaveStatusEl.textContent = editorState.autoSave ? '자동 저장 활성' : '자동 저장 비활성';
+            }
+        }
+        
+        // --- 편집기 기본 UI 업데이트 ---
+        function updateLineNumbers() {
+            if (!editorState.showLineNumbers) {
+                lineNumberContainer.innerHTML = ''; 
+                return;
+            }
+            const lines = textInput.value.split('\n');
+            const lineCount = lines.length;
+            let lineNumbersHTML = '';
+            for (let i = 1; i <= lineCount; i++) {
+                lineNumbersHTML += `<div>${i}</div>`;
+            }
+            lineNumberContainer.innerHTML = lineNumbersHTML;
+            lineNumberContainer.scrollTop = textInput.scrollTop; 
+        }
+        
+        function updateStats() {
             const text = textInput.value;
-            const lines = text.split('\n');
-            const numberOfLines = lines.length;
+            const charCountWithSpaces = text.length;
+            const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+            const lineCount = text.split('\n').length;
             
-            const fragment = document.createDocumentFragment();
-            for (let i = 1; i <= numberOfLines; i++) {
-                const lineNumberDiv = document.createElement('div');
-                lineNumberDiv.textContent = i;
-                lineNumberDiv.className = 'line-number';
-                fragment.appendChild(lineNumberDiv);
-            }
-            
-            lineNumberContainer.innerHTML = ''; 
-            lineNumberContainer.appendChild(fragment);
-            
-            const textInputHeight = textInput.clientHeight;
-            if (textInputHeight > 0) {
-                 lineNumberContainer.style.height = textInputHeight + 'px';
-            }
-            lineNumberContainer.scrollTop = textInput.scrollTop;
-
-            charCountWithSpacesElem.textContent = text.length;
-            wordCountElem.textContent = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
-            lineCountElem.textContent = numberOfLines;
-            updateCursorPosition();
+            document.getElementById('charCountWithSpaces').textContent = charCountWithSpaces;
+            document.getElementById('wordCount').textContent = wordCount;
+            document.getElementById('lineCount').textContent = lineCount;
+            updateCursorPosition(); 
         }
         
         function updateCursorPosition() {
-            try {
-                const cursorPos = textInput.selectionStart;
-                let lineNum = 1;
-                let colNum = 1;
-                for (let i = 0; i < cursorPos; i++) {
-                    if (textInput.value[i] === '\n') {
-                        lineNum++;
-                        colNum = 1;
-                    } else {
-                        colNum++;
-                    }
-                }
-                cursorPositionElem.textContent = `위치: ${lineNum}:${colNum}`;
-            } catch (e) {
-                cursorPositionElem.textContent = `위치: -:-`;
-            }
+            const textarea = textInput;
+            const text = textarea.value;
+            const cursorIndex = textarea.selectionStart;
+            const textBeforeCursor = text.substring(0, cursorIndex);
+            const currentLineNumber = textBeforeCursor.split('\n').length;
+            const currentColumnNumber = textBeforeCursor.substring(textBeforeCursor.lastIndexOf('\n') + 1).length + 1;
+            
+            editorState.cursorPosition = { line: currentLineNumber, column: currentColumnNumber };
+            document.getElementById('cursorPosition').textContent = `위치: ${currentLineNumber}:${currentColumnNumber}`;
         }
 
+        // --- 메시지 및 확인 대화상자 ---
+        function showMessage(message, type = 'info', duration = 3000) {
+            messageBox.textContent = message;
+            messageBox.className = `message-box ${type}`; 
+            messageBox.classList.add('show');
+            
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, duration);
+        }
 
-        // --- Event Listeners Setup ---
-        function setupEventListeners() {
-            textInput.addEventListener('focus', () => { lastKnownState = textInput.value; updateCursorPosition(); });
-            textInput.addEventListener('input', (event) => {
-                const currentState = textInput.value;
-                 if (currentState !== lastKnownState && !(event.inputType && event.inputType.startsWith('history'))) {
-                    pushToUndoStack(lastKnownState);
-                    redoStack = []; 
-                    lastKnownState = currentState;
-                    updateUndoRedoButtons();
-                }
-                updateLineNumbersAndStats();
+        function showConfirmDialog(title, message) {
+            return new Promise((resolve) => {
+                confirmModalTitle.textContent = title;
+                confirmModalMessage.textContent = message;
+                confirmModal.classList.add('show');
+                confirmModalResolve = resolve; 
             });
-            textInput.addEventListener('click', updateCursorPosition);
-            textInput.addEventListener('keyup', updateCursorPosition);
-
-
-            if (textInput && lineNumberContainer) {
-                textInput.addEventListener('scroll', () => { if (lineNumberContainer) lineNumberContainer.scrollTop = textInput.scrollTop; });
-                textInput.addEventListener('keydown', handleKeyDown);
-                new ResizeObserver(updateLineNumbersAndStats).observe(textInput);
-                window.addEventListener('resize', () => {
-                    updateLineNumbersAndStats();
-                });
-            }
-            
-            // Menu Buttons (File)
-            document.getElementById('loadFileButton').addEventListener('click', () => fileInput.click());
-            document.getElementById('saveTxtButton').addEventListener('click', () => downloadFile('document.txt', textInput.value, 'text/plain;charset=utf-8'));
-            document.getElementById('saveHtmlButton').addEventListener('click', () => downloadFile('document.html', textInput.value, 'text/html;charset=utf-8'));
-            document.getElementById('saveMarkdownButton').addEventListener('click', () => downloadFile('document.md', textInput.value, 'text/markdown;charset=utf-8'));
-            document.getElementById('saveJsonButton').addEventListener('click', () => downloadFile('document.json', textInput.value, 'application/json;charset=utf-8'));
-            document.getElementById('saveXmlButton').addEventListener('click', () => downloadFile('document.xml', textInput.value, 'application/xml;charset=utf-8')); // New
-            
-            // Menu Buttons (Edit)
-            undoButton.addEventListener('click', handleUndo);
-            redoButton.addEventListener('click', handleRedo);
-            findReplaceButton.addEventListener('click', () => { findReplaceModal.classList.add('show'); findInput.focus(); findReplaceMessage.textContent = '';});
-            document.getElementById('clearAllButton').addEventListener('click', handleClearAll);
-
-            // Menu Buttons (View)
-            previewHtmlButton.addEventListener('click', () => showPreview('html'));
-            previewMarkdownButton.addEventListener('click', () => showPreview('markdown'));
-            previewJsonButton.addEventListener('click', () => showPreview('json'));
-            previewXmlButton.addEventListener('click', () => showPreview('xml')); // New
-            toggleWordWrapButton.addEventListener('click', handleToggleWordWrap);
-            
-            // Menu Buttons (Tools)
-            markdownHelperButton.addEventListener('click', () => markdownHelperModal.classList.add('show'));
-            jsonHelperButton.addEventListener('click', () => jsonHelperModal.classList.add('show')); // New
-            
-            // Menu Buttons (AI & Settings)
-            document.getElementById('summarizeButton').addEventListener('click', handleSummarize);
-            document.getElementById('continueButton').addEventListener('click', handleContinue);
-            settingsButton.addEventListener('click', () => settingsModal.classList.add('show'));
-            fullscreenButton.addEventListener('click', toggleFullScreen);
-
-
-            // Modals Close
-            setupModalClose(previewModal, closePreviewModalButton, () => { previewIframe.srcdoc = ''; markdownPreviewArea.innerHTML = ''; jsonPreviewArea.textContent = ''; xmlPreviewArea.textContent = ''; });
-            setupModalClose(settingsModal, closeSettingsModalButton);
-            setupModalClose(document.getElementById('llmOutputModal'), document.getElementById('closeLlmOutputButton'));
-            setupModalClose(markdownHelperModal, closeMarkdownHelperModalButton);
-            setupModalClose(jsonHelperModal, closeJsonHelperModalButton); // New
-            setupModalClose(findReplaceModal, document.getElementById('closeFindReplaceModalButton'));
-
-            // File Input
-            fileInput.addEventListener('change', handleFileLoad);
-            
-            // Settings Modal
-            saveSettingsButton.addEventListener('click', handleSaveSettings);
-
-            // Markdown Helper
-            document.querySelectorAll('.markdown-insert').forEach(button => {
-                button.addEventListener('click', (e) => handleMarkdownInsert(e.currentTarget.dataset.syntax));
-            });
-            // JSON Helper
-            document.querySelectorAll('.json-insert').forEach(button => {
-                button.addEventListener('click', (e) => handleJsonInsert(e.currentTarget.dataset.syntax));
-            });
-
-
-            // Find & Replace Modal
-            document.getElementById('findNextButton').addEventListener('click', handleFindNext);
-            document.getElementById('replaceButton').addEventListener('click', handleReplace);
-            document.getElementById('replaceAllButton').addEventListener('click', handleReplaceAll);
-            document.getElementById('findInput').addEventListener('input', () => { currentSearchStartIndex = 0; lastSearchQuery = ""; findReplaceMessage.textContent = ''; });
-
-
-            // LLM Output
-            document.getElementById('insertLlmOutputButton').addEventListener('click', handleInsertLlmOutput);
-        }
-        
-        function handleKeyDown(e) {
-            if (e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete') {
-                requestAnimationFrame(updateLineNumbersAndStats);
-            } else if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) { // Ensure Tab is not part of a shortcut
-                e.preventDefault();
-                insertTextAtCursor('    ');
-            } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-                e.preventDefault(); handleUndo();
-            } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key === 'Z' && e.shiftKey))) {
-                e.preventDefault(); handleRedo();
-            } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
-                e.preventDefault(); findReplaceButton.click();
-            } else {
-                const pairs = {'(': ')', '{': '}', '[': ']', '"': '"', "'": "'", '`': '`'};
-                if (pairs[e.key]) {
-                    e.preventDefault();
-                    const start = textInput.selectionStart;
-                    const end = textInput.selectionEnd;
-                    const selectedText = textInput.value.substring(start, end);
-                    const textToInsert = e.key + selectedText + pairs[e.key];
-                    insertTextAtCursor(textToInsert, selectedText.length > 0 ? start + textToInsert.length : start + 1);
-                }
-            }
-            updateCursorPosition();
         }
 
-        function insertTextAtCursor(textToInsert, newCursorPosAfterInsertion = null) {
-            const originalState = textInput.value;
-            const start = textInput.selectionStart;
-            
-            document.execCommand('insertText', false, textToInsert);
-            
-            if (textInput.value !== originalState) {
-                pushToUndoStack(originalState);
-                redoStack = [];
-                lastKnownState = textInput.value;
-                updateUndoRedoButtons();
-                updateLineNumbersAndStats();
-            }
-            
-            if (newCursorPosAfterInsertion !== null) {
-                 try { textInput.setSelectionRange(newCursorPosAfterInsertion, newCursorPosAfterInsertion); } catch(e){}
-            }
-            textInput.focus();
-        }
-
-
-        // --- UI Handlers (Undo, Redo, ClearAll, ToggleWordWrap, SaveSettings, Fullscreen) ---
-        // (These functions remain largely the same)
-        function handleUndo() {
-            if (undoStack.length > 0) {
-                const previousState = undoStack.pop();
-                redoStack.push(textInput.value); 
-                updateEditorState(previousState, true, textInput.selectionStart); 
-            }
-        }
-        function handleRedo() {
-            if (redoStack.length > 0) {
-                const nextState = redoStack.pop();
-                pushToUndoStack(textInput.value); 
-                updateEditorState(nextState, true, textInput.selectionStart); 
-            }
-        }
-        function handleClearAll() {
-            if (textInput.value !== "") { pushToUndoStack(textInput.value); redoStack = []; }
-            updateEditorState("");
-            showMessage('모든 내용이 지워졌습니다.', 'info');
-        }
-        function handleToggleWordWrap() {
-            isWordWrapEnabled = !isWordWrapEnabled;
-            textInput.style.whiteSpace = isWordWrapEnabled ? 'pre-wrap' : 'pre';
-            textInput.style.overflowX = isWordWrapEnabled ? 'hidden' : 'auto';
-            const iconClass = isWordWrapEnabled ? 'fa-align-left' : 'fa-align-justify'; 
-            toggleWordWrapButton.innerHTML = `<i class="fas ${iconClass}"></i> 자동 줄 바꿈 ${isWordWrapEnabled ? '끄기' : '켜기'}`;
-            toggleWordWrapButton.classList.toggle('bg-orange-600', isWordWrapEnabled);
-            toggleWordWrapButton.classList.toggle('hover:bg-orange-700', isWordWrapEnabled);
-            toggleWordWrapButton.classList.toggle('bg-teal-600', !isWordWrapEnabled);
-            toggleWordWrapButton.classList.toggle('hover:bg-teal-700', !isWordWrapEnabled);
-            updateLineNumbersAndStats();
-        }
-        function handleSaveSettings() {
-            const newSize = fontSizeInput.value;
-            if (newSize >= 10 && newSize <= 30) {
-                localStorage.setItem(EDITOR_FONT_SIZE_KEY, newSize);
-                applySettings();
-                showMessage('설정이 저장되었습니다.', 'success');
-                settingsModal.classList.remove('show');
-            } else {
-                showMessage('글꼴 크기는 10px에서 30px 사이여야 합니다.', 'error');
-            }
-        }
-        function toggleFullScreen() {
-            mainContainer.classList.toggle('fullscreen');
-            fullscreenButton.innerHTML = mainContainer.classList.contains('fullscreen') ? 
-                `<i class="fas fa-compress"></i> <span class="sm:inline hidden">화면 축소</span>` : 
-                `<i class="fas fa-expand"></i> <span class="sm:inline hidden">전체 화면</span>`;
-            requestAnimationFrame(updateLineNumbersAndStats);
-        }
-        
-        // --- Preview Logic ---
-        function showPreview(type) {
+        // --- 찾기 및 바꾸기 ---
+        function findText(isNext = false) {
+            const searchText = findInput.value;
             const content = textInput.value;
-            const allowEmpty = ['json', 'xml']; // Types that can be previewed even if empty (for validation/structure display)
+            const useRegex = regexCheckbox.checked;
+            const caseSensitive = matchCaseCheckbox.checked;
+            const searchWholeWord = wholeWordCheckbox.checked;
 
-            if (!content.trim() && !allowEmpty.includes(type)) {
-                 showMessage('미리보기할 내용이 없습니다.', 'error'); return;
+            if (!searchText) {
+                findReplaceMessage.textContent = '찾을 내용을 입력하세요.';
+                editorState.findMatches = [];
+                editorState.currentMatchIndex = -1;
+                return;
             }
 
-            previewModalTitle.textContent = `${type.toUpperCase()} 미리보기`;
-            previewIframe.style.display = 'none';
-            markdownPreviewArea.style.display = 'none';
-            jsonPreviewArea.style.display = 'none';
-            xmlPreviewArea.style.display = 'none'; // New
-            jsonPreviewArea.classList.remove('text-red-400');
-            xmlPreviewArea.classList.remove('text-red-400');
+            let regexFlags = 'g'; 
+            if (!caseSensitive) regexFlags += 'i';
 
-
-            if (type === 'html') {
-                previewIframe.style.display = 'block';
-                previewIframe.srcdoc = content;
-            } else if (type === 'markdown') {
-                markdownPreviewArea.style.display = 'block';
-                markdownPreviewArea.innerHTML = marked.parse(content, { breaks: true, gfm: true });
-            } else if (type === 'json') {
-                jsonPreviewArea.style.display = 'block';
-                try {
-                    const parsedJson = JSON.parse(content || "{}"); 
-                    jsonPreviewArea.textContent = JSON.stringify(parsedJson, null, 2);
-                } catch (e) {
-                    jsonPreviewArea.textContent = `잘못된 JSON 형식입니다:\n${e.message}`;
-                    jsonPreviewArea.classList.add('text-red-400');
-                }
-            } else if (type === 'xml') { // New
-                xmlPreviewArea.style.display = 'block';
-                try {
-                    xmlPreviewArea.textContent = formatXml(content);
-                } catch (e) {
-                    xmlPreviewArea.textContent = `XML을 포맷하는 중 오류 발생:\n${e.message}\n\n(참고: 이 미리보기는 간단한 XML 포맷팅만 지원합니다.)`;
-                    xmlPreviewArea.classList.add('text-red-400');
-                }
+            let searchPattern = useRegex ? searchText : escapeRegExp(searchText);
+            if (!useRegex && searchWholeWord) {
+                searchPattern = `\\b${searchPattern}\\b`;
             }
-            previewModal.classList.add('show');
+            
+            try {
+                const regex = new RegExp(searchPattern, regexFlags);
+                let matches = [];
+                let match;
+                while ((match = regex.exec(content)) !== null) {
+                    matches.push({ start: match.index, end: match.index + match[0].length, text: match[0] });
+                }
+                editorState.findMatches = matches;
+
+                if (matches.length === 0) {
+                    findReplaceMessage.textContent = '일치하는 항목이 없습니다.';
+                    editorState.currentMatchIndex = -1;
+                } else {
+                    if (isNext) {
+                        editorState.currentMatchIndex = (editorState.currentMatchIndex + 1) % matches.length;
+                    } else {
+                        editorState.currentMatchIndex = 0; 
+                    }
+                    highlightMatch(editorState.currentMatchIndex);
+                    findReplaceMessage.textContent = `${editorState.currentMatchIndex + 1}/${matches.length} 일치`;
+                }
+            } catch (e) {
+                findReplaceMessage.textContent = '잘못된 정규식입니다.';
+                showMessage('정규식 오류: ' + e.message, 'error');
+                editorState.findMatches = [];
+                editorState.currentMatchIndex = -1;
+            }
+        }
+
+        function highlightMatch(index) {
+            if (index >= 0 && index < editorState.findMatches.length) {
+                const match = editorState.findMatches[index];
+                textInput.focus();
+                textInput.selectionStart = match.start;
+                textInput.selectionEnd = match.end;
+                ensureSelectionVisible();
+            }
         }
         
-        // --- Helper Insert Logic (Markdown, JSON) ---
-        function handleMarkdownInsert(syntax) {
-            const start = textInput.selectionStart;
-            const end = textInput.selectionEnd;
-            const selectedText = textInput.value.substring(start, end);
-            let textToInsert = "";
-            let cursorPosOffset = 0; 
-
-            switch (syntax) {
-                case 'bold': textToInsert = `**${selectedText || '굵은 텍스트'}**`; cursorPosOffset = selectedText ? textToInsert.length : 2; break;
-                case 'italic': textToInsert = `*${selectedText || '기울인 텍스트'}*`; cursorPosOffset = selectedText ? textToInsert.length : 1; break;
-                case 'heading1': textToInsert = `# ${selectedText || '제목 1'}\n`; cursorPosOffset = selectedText ? textToInsert.length : 2; break;
-                case 'heading2': textToInsert = `## ${selectedText || '제목 2'}\n`; cursorPosOffset = selectedText ? textToInsert.length : 3; break;
-                case 'link': 
-                    const url = prompt("링크 URL을 입력하세요:", "https://");
-                    if (url === null) return; 
-                    textToInsert = `[${selectedText || '링크 텍스트'}](${url || 'https://example.com'})`; 
-                    cursorPosOffset = selectedText ? textToInsert.indexOf(']') + 2 : (url ? textToInsert.indexOf('(') + 1 : 1);
-                    break;
-                case 'image':
-                    const imgUrl = prompt("이미지 URL을 입력하세요:", "https://");
-                    if (imgUrl === null) return;
-                    textToInsert = `![${selectedText || '이미지 설명'}](${imgUrl || 'https://via.placeholder.com/150'})`; 
-                    cursorPosOffset = selectedText ? textToInsert.indexOf(']') + 2 : (imgUrl ? textToInsert.indexOf('(') + 1 : 2);
-                    break;
-                case 'ul': textToInsert = (start === 0 || textInput.value[start-1] === '\n' ? "" : "\n") + `- ${selectedText || '항목'}\n`; cursorPosOffset = selectedText ? textToInsert.length : (textToInsert.startsWith('\n')?3:2) ; break;
-                case 'ol': textToInsert = (start === 0 || textInput.value[start-1] === '\n' ? "" : "\n") + `1. ${selectedText || '항목'}\n`; cursorPosOffset = selectedText ? textToInsert.length : (textToInsert.startsWith('\n')?4:3); break;
-                case 'blockquote': textToInsert = (start === 0 || textInput.value[start-1] === '\n' ? "" : "\n") + `> ${selectedText || '인용문'}\n`; cursorPosOffset = selectedText ? textToInsert.length : (textToInsert.startsWith('\n')?3:2); break;
-                case 'codeblock': textToInsert = (start === 0 || textInput.value[start-1] === '\n' ? "" : "\n") + "```\n" + (selectedText || '코드 내용') + "\n```\n"; cursorPosOffset = selectedText ? textToInsert.indexOf('\n') + 1 : (textToInsert.startsWith('\n')?5:4); break;
-                case 'inlinecode': textToInsert = `\`${selectedText || '인라인 코드'}\``; cursorPosOffset = selectedText ? textToInsert.length : 1; break;
-                case 'hr': textToInsert = (start === 0 || textInput.value[start-1] === '\n' ? "" : "\n") + "---\n"; cursorPosOffset = textToInsert.length; break;
+        function findNext() {
+            if (editorState.findMatches.length === 0 || findInput.value !== editorState.lastSearchTerm) {
+                 editorState.lastSearchTerm = findInput.value;
+                findText(false); 
+            } else {
+                editorState.currentMatchIndex = (editorState.currentMatchIndex + 1) % editorState.findMatches.length;
+                highlightMatch(editorState.currentMatchIndex);
+                findReplaceMessage.textContent = `${editorState.currentMatchIndex + 1}/${editorState.findMatches.length} 일치`;
             }
-            insertTextAtCursor(textToInsert, start + cursorPosOffset);
-            markdownHelperModal.classList.remove('show');
-        }
-        function handleJsonInsert(syntax) {
-            const start = textInput.selectionStart;
-            const end = textInput.selectionEnd;
-            const selectedText = textInput.value.substring(start, end).trim();
-            let textToInsert = "";
-            let cursorPosAfter = 0;
-            const indent = "  "; // For basic indentation
-
-            switch(syntax) {
-                case 'object': textToInsert = `{\n${indent}\n}`; cursorPosAfter = start + 3; break;
-                case 'array': textToInsert = `[\n${indent}\n]`; cursorPosAfter = start + 3; break;
-                case 'keypair': 
-                    textToInsert = `"${selectedText || 'key'}": "value"`; 
-                    cursorPosAfter = start + (selectedText ? selectedText.length + 4 : 6); // after "key": "
-                    break;
-                case 'string': textToInsert = `"${selectedText || 'text'}"`; cursorPosAfter = start + (selectedText ? selectedText.length + 1 : 1); break;
-                case 'number': textToInsert = selectedText && !isNaN(parseFloat(selectedText)) ? selectedText : '0'; cursorPosAfter = start + textToInsert.length; break;
-                case 'booleanTrue': textToInsert = 'true'; cursorPosAfter = start + 4; break;
-                case 'booleanFalse': textToInsert = 'false'; cursorPosAfter = start + 5; break;
-                case 'null': textToInsert = 'null'; cursorPosAfter = start + 4; break;
-            }
-            insertTextAtCursor(textToInsert, cursorPosAfter);
-            jsonHelperModal.classList.remove('show');
         }
 
+        function replaceCurrent() {
+            if (editorState.currentMatchIndex === -1 || editorState.findMatches.length === 0) {
+                findNext(); 
+                if (editorState.currentMatchIndex === -1) return; 
+            }
 
-        // --- File Handling ---
+            const match = editorState.findMatches[editorState.currentMatchIndex];
+            const replacementText = replaceInput.value;
+            
+            saveToUndoStack(); 
+            textInput.setRangeText(replacementText, match.start, match.end, 'end');
+            setTabModified(activeTabId, true);
+            
+            const oldSearchTerm = findInput.value;
+            findText(false); 
+            if (findInput.value !== oldSearchTerm) findInput.value = oldSearchTerm;
+
+            showMessage('1개 항목을 바꿨습니다.', 'info');
+        }
+
+        function replaceAllFound() {
+            const searchText = findInput.value;
+            const replacementText = replaceInput.value;
+            if (!searchText) {
+                findReplaceMessage.textContent = '찾을 내용을 입력하세요.';
+                return;
+            }
+
+            if (editorState.findMatches.length === 0 || searchText !== editorState.lastSearchTerm) {
+                findText(false); 
+                if (editorState.findMatches.length === 0) {
+                     findReplaceMessage.textContent = '바꿀 항목이 없습니다.';
+                    return; 
+                }
+            }
+            
+            saveToUndoStack(); 
+            
+            let content = textInput.value;
+            let replacedCount = 0;
+
+            // Build the new content by iterating through matches backwards
+            // This avoids index issues if replacementText has a different length than matched text
+            let newContentParts = [];
+            let lastIndex = content.length;
+
+            for (let i = editorState.findMatches.length - 1; i >= 0; i--) {
+                const match = editorState.findMatches[i];
+                newContentParts.unshift(content.substring(match.end, lastIndex));
+                newContentParts.unshift(replacementText);
+                lastIndex = match.start;
+                replacedCount++;
+            }
+            newContentParts.unshift(content.substring(0, lastIndex));
+            
+            textInput.value = newContentParts.join('');
+            setTabModified(activeTabId, true);
+            updateLineNumbers();
+            updateStats();
+            
+            findReplaceMessage.textContent = `${replacedCount}개 항목을 모두 바꿨습니다.`;
+            editorState.findMatches = []; 
+            editorState.currentMatchIndex = -1;
+            showMessage(`${replacedCount}개 항목을 모두 바꿨습니다.`, 'success');
+        }
+        
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); 
+        }
+        
+        function ensureSelectionVisible() {
+            const textarea = textInput;
+            const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 20; 
+            const selectionStartLine = textarea.value.substring(0, textarea.selectionStart).split('\n').length;
+            const desiredScrollTop = (selectionStartLine - 1) * lineHeight;
+
+            if (desiredScrollTop < textarea.scrollTop || 
+                desiredScrollTop > textarea.scrollTop + textarea.clientHeight - lineHeight) {
+                textarea.scrollTop = Math.max(0, desiredScrollTop - textarea.clientHeight / 2 + lineHeight);
+            }
+        }
+        
+        // --- 실행 취소/다시 실행 ---
+        function saveToUndoStack() {
+            const currentTab = tabs.find(tab => tab.id === activeTabId);
+            if (!currentTab) return;
+
+            if (currentTab.undoStack.length > 0 && currentTab.undoStack[currentTab.undoStack.length - 1] === textInput.value) {
+                return;
+            }
+
+            currentTab.undoStack.push(textInput.value);
+            currentTab.redoStack = []; 
+            
+            if (currentTab.undoStack.length > 100) {
+                currentTab.undoStack.shift();
+            }
+            editorState.undoStack = [...currentTab.undoStack];
+            editorState.redoStack = [...currentTab.redoStack];
+        }
+        
+        function undo() {
+            const currentTab = tabs.find(tab => tab.id === activeTabId);
+            if (!currentTab || currentTab.undoStack.length === 0) return;
+            
+            currentTab.redoStack.push(textInput.value); 
+            textInput.value = currentTab.undoStack.pop(); 
+            
+            setTabModified(activeTabId, textInput.value !== (editorState.lastSavedStates[activeTabId] || ''));
+            updateLineNumbers();
+            updateStats();
+            updateCursorPosition();
+
+            editorState.undoStack = [...currentTab.undoStack];
+            editorState.redoStack = [...currentTab.redoStack];
+        }
+        
+        function redo() {
+            const currentTab = tabs.find(tab => tab.id === activeTabId);
+            if (!currentTab || currentTab.redoStack.length === 0) return;
+            
+            currentTab.undoStack.push(textInput.value); 
+            textInput.value = currentTab.redoStack.pop(); 
+            
+            setTabModified(activeTabId, textInput.value !== (editorState.lastSavedStates[activeTabId] || ''));
+            updateLineNumbers();
+            updateStats();
+            updateCursorPosition();
+
+            editorState.undoStack = [...currentTab.undoStack];
+            editorState.redoStack = [...currentTab.redoStack];
+        }
+        
+        // --- 파일 작업 ---
+        function loadFile() {
+            fileInput.click(); 
+        }
+        
         function handleFileLoad(event) {
             const file = event.target.files[0];
             if (!file) return;
+            
             const reader = new FileReader();
-            reader.onload = (e) => {
-                const newContent = e.target.result;
-                if (textInput.value !== "") pushToUndoStack(textInput.value); 
-                redoStack = [];
-                updateEditorState(newContent, false, 0);
-                showMessage(`'${file.name}' 파일을 성공적으로 불러왔습니다.`);
-                textInput.scrollTop = 0;
-                if(lineNumberContainer) lineNumberContainer.scrollTop = 0;
-                event.target.value = null;
+            reader.onload = function(e) {
+                let targetTabId = activeTabId;
+                const currentTab = tabs.find(tab => tab.id === activeTabId);
+
+                if (currentTab && (currentTab.content.trim() !== '' || currentTab.modified)) {
+                    targetTabId = createNewTab(); 
+                }
+                
+                const loadedTab = tabs.find(tab => tab.id === targetTabId);
+                if (loadedTab) {
+                    loadedTab.title = file.name;
+                    loadedTab.content = e.target.result;
+                    loadedTab.path = file.name; 
+                    loadedTab.modified = false;
+                    loadedTab.lastSavedContent = e.target.result;
+                    loadedTab.undoStack = [];
+                    loadedTab.redoStack = [];
+                    
+                    editorState.lastSavedStates[targetTabId] = e.target.result;
+                    
+                    if (activeTabId === targetTabId) { 
+                        textInput.value = loadedTab.content;
+                        editorState.undoStack = [];
+                        editorState.redoStack = [];
+                        updateLineNumbers();
+                        updateStats();
+                    } else { 
+                        switchToTab(targetTabId); 
+                    }
+                    renderTabs(); 
+                    showMessage(`파일 "${file.name}" 로드 완료.`, 'success');
+                }
             };
-            reader.onerror = () => showMessage('파일을 읽는 중 오류가 발생했습니다.', 'error');
-            if (file.type === 'text/plain' || file.type === 'text/html' || file.type === 'text/markdown' || file.type === 'application/json' || file.type === 'application/xml' || file.name.endsWith('.txt') || file.name.endsWith('.html') || file.name.endsWith('.md') || file.name.endsWith('.json') || file.name.endsWith('.xml')) {
-                reader.readAsText(file, 'UTF-8');
-            } else {
-                showMessage('지원하지 않는 파일 형식입니다 (.txt, .html, .md, .json, .xml만 가능).', 'error');
-            }
+            reader.onerror = function() {
+                showMessage('파일 읽기 오류.', 'error');
+            };
+            reader.readAsText(file);
+            fileInput.value = ''; 
         }
-        function downloadFile(filename, content, mimeType) {
-            if (!content.trim() && mimeType !== 'application/json' && mimeType !== 'application/xml') { showMessage('저장할 내용이 없습니다.', 'error'); return; }
-            const userFilename = prompt("파일 이름을 입력하세요 (확장자 포함):", filename);
-            if (!userFilename) { showMessage('파일 저장이 취소되었습니다.', 'info'); return; }
+        
+        function saveFile(format) {
+            const currentTab = tabs.find(tab => tab.id === activeTabId);
+            if (!currentTab) return;
+
+            const text = currentTab.content; 
             
-            const element = document.createElement('a');
-            const blob = new Blob([content], { type: mimeType });
-            element.href = URL.createObjectURL(blob);
-            element.download = userFilename.trim();
-            document.body.appendChild(element);
-            element.click();
-            document.body.removeChild(element);
-            URL.revokeObjectURL(element.href);
-            showMessage(`'${userFilename.trim()}' 파일이 성공적으로 저장되었습니다!`);
-        }
-
-        // --- Find and Replace Logic (handleFindNext, handleReplace, handleReplaceAll) ---
-        // (These functions remain largely the same)
-        function handleFindNext() {
-            const query = document.getElementById('findInput').value;
-            const content = textInput.value;
-            if (!query) { findReplaceMessage.textContent = "찾을 내용을 입력하세요."; return; }
-
-            const caseSensitive = document.getElementById('matchCaseCheckbox').checked;
+            if (text.trim() === '' && !currentTab.path) { 
+                showMessage('저장할 내용이 없습니다.', 'info');
+                return;
+            }
             
-            let tempContent = caseSensitive ? content : content.toLowerCase();
-            let tempQuery = caseSensitive ? query : query.toLowerCase();
+            let defaultFilename = currentTab.path || currentTab.title.replace(/\s*\*\s*$/, '') || '제목 없음';
+            const baseNameMatch = defaultFilename.match(/^(.*?)(?:\.[^.]*)?$/); // Get name without extension
+            const baseName = baseNameMatch ? baseNameMatch[1] : defaultFilename;
+            let filename = `${baseName}.${format}`;
 
-            if (lastSearchQuery !== query || (matchCaseCheckbox.checked && flags.includes('i')) || (!matchCaseCheckbox.checked && !flags.includes('i'))) {
-                currentSearchStartIndex = 0;
+
+            let blob;
+            let mimeType;
+            
+            switch (format) {
+                case 'txt': mimeType = 'text/plain'; break;
+                case 'html': mimeType = 'text/html'; break;
+                case 'md': mimeType = 'text/markdown'; break;
+                case 'js': mimeType = 'text/javascript'; break;
+                case 'css': mimeType = 'text/css'; break;
+                case 'json':
+                    try { JSON.parse(text); mimeType = 'application/json'; } 
+                    catch (e) { showMessage('유효한 JSON이 아닙니다. 저장 실패.', 'error'); return; }
+                    break;
+                case 'xml': mimeType = 'application/xml'; break; 
+                case 'csv': mimeType = 'text/csv'; break;
+                default: mimeType = 'text/plain'; filename = `${baseName}.txt`;
             }
-            lastSearchQuery = query; 
+            blob = new Blob([text], { type: mimeType });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+            
+            currentTab.path = filename; 
+            currentTab.lastSavedContent = text;
+            editorState.lastSavedStates[activeTabId] = text;
+            setTabModified(activeTabId, false); 
+            renameTab(activeTabId, filename.split('/').pop().split('\\').pop()); 
+            
+            showMessage(`${format.toUpperCase()} 파일로 저장되었습니다: ${filename}`, 'success');
+        }
+        
+        // --- 미리보기 ---
+        function openPreviewWindow(content, type) {
+            const previewWindow = window.open('', `_blank_preview_${type}`, 'width=800,height=600,resizable=yes,scrollbars=yes');
+            if (!previewWindow) {
+                showMessage('팝업이 차단되었을 수 있습니다. 확인해주세요.', 'error');
+                return;
+            }
+            
+            let previewHtmlContent = '';
+            const currentThemeIsLight = document.body.classList.contains('light-theme');
+            
+            // Determine correct highlight.js stylesheet based on current theme
+            const highlightStylesheetLink = document.querySelector('link[href*="highlight.js"][rel="stylesheet"]');
+            const highlightStyle = highlightStylesheetLink ? highlightStylesheetLink.href : 
+                (currentThemeIsLight ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css' 
+                                    : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css');
 
-            const matchIndex = tempContent.indexOf(tempQuery, currentSearchStartIndex);
+            const bodyBg = currentThemeIsLight ? '#ffffff' : '#1f2937';
+            const textColor = currentThemeIsLight ? '#111827' : '#d1d5db';
+            const tableBorder = currentThemeIsLight ? '#d1d5db' : '#4b5563';
+            const thBg = currentThemeIsLight ? '#f3f4f6' : '#374151';
+            const evenRowBg = currentThemeIsLight ? '#f9fafb' : '#283140';
 
-            if (matchIndex !== -1) {
-                textInput.focus();
-                textInput.setSelectionRange(matchIndex, matchIndex + query.length);
-                const lines = content.substring(0, matchIndex).split('\n').length;
-                const avgLineHeight = textInput.scrollHeight / textInput.value.split('\n').length;
-                textInput.scrollTop = Math.max(0, (lines * avgLineHeight) - (textInput.clientHeight / 3) );
 
-                currentSearchStartIndex = matchIndex + 1; 
-                findReplaceMessage.textContent = `'${content.substring(matchIndex, matchIndex + query.length)}'을(를) 찾았습니다.`;
-            } else {
-                currentSearchStartIndex = 0; 
-                findReplaceMessage.textContent = "더 이상 일치하는 항목이 없습니다.";
-                showMessage("더 이상 일치하는 항목이 없습니다.", "info");
+            try {
+                switch (type) {
+                    case 'html':
+                        previewHtmlContent = DOMPurify.sanitize(content, {ADD_TAGS: ["iframe"], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling']});
+                        break;
+                    case 'markdown':
+                        previewHtmlContent = DOMPurify.sanitize(marked.parse(content)); // marked.parse will use hljs via setOptions
+                        break;
+                    case 'json':
+                        const jsonObj = JSON.parse(content); 
+                        previewHtmlContent = `<pre><code class="language-json hljs">${hljs.highlight(JSON.stringify(jsonObj, null, editorState.tabSize), { language: 'json', ignoreIllegals: true }).value}</code></pre>`;
+                        break;
+                    case 'xml':
+                        const parser = new DOMParser();
+                        const xmlDoc = parser.parseFromString(content, "application/xml");
+                        if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+                            throw new Error("잘못된 XML 형식입니다.");
+                        }
+                        previewHtmlContent = `<pre><code class="language-xml hljs">${hljs.highlight(content, { language: 'xml', ignoreIllegals: true }).value}</code></pre>`;
+                        break;
+                    case 'js':
+                         previewHtmlContent = `<pre><code class="language-javascript hljs">${hljs.highlight(content, { language: 'javascript', ignoreIllegals: true }).value}</code></pre>`;
+                        break;
+                    case 'css':
+                         previewHtmlContent = `<pre><code class="language-css hljs">${hljs.highlight(content, { language: 'css', ignoreIllegals: true }).value}</code></pre>`;
+                        break;
+                    case 'csv':
+                        previewHtmlContent = convertCsvToHtmlTable(content);
+                        break;
+                    default: previewHtmlContent = "알 수 없는 미리보기 타입입니다.";
+                }
+            } catch (e) {
+                 previewHtmlContent = `<div style="color: red; padding: 10px; background-color: rgba(255,0,0,0.1); border-radius: 6px;"><strong>오류:</strong> ${e.message}</div><pre>${content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>`;
+            }
+
+            const finalHtml = `
+            <!DOCTYPE html><html lang="ko">
+            <head><meta charset="UTF-8"><title>${type.toUpperCase()} 미리보기</title>
+            <link rel="stylesheet" href="${highlightStyle}">
+            <style>
+                body { margin: 0; padding: 20px; font-family: 'Inter', sans-serif; line-height: 1.6; background-color: ${bodyBg}; color: ${textColor}; }
+                pre { white-space: pre-wrap; word-wrap: break-word; }
+                table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+                th, td { border: 1px solid ${tableBorder}; padding: 8px 12px; text-align: left; }
+                th { background-color: ${thBg}; font-weight: bold; }
+                tr:nth-child(even) { background-color: ${evenRowBg}; }
+                code.hljs { padding: 1em; border-radius: 5px; }
+            </style>
+            </head><body>${previewHtmlContent}</body></html>`;
+            
+            previewWindow.document.open();
+            previewWindow.document.write(finalHtml);
+            previewWindow.document.close();
+        }
+
+        function convertCsvToHtmlTable(csvText) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length === 0) return '<p>CSV 데이터가 비어있습니다.</p>';
+            
+            let table = '<table border="1">';
+            const headers = parseCSVLine(lines[0]);
+            table += '<thead><tr>';
+            headers.forEach(header => table += `<th>${DOMPurify.sanitize(header)}</th>`);
+            table += '</tr></thead>';
+            
+            table += '<tbody>';
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === "") continue; // Skip empty lines
+                const cells = parseCSVLine(lines[i]);
+                table += '<tr>';
+                cells.forEach(cell => table += `<td>${DOMPurify.sanitize(cell)}</td>`);
+                table += '</tr>';
+            }
+            table += '</tbody></table>';
+            return table;
+        }
+
+        function parseCSVLine(line) {
+            const cells = [];
+            let currentCell = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    if (inQuotes && i + 1 < line.length && line[i+1] === '"') { 
+                        currentCell += '"';
+                        i++; 
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    cells.push(currentCell);
+                    currentCell = '';
+                } else {
+                    currentCell += char;
+                }
+            }
+            cells.push(currentCell); 
+            return cells;
+        }
+        
+        // --- 포맷팅 ---
+        function formatJson() {
+            try {
+                const jsonObj = JSON.parse(textInput.value);
+                saveToUndoStack();
+                textInput.value = JSON.stringify(jsonObj, null, editorState.tabSize);
+                setTabModified(activeTabId, true);
+                updateLineNumbers();
+                showMessage('JSON 포맷팅 완료.', 'success');
+            } catch (e) {
+                showMessage('JSON 파싱 오류: ' + e.message, 'error');
             }
         }
 
-        function handleReplace() {
-            const query = document.getElementById('findInput').value;
-            const replacement = document.getElementById('replaceInput').value;
-            if (!query) { findReplaceMessage.textContent = "찾을 내용을 입력하세요."; return; }
+        function formatXmlString(xml) { // Basic XML Formatter - Improved slightly
+            let formatted = '';
+            let indentLevel = 0;
+            const tab = ' '.repeat(editorState.tabSize);
+            let inClosingTag = false;
+        
+            // Split by tags, keeping delimiters
+            const nodes = xml.match(/<[^>]+>|[^<]+/g);
+            if (!nodes) return xml; // Not XML or empty
+        
+            nodes.forEach(node => {
+                if (node.match(/^<\//)) { // Closing tag
+                    indentLevel = Math.max(0, indentLevel - 1);
+                    formatted += tab.repeat(indentLevel) + node.trim() + '\n';
+                } else if (node.match(/^<[^!?]/) && !node.match(/\/>$/)) { // Opening tag (not PI, comment, or self-closing)
+                    formatted += tab.repeat(indentLevel) + node.trim() + '\n';
+                    indentLevel++;
+                } else if (node.match(/\/>$/) || node.match(/^<!/) || node.match(/^\?</)) { // Self-closing, comment, or PI
+                    formatted += tab.repeat(indentLevel) + node.trim() + '\n';
+                } else { // Text content
+                    formatted += tab.repeat(indentLevel) + node.trim() + '\n';
+                }
+            });
+            return formatted.trim();
+        }
 
+        function formatXml() { 
+            try {
+                const formattedXml = formatXmlString(textInput.value);
+                saveToUndoStack();
+                textInput.value = formattedXml;
+                setTabModified(activeTabId, true);
+                updateLineNumbers();
+                showMessage('XML 포맷팅 시도 (기본).', 'info');
+            } catch (e) {
+                showMessage('XML 포맷팅 오류: ' + e.message, 'error');
+            }
+        }
+
+         function formatCsvToTable() {
+            try {
+                openPreviewWindow(textInput.value, 'csv'); 
+                showMessage('CSV를 HTML 테이블로 변환하여 미리보기에 표시합니다.', 'info');
+            } catch (e) {
+                showMessage('CSV 변환 오류: ' + e.message, 'error');
+            }
+        }
+
+
+        // --- 상세 통계 ---
+        function showDetailedStats() {
+            const text = textInput.value;
+            const statsModal = document.getElementById('statsModal');
+            
+            const charsWithSpaces = text.length;
+            const charsWithoutSpaces = text.replace(/\s/g, '').length;
+            const wordsArray = text.trim() === '' ? [] : text.trim().match(/\S+/g) || [];
+            const wordCount = wordsArray.length;
+            const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+            const sentenceCount = sentences.length;
+            const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+            const paragraphCount = paragraphs.length;
+            const lineCount = text.split('\n').length;
+            
+            const avgWordLength = wordCount > 0 ? (charsWithoutSpaces / wordCount).toFixed(1) : 0;
+            const avgSentenceLength = sentenceCount > 0 ? (wordCount / sentenceCount).toFixed(1) : 0;
+            const readingTime = Math.max(1, Math.ceil(wordCount / 200)); 
+            
+            const wordFrequency = {};
+            wordsArray.forEach(word => {
+                const cleanWord = word.toLowerCase().replace(/^[^\w]+|[^\w]+$/g, ""); 
+                if (cleanWord.length > 2) { 
+                    wordFrequency[cleanWord] = (wordFrequency[cleanWord] || 0) + 1;
+                }
+            });
+            const sortedWords = Object.entries(wordFrequency).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            
+            document.getElementById('statsCharsWithSpaces').textContent = charsWithSpaces;
+            document.getElementById('statsCharsWithoutSpaces').textContent = charsWithoutSpaces;
+            document.getElementById('statsWords').textContent = wordCount;
+            document.getElementById('statsSentences').textContent = sentenceCount;
+            document.getElementById('statsParagraphs').textContent = paragraphCount;
+            document.getElementById('statsLines').textContent = lineCount;
+            document.getElementById('statsAvgWordLength').textContent = avgWordLength;
+            document.getElementById('statsAvgSentenceLength').textContent = avgSentenceLength;
+            document.getElementById('statsReadingTime').textContent = readingTime;
+            
+            let freqHtml = sortedWords.length > 0 ? '<ul class="list-disc pl-5">' : '<p>분석할 단어가 충분하지 않습니다.</p>';
+            sortedWords.forEach(([word, count]) => freqHtml += `<li>${word}: ${count}회</li>`);
+            if (sortedWords.length > 0) freqHtml += '</ul>';
+            document.getElementById('statsWordFrequency').innerHTML = freqHtml;
+            
+            statsModal.classList.add('show');
+        }
+
+        // --- 드래그 앤 드롭 ---
+        function setupDragAndDrop() {
+            const dropTarget = mainContainer; 
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropTarget.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false); 
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            dropTarget.addEventListener('dragenter', () => mainContainer.classList.add('drag-over'), false);
+            dropTarget.addEventListener('dragover', () => mainContainer.classList.add('drag-over'), false); 
+            dropTarget.addEventListener('dragleave', (e) => {
+                if (e.target === mainContainer || !mainContainer.contains(e.relatedTarget)) {
+                    mainContainer.classList.remove('drag-over');
+                }
+            }, false);
+            dropTarget.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                mainContainer.classList.remove('drag-over');
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    const mockEvent = { target: { files: [files[0]] } };
+                    handleFileLoad(mockEvent);
+                    showMessage(`파일 "${files[0].name}"을(를) 드롭하여 로드했습니다.`, 'success');
+                }
+            }
+        }
+        
+        // --- AI 기능 (시뮬레이션) ---
+        function showAiModal(title, operation) {
+            const llmOutputModal = document.getElementById('llmOutputModal');
+            const llmOutputTitle = document.getElementById('llmOutputTitle');
+            const llmOutputContent = document.getElementById('llmOutputContent');
+            const llmLoadingContainer = document.getElementById('llmLoadingContainer');
+            const insertLlmOutputButton = document.getElementById('insertLlmOutputButton');
+
+            llmOutputTitle.textContent = title;
+            llmOutputContent.textContent = '';
+            llmOutputContent.style.display = 'none';
+            llmLoadingContainer.style.display = 'flex';
+            insertLlmOutputButton.disabled = true;
+            llmOutputModal.classList.add('show');
+
+            const selection = textInput.value.substring(textInput.selectionStart, textInput.selectionEnd);
+            const fullText = textInput.value;
+            let inputText = selection.trim() !== '' ? selection : fullText;
+
+            if (inputText.trim() === '') {
+                llmLoadingContainer.style.display = 'none';
+                llmOutputContent.style.display = 'block';
+                llmOutputContent.textContent = 'AI 작업을 위한 텍스트가 없습니다. 내용을 입력하거나 선택해주세요.';
+                return;
+            }
+            
+            setTimeout(() => { 
+                llmLoadingContainer.style.display = 'none';
+                llmOutputContent.style.display = 'block';
+                let resultText = '';
+                switch (operation) {
+                    case 'summarize': resultText = simulateSummarize(inputText); break;
+                    case 'continue': resultText = simulateContinue(inputText); break;
+                    case 'grammar': resultText = simulateGrammarCheck(inputText); break;
+                    case 'translate':
+                        const lang = document.getElementById('targetLanguageSelect').value;
+                        resultText = simulateTranslate(inputText, lang);
+                        break;
+                    case 'style':
+                        const style = document.getElementById('styleTypeSelect').value;
+                        resultText = simulateStyleChange(inputText, style);
+                        break;
+                    default: resultText = '알 수 없는 AI 작업입니다.';
+                }
+                llmOutputContent.textContent = resultText;
+                insertLlmOutputButton.disabled = false;
+            }, 1500);
+        }
+        
+        function simulateSummarize(text) { return `[요약 결과]\n${text.substring(0, Math.min(text.length, 100))}... (시뮬레이션)`; }
+        function simulateContinue(text) { return `${text}\n\n[이어쓰기 결과]\n그리고 이야기는 계속되었습니다... (시뮬레이션)`; }
+        function simulateGrammarCheck(text) { return `[문법 검사 결과]\n수정된 텍스트: ${text.replace(/잘못된부분/g, '고쳐진부분')} (시뮬레이션)`; }
+        function simulateTranslate(text, lang) { return `[${lang} 번역 결과]\nTranslated: ${text} (시뮬레이션)`; }
+        function simulateStyleChange(text, style) { return `[${style} 스타일 변환 결과]\nStylized: ${text} (시뮬레이션)`; }
+
+        // --- 단축키 ---
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                const isModalOpen = document.querySelector('.modal-overlay.show');
+                if (isModalOpen && e.key !== 'Escape') { 
+                    if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                    } else {
+                    }
+                    return;
+                }
+
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveFile(tabs.find(t => t.id === activeTabId)?.path?.split('.').pop() || 'txt');
+                } else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                    e.preventDefault(); undo();
+                } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+                    e.preventDefault(); redo();
+                } else if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault();
+                    findReplaceModal.classList.add('show');
+                    findInput.focus();
+                } else if ((e.ctrlKey || e.metaKey) && (e.key === 'n' || e.key === 't')) {
+                    e.preventDefault(); createNewTab();
+                } else if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
+                    e.preventDefault(); closeTab(activeTabId);
+                } else if (e.key === 'F11') {
+                    e.preventDefault(); toggleFullscreen();
+                } else if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+                    e.preventDefault(); openSettings();
+                } else if (e.key === 'Escape') { 
+                    const openModal = document.querySelector('.modal-overlay.show');
+                    if (openModal) {
+                        openModal.classList.remove('show');
+                    }
+                }
+
+                if (document.activeElement === textInput) {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const start = textInput.selectionStart;
+                        const end = textInput.selectionEnd;
+                        const tabChars = ' '.repeat(editorState.tabSize);
+                        saveToUndoStack();
+                        if (start !== end) { 
+                            let lines = textInput.value.substring(start, end).split('\n');
+                            let newSelection = lines.map(line => e.shiftKey ? 
+                                (line.startsWith(tabChars) ? line.substring(tabChars.length) : (line.startsWith('\t') ? line.substring(1) : line))
+                                : tabChars + line).join('\n');
+                            textInput.setRangeText(newSelection, start, end, 'select');
+                        } else { 
+                            if (e.shiftKey) {
+                                const textBeforeCursor = textInput.value.substring(0, start);
+                                const currentLineStart = textBeforeCursor.lastIndexOf('\n') + 1;
+                                if (textInput.value.substring(currentLineStart, start).startsWith(tabChars)) {
+                                    textInput.setRangeText('', start - tabChars.length, start, 'end');
+                                } else if (textInput.value.substring(currentLineStart, start).startsWith('\t')) {
+                                     textInput.setRangeText('', start - 1, start, 'end');
+                                }
+                            } else {
+                                textInput.setRangeText(tabChars, start, end, 'end');
+                            }
+                        }
+                        setTabModified(activeTabId, true);
+                        updateCursorPosition(); 
+                    }
+                }
+            });
+        }
+        
+        // --- 이벤트 리스너 설정 ---
+        function setupEventListeners() {
+            textInput.addEventListener('input', () => {
+                saveToUndoStack(); 
+                updateLineNumbers();
+                updateStats();
+                const currentTab = tabs.find(tab => tab.id === activeTabId);
+                if (currentTab) {
+                    setTabModified(activeTabId, textInput.value !== (editorState.lastSavedStates[activeTabId] || currentTab.lastSavedContent || ''));
+                    currentTab.content = textInput.value; 
+                    if (currentTab.modified && editorState.autoSave) startAutoSaveTimer();
+                }
+            });
+            textInput.addEventListener('scroll', () => { if(editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop; });
+            textInput.addEventListener('click', updateCursorPosition);
+            textInput.addEventListener('keyup', updateCursorPosition); 
+            
+            fileInput.addEventListener('change', handleFileLoad);
+            
+            document.getElementById('newFileButton').addEventListener('click', () => createNewTab());
+            document.getElementById('loadFileButton').addEventListener('click', loadFile);
+            document.getElementById('saveTxtButton').addEventListener('click', () => saveFile('txt'));
+            document.getElementById('saveHtmlButton').addEventListener('click', () => saveFile('html'));
+            document.getElementById('saveMarkdownButton').addEventListener('click', () => saveFile('md'));
+            document.getElementById('saveJsonButton').addEventListener('click', () => saveFile('json'));
+            document.getElementById('saveXmlButton').addEventListener('click', () => saveFile('xml'));
+            document.getElementById('saveCsvButton').addEventListener('click', () => saveFile('csv'));
+            document.getElementById('saveJsButton').addEventListener('click', () => saveFile('js'));
+            document.getElementById('saveCssButton').addEventListener('click', () => saveFile('css'));
+
+
+            document.getElementById('undoButton').addEventListener('click', undo);
+            document.getElementById('redoButton').addEventListener('click', redo);
+            document.getElementById('findReplaceButton').addEventListener('click', () => { findReplaceModal.classList.add('show'); findInput.focus(); });
+            document.getElementById('selectAllButton').addEventListener('click', () => textInput.select());
+            document.getElementById('clearAllButton').addEventListener('click', async () => {
+                const confirmed = await showConfirmDialog('모두 지우기 확인', '정말로 현재 탭의 모든 내용을 지우시겠습니까? 이 작업은 되돌릴 수 없습니다.');
+                if (confirmed) {
+                    saveToUndoStack();
+                    textInput.value = '';
+                    const currentTab = tabs.find(tab => tab.id === activeTabId);
+                    if (currentTab) currentTab.content = '';
+                    setTabModified(activeTabId, true);
+                    updateLineNumbers(); updateStats();
+                    showMessage('내용이 모두 삭제되었습니다.', 'info');
+                }
+            });
+
+            document.getElementById('previewHtmlButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'html'));
+            document.getElementById('previewMarkdownButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'markdown'));
+            document.getElementById('previewJsonButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'json'));
+            document.getElementById('previewXmlButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'xml'));
+            document.getElementById('previewCsvButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'csv'));
+            document.getElementById('previewJsButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'js'));
+            document.getElementById('previewCssButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'css'));
+
+
+            document.getElementById('toggleWordWrapButton').addEventListener('click', () => { 
+                editorState.wordWrap = !editorState.wordWrap; 
+                applySettingsToUI(); 
+                showMessage(`자동 줄 바꿈 ${editorState.wordWrap ? '활성' : '비활성'}.`, 'info');
+            });
+            document.getElementById('toggleLineNumbersButton').addEventListener('click', () => { 
+                editorState.showLineNumbers = !editorState.showLineNumbers; 
+                applySettingsToUI(); 
+                updateLineNumbers(); 
+                showMessage(`줄 번호 ${editorState.showLineNumbers ? '표시' : '숨김'}.`, 'info');
+            });
+
+            document.getElementById('formatJsonButton').addEventListener('click', formatJson);
+            document.getElementById('formatXmlButton').addEventListener('click', formatXml);
+            document.getElementById('formatCsvButton').addEventListener('click', formatCsvToTable);
+            document.getElementById('countStatsButton').addEventListener('click', showDetailedStats);
+
+            findNextButton.addEventListener('click', findNext);
+            replaceButton.addEventListener('click', replaceCurrent);
+            replaceAllButton.addEventListener('click', replaceAllFound);
+            findInput.addEventListener('input', () => { editorState.lastSearchTerm = findInput.value; findText(false); }); 
+            [matchCaseCheckbox, wholeWordCheckbox, regexCheckbox].forEach(cb => cb.addEventListener('change', () => findText(false)));
+            document.getElementById('closeFindReplaceModalButton').addEventListener('click', () => findReplaceModal.classList.remove('show'));
+            
+            document.getElementById('summarizeButton').addEventListener('click', () => showAiModal('텍스트 요약', 'summarize'));
+            document.getElementById('continueButton').addEventListener('click', () => showAiModal('이어쓰기', 'continue'));
+            document.getElementById('grammarCheckButton').addEventListener('click', () => showAiModal('문법 검사', 'grammar'));
+            document.getElementById('translateButton').addEventListener('click', () => document.getElementById('translateModal').classList.add('show'));
+            document.getElementById('changeStyleButton').addEventListener('click', () => document.getElementById('styleModal').classList.add('show'));
+            document.getElementById('startTranslateButton').addEventListener('click', () => { document.getElementById('translateModal').classList.remove('show'); showAiModal('텍스트 번역', 'translate'); });
+            document.getElementById('startStyleChangeButton').addEventListener('click', () => { document.getElementById('styleModal').classList.remove('show'); showAiModal('스타일 변환', 'style'); });
+            document.getElementById('closeTranslateModalButton').addEventListener('click', () => document.getElementById('translateModal').classList.remove('show'));
+            document.getElementById('closeStyleModalButton').addEventListener('click', () => document.getElementById('styleModal').classList.remove('show'));
+            document.getElementById('closeLlmOutputButton').addEventListener('click', () => document.getElementById('llmOutputModal').classList.remove('show'));
+            document.getElementById('insertLlmOutputButton').addEventListener('click', () => {
+                const llmResult = document.getElementById('llmOutputContent').textContent;
+                if (llmResult) {
+                    saveToUndoStack();
+                    const cursorPos = textInput.selectionEnd; 
+                    textInput.setRangeText(llmResult, textInput.selectionStart, textInput.selectionEnd, 'end');
+                    setTabModified(activeTabId, true);
+                    updateLineNumbers(); updateStats();
+                    document.getElementById('llmOutputModal').classList.remove('show');
+                    showMessage('AI 결과가 에디터에 삽입되었습니다.', 'success');
+                }
+            });
+
+            document.getElementById('settingsButton').addEventListener('click', openSettings);
+            document.getElementById('closeSettingsModalButton').addEventListener('click', () => document.getElementById('settingsModal').classList.remove('show'));
+            document.getElementById('saveSettingsButton').addEventListener('click', saveSettings);
+
+            document.getElementById('keyboardShortcutsButton').addEventListener('click', () => document.getElementById('keyboardShortcutsModal').classList.add('show'));
+            document.getElementById('closeKeyboardShortcutsButton').addEventListener('click', () => document.getElementById('keyboardShortcutsModal').classList.remove('show'));
+            
+            document.getElementById('fullscreenButton').addEventListener('click', toggleFullscreen);
+
+            setupHelperModals();
+
+            document.querySelector('.new-tab-button').addEventListener('click', () => createNewTab());
+
+            confirmModalOkButton.addEventListener('click', () => {
+                if (confirmModalResolve) confirmModalResolve(true);
+                confirmModal.classList.remove('show');
+            });
+            confirmModalCancelButton.addEventListener('click', () => {
+                if (confirmModalResolve) confirmModalResolve(false);
+                confirmModal.classList.remove('show');
+            });
+            closeConfirmModalButton.addEventListener('click', () => {
+                if (confirmModalResolve) confirmModalResolve(false); 
+                confirmModal.classList.remove('show');
+            });
+        }
+        
+        // --- 설정 ---
+        function openSettings() {
+            document.getElementById('fontSizeInput').value = editorState.fontSize;
+            document.getElementById('fontFamilySelect').value = editorState.fontFamily;
+            document.getElementById('tabSizeInput').value = editorState.tabSize;
+            document.getElementById('autoSaveCheckbox').checked = editorState.autoSave;
+            document.getElementById('autoSaveIntervalInput').value = editorState.autoSaveInterval / 1000;
+            document.getElementById('lineNumbersCheckbox').checked = editorState.showLineNumbers;
+            document.getElementById('wordWrapCheckbox').checked = editorState.wordWrap;
+            document.getElementById('settingsModal').classList.add('show');
+        }
+
+        function saveSettings() {
+            editorState.fontSize = parseInt(document.getElementById('fontSizeInput').value);
+            editorState.fontFamily = document.getElementById('fontFamilySelect').value;
+            editorState.tabSize = parseInt(document.getElementById('tabSizeInput').value);
+            editorState.autoSave = document.getElementById('autoSaveCheckbox').checked;
+            editorState.autoSaveInterval = parseInt(document.getElementById('autoSaveIntervalInput').value) * 1000;
+            editorState.showLineNumbers = document.getElementById('lineNumbersCheckbox').checked;
+            editorState.wordWrap = document.getElementById('wordWrapCheckbox').checked;
+            
+            applySettingsToUI();
+            localStorage.setItem('editorSettings_v2', JSON.stringify(editorState)); 
+            updateAutosaveStatus('idle'); 
+            if (editorState.autoSave) startAutoSaveTimer(); else clearTimeout(editorState.autoSaveTimerId);
+
+            document.getElementById('settingsModal').classList.remove('show');
+            showMessage('설정이 저장되었습니다.', 'success');
+        }
+
+        function loadSettings() {
+            loadTheme(); 
+            const savedSettings = localStorage.getItem('editorSettings_v2');
+            if (savedSettings) {
+                try {
+                    const parsed = JSON.parse(savedSettings);
+                    editorState.fontSize = parsed.fontSize || 16;
+                    editorState.fontFamily = parsed.fontFamily || "'JetBrains Mono', monospace";
+                    editorState.tabSize = parsed.tabSize || 4;
+                    editorState.autoSave = typeof parsed.autoSave === 'boolean' ? parsed.autoSave : true;
+                    editorState.autoSaveInterval = parsed.autoSaveInterval || 30000;
+                    editorState.showLineNumbers = typeof parsed.showLineNumbers === 'boolean' ? parsed.showLineNumbers : true;
+                    editorState.wordWrap = typeof parsed.wordWrap === 'boolean' ? parsed.wordWrap : false;
+                } catch(e) { console.error("Failed to parse settings:", e); }
+            }
+        }
+        
+        function applySettingsToUI() {
+            textInput.style.fontSize = `${editorState.fontSize}px`;
+            lineNumberContainer.style.fontSize = `${editorState.fontSize}px`; 
+            textInput.style.fontFamily = editorState.fontFamily;
+            lineNumberContainer.style.fontFamily = editorState.fontFamily; 
+            textInput.style.tabSize = editorState.tabSize; 
+            
+            lineNumberContainer.style.display = editorState.showLineNumbers ? 'block' : 'none';
+            textInput.style.whiteSpace = editorState.wordWrap ? 'pre-wrap' : 'pre';
+            textInput.style.wordBreak = editorState.wordWrap ? 'break-all' : 'normal'; 
+            updateLineNumbers(); 
+        }
+
+        function toggleFullscreen() {
+            mainContainer.classList.toggle('fullscreen');
+            const isFullscreen = mainContainer.classList.contains('fullscreen');
+            const fsButton = document.getElementById('fullscreenButton');
+            fsButton.innerHTML = isFullscreen ? 
+                '<i class="fas fa-compress"></i> <span class="sm:inline hidden">일반 화면</span>' : 
+                '<i class="fas fa-expand"></i> <span class="sm:inline hidden">전체 화면</span>';
+            fsButton.title = isFullscreen ? "전체 화면 종료 (F11)" : "전체 화면 (F11)";
+        }
+        
+        // --- 도우미 모달 및 문법 삽입 ---
+        function setupHelperModals() {
+            const helpers = [
+                { button: 'markdownHelperButton', modal: 'markdownHelperModal', close: 'closeMarkdownHelperModalButton', inserts: '.markdown-insert', action: insertMarkdownSyntax },
+                { button: 'jsonHelperButton', modal: 'jsonHelperModal', close: 'closeJsonHelperModalButton', inserts: '.json-insert', action: insertJsonSyntax },
+                { button: 'xmlHelperButton', modal: 'xmlHelperModal', close: 'closeXmlHelperModalButton', inserts: '.xml-insert', action: insertXmlSyntax },
+                { button: 'csvHelperButton', modal: 'csvHelperModal', close: 'closeCsvHelperModalButton', inserts: '.csv-insert', action: insertCsvSyntax },
+            ];
+            helpers.forEach(h => {
+                document.getElementById(h.button).addEventListener('click', () => document.getElementById(h.modal).classList.add('show'));
+                document.getElementById(h.close).addEventListener('click', () => document.getElementById(h.modal).classList.remove('show'));
+                document.querySelectorAll(`#${h.modal} ${h.inserts}`).forEach(btn => btn.addEventListener('click', function() { h.action(this.dataset.syntax); }));
+            });
+        }
+
+        function insertTextAndSelect(textToInsert, selectionOffsetStart = 0, selectionOffsetEnd = 0, placeholder = "텍스트") {
             const start = textInput.selectionStart;
             const end = textInput.selectionEnd;
             const selectedText = textInput.value.substring(start, end);
             
-            const compareQuery = document.getElementById('matchCaseCheckbox').checked ? query : query.toLowerCase();
-            const compareSelected = document.getElementById('matchCaseCheckbox').checked ? selectedText : selectedText.toLowerCase();
-
-            if (selectedText && compareSelected === compareQuery) {
-                insertTextAtCursor(replacement); 
-                findReplaceMessage.textContent = "바꾸었습니다. 다음 항목을 찾으세요.";
-                currentSearchStartIndex = start + replacement.length;
-                handleFindNext(); 
-            } else {
-                handleFindNext(); 
-                if (currentSearchStartIndex > 0 && selectedText) findReplaceMessage.textContent = "선택된 텍스트가 찾을 내용과 일치하지 않습니다. 다음 항목을 찾았습니다.";
-            }
-        }
-
-        function handleReplaceAll() {
-            const query = document.getElementById('findInput').value;
-            const replacement = document.getElementById('replaceInput').value;
-            if (!query) { findReplaceMessage.textContent = "찾을 내용을 입력하세요."; return; }
-
-            const originalContent = textInput.value;
-            const caseSensitive = document.getElementById('matchCaseCheckbox').checked;
-            const flags = caseSensitive ? 'g' : 'gi'; 
-            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(escapedQuery, flags);
+            saveToUndoStack();
             
-            let count = 0;
-            if (regex.test(originalContent)) {
-                 const newContent = originalContent.replace(regex, () => {
-                    count++;
-                    return replacement;
-                });
-                pushToUndoStack(originalContent);
-                redoStack = [];
-                updateEditorState(newContent, false, textInput.selectionStart);
-                findReplaceMessage.textContent = `${count}개의 항목을 모두 바꾸었습니다.`;
-                showMessage(`${count}개의 항목을 모두 바꾸었습니다.`, 'success');
-            } else {
-                findReplaceMessage.textContent = "일치하는 항목이 없습니다.";
-                showMessage("일치하는 항목이 없습니다.", "info");
-            }
-            currentSearchStartIndex = 0;
-        }
-
-
-        // --- AI & LLM (handleSummarize, handleContinue, handleInsertLlmOutput, callGeminiAPI) ---
-        // (These functions remain largely the same)
-        function handleSummarize() {
-            const text = textInput.value.trim();
-            if (!text) { showMessage('요약할 텍스트가 없습니다.', 'error'); return; }
-            callGeminiAPI(`다음 텍스트를 한국어로 간결하게 요약해 주세요:\n\n---\n${text}\n---`, '텍스트 요약 결과');
-        }
-        function handleContinue() {
-            const text = textInput.value;
-            if (!text.trim()) { showMessage('이어쓸 텍스트가 없습니다.', 'error'); return; }
-            callGeminiAPI(`다음은 사용자가 작성 중인 텍스트의 일부입니다. 이 텍스트의 맥락을 파악하여 자연스럽게 다음 내용을 한국어로 이어서 작성해 주세요:\n\n---\n${text}`, '텍스트 이어쓰기 결과');
-        }
-        function handleInsertLlmOutput() {
-            const generatedText = document.getElementById('llmOutputContent').textContent;
-            if (generatedText) {
-                const currentEditorText = textInput.value;
-                const separator = (currentEditorText.endsWith('\n\n') || currentEditorText === '' || currentEditorText.endsWith('\n')) ? '' : '\n\n';
-                const textToInsert = separator + generatedText;
-                insertTextAtCursor(textToInsert, textInput.selectionStart + textToInsert.length);
-                
-                textInput.focus();
-                textInput.scrollTop = textInput.scrollHeight; 
-                showMessage('생성된 텍스트가 에디터에 삽입되었습니다.');
-            }
-            document.getElementById('llmOutputModal').classList.remove('show');
-        }
-        async function callGeminiAPI(prompt, title) {
-            showLoading(true);
-            document.getElementById('llmOutputTitle').textContent = title;
-            document.getElementById('llmOutputContent').textContent = '';
-            try {
-                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) { const err = await response.json(); throw new Error(`API Error (${response.status}): ${err.error?.message || 'Unknown error'}`); }
-                const result = await response.json();
-                if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    document.getElementById('llmOutputContent').textContent = result.candidates[0].content.parts[0].text;
-                    document.getElementById('llmOutputModal').classList.add('show');
-                } else if (result.promptFeedback?.blockReason) {
-                    showMessage(`AI 응답 생성 중 문제 발생: ${result.promptFeedback.blockReason}`, 'error');
-                } else { showMessage('AI로부터 유효한 응답을 받지 못했습니다.', 'error'); }
-            } catch (error) { showMessage(`AI 응답 처리 중 오류: ${error.message}`, 'error');
-            } finally { showLoading(false); }
-        }
-
-        // --- Utility Functions (showMessage, showLoading, setupModalClose, formatXml) ---
-        function showMessage(message, type = 'success', duration = 3000) {
-            messageBox.textContent = message;
-            messageBox.className = `message-box ${type} show`;
-            if (messageTimeout) clearTimeout(messageTimeout);
-            messageTimeout = setTimeout(() => {
-                messageBox.classList.remove('show');
-                setTimeout(() => { if (!messageBox.classList.contains('show')) messageBox.style.visibility = 'hidden'; }, 500);
-            }, duration);
-            messageBox.style.visibility = 'visible';
-        }
-        function showLoading(show) {
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            if (show) {
-                loadingIndicator.classList.add('show');
-                loadingIndicator.style.visibility = 'visible';
-            } else {
-                loadingIndicator.classList.remove('show');
-                setTimeout(() => { if (!loadingIndicator.classList.contains('show')) loadingIndicator.style.visibility = 'hidden'; }, 500);
-            }
-        }
-        function setupModalClose(modalElement, closeButtonElement, onCloseCallback = null) {
-            if (closeButtonElement) closeButtonElement.addEventListener('click', () => { modalElement.classList.remove('show'); if (onCloseCallback) onCloseCallback(); });
-            if (modalElement) modalElement.addEventListener('click', (event) => { if (event.target === modalElement) { modalElement.classList.remove('show'); if (onCloseCallback) onCloseCallback(); }});
-        }
-        function formatXml(xml, tab = '  ') { // Basic XML Formatter
-            let formatted = '', indent = '';
-            if (!xml || typeof xml !== 'string') return "잘못된 XML 내용입니다.";
+            let finalInsertion = textToInsert.replace(/\$\{selectedTextOrPlaceholder\}/g, selectedText || placeholder);
             
-            xml.split(/>\s*</).forEach(node => {
-                if (node.match(/^\/\w/)) indent = indent.substring(tab.length); // Decrease indent
-                formatted += indent + '<' + node.replace(/^\s+|\s+$/g, '') + '>\n';
-                if (node.match(/^<?\w[^>]*[^\/]$/)) indent += tab; // Increase indent
-            });
-            return formatted.substring(1, formatted.length - 2); // Remove leading '<' and trailing '>\n'
+            textInput.setRangeText(finalInsertion, start, end, 'end'); 
+            
+            if (!selectedText && placeholder) { // Only try to select placeholder if it was actually inserted
+                const placeholderIndex = finalInsertion.indexOf(placeholder);
+                if (placeholderIndex !== -1) {
+                    textInput.selectionStart = start + placeholderIndex;
+                    textInput.selectionEnd = start + placeholderIndex + placeholder.length;
+                }
+            } else if (selectedText) { 
+                 textInput.selectionStart = start + selectionOffsetStart;
+                 textInput.selectionEnd = start + finalInsertion.length - selectionOffsetEnd;
+            }
+            
+            setTabModified(activeTabId, true);
+            textInput.focus();
         }
 
-    </script>
+        function insertMarkdownSyntax(syntax) {
+            let text = '', selStart = 0, selEnd = 0, placeholder = "텍스트";
+            switch (syntax) {
+                case 'bold': text = `**\${selectedTextOrPlaceholder}**`; selStart=2; selEnd=2; placeholder="굵은 텍스트"; break;
+                case 'italic': text = `*\${selectedTextOrPlaceholder}*`; selStart=1; selEnd=1; placeholder="기울인 텍스트"; break;
+                case 'heading1': text = `# \${selectedTextOrPlaceholder}`; placeholder="제목 1"; break;
+                case 'heading2': text = `## \${selectedTextOrPlaceholder}`; placeholder="제목 2"; break;
+                case 'link': text = `[\${selectedTextOrPlaceholder}](URL)`; placeholder="링크 텍스트"; selStart = text.indexOf('URL'); selEnd = text.length - (selStart + 3); break;
+                case 'image': text = `![\${selectedTextOrPlaceholder}](이미지URL)`; placeholder="이미지 설명"; selStart = text.indexOf('이미지URL'); selEnd = text.length - (selStart + 8); break;
+                case 'ul': text = `- \${selectedTextOrPlaceholder}`; placeholder="항목"; break;
+                case 'ol': text = `1. \${selectedTextOrPlaceholder}`; placeholder="항목"; break;
+                case 'blockquote': text = `> \${selectedTextOrPlaceholder}`; placeholder="인용문"; break;
+                case 'codeblock': text = "```언어\n\${selectedTextOrPlaceholder}\n```"; placeholder="코드"; selStart=text.indexOf('언어'); selEnd = text.length - (selStart + 2); break;
+                case 'inlinecode': text = `\`\${selectedTextOrPlaceholder}\``; selStart=1; selEnd=1; placeholder="인라인 코드"; break;
+                case 'hr': text = '\n---\n'; break;
+                case 'table': text = '| 제목1 | 제목2 |\n| --- | --- |\n| 내용1 | 내용2 |'; break;
+                case 'strikethrough': text = `~~\${selectedTextOrPlaceholder}~~`; selStart=2; selEnd=2; placeholder="취소선"; break;
+                case 'tasklist': text = `- [ ] \${selectedTextOrPlaceholder}`; placeholder="작업"; break;
+                case 'footnote': text = `\${selectedTextOrPlaceholder}[^1]\n\n[^1]: 각주 내용`; placeholder="본문"; selStart = text.lastIndexOf('각주 내용'); selEnd = text.length - (selStart + 5) ; break;
+            }
+            insertTextAndSelect(text, selStart, selEnd, placeholder);
+        }
+        
+        function insertJsonSyntax(syntax) {
+            let text = '', selStart = 0, selEnd = 0, placeholder = "값";
+            switch (syntax) {
+                case 'object': text = `{\n\t"\${selectedTextOrPlaceholder}": ""\n}`; selStart=text.indexOf('""')+1; selEnd=1; placeholder="키"; break;
+                case 'array': text = `[\n\t"\${selectedTextOrPlaceholder}"\n]`; selStart=text.indexOf('""')+1; selEnd=1; placeholder="항목"; break;
+                case 'keypair': text = `"\${selectedTextOrPlaceholder}": "value"`; placeholder="키"; selStart = text.indexOf('"value"')+1; selEnd=1; break;
+                case 'string': text = `"\${selectedTextOrPlaceholder}"`; selStart=1; selEnd=1; break;
+                case 'number': text = `\${selectedTextOrPlaceholder}`; placeholder="0"; break;
+                case 'booleanTrue': text = 'true'; break;
+                case 'booleanFalse': text = 'false'; break;
+                case 'nullValue': text = 'null'; break; 
+                case 'complexObject': text = '{\n\t"id": 1,\n\t"name": "Sample",\n\t"active": true\n}'; break;
+                case 'arrayOfObjects': text = '[\n\t{\n\t\t"id": 1,\n\t\t"item": "첫번째"\n\t},\n\t{\n\t\t"id": 2,\n\t\t"item": "두번째"\n\t}\n]'; break;
+            }
+             insertTextAndSelect(text, selStart, selEnd, placeholder);
+        }
+
+        function insertXmlSyntax(syntax) {
+            let text = '', selStart = 0, selEnd = 0, placeholder = "내용";
+            switch (syntax) {
+                case 'element': text = `<elementName>\${selectedTextOrPlaceholder}</elementName>`; placeholder="내용"; selStart=text.indexOf('>')+1; selEnd=text.length - text.lastIndexOf('<'); break;
+                case 'attribute': text = `<element attributeName="\${selectedTextOrPlaceholder}"></element>`; placeholder="값"; selStart=text.indexOf('""')+1; selEnd=text.length - (text.indexOf('""')+1); break;
+                case 'comment': text = ``; selStart=5; selEnd=4; placeholder="주석"; break;
+                case 'cdata': text = `<![CDATA[\${selectedTextOrPlaceholder}]]>`; selStart=10; selEnd=4; placeholder="데이터"; break;
+                case 'declaration': text = `<?xml version="1.0" encoding="UTF-8"?>\n`; break;
+                case 'emptyElement': text = `<emptyElement/>`; break;
+                case 'namespace': text = `<element xmlns:prefix="\${selectedTextOrPlaceholder}"></element>`; placeholder="namespaceURI"; selStart=text.indexOf('""')+1; selEnd=text.length - (text.indexOf('""')+1); break;
+                case 'template': text = `<?xml version="1.0" encoding="UTF-8"?>\n<root>\n\t<item id="1">\${selectedTextOrPlaceholder}</item>\n</root>`; placeholder="아이템 내용"; selStart=text.indexOf('>')+1; selEnd=text.length - text.lastIndexOf('<'); break;
+            }
+             insertTextAndSelect(text, selStart, selEnd, placeholder);
+        }
+
+        function insertCsvSyntax(syntax) {
+            let text = '', selStart = 0, selEnd = 0, placeholder = "값";
+            switch (syntax) {
+                case 'comma': text = ','; break;
+                case 'newline': text = '\n'; break;
+                case 'wrapInQuotes': text = `"\${selectedTextOrPlaceholder}"`; selStart=1; selEnd=1; break;
+                case 'newFieldQuoted': text = `,"\${selectedTextOrPlaceholder}"`; selStart=2; selEnd=1; break;
+                case 'sampleHeader': text = 'Header1,Header2,Header3'; break;
+                case 'sampleRow': text = 'Data1,Data2,Data3'; break;
+                case 'createTable': text = 'ID,Name\n1,\${selectedTextOrPlaceholder}\n2,Another Value'; placeholder="첫번째 값"; selStart=text.indexOf(',')+1; selEnd=text.length - (text.indexOf(',') + placeholder.length +1); break;
+                case 'template': text = 'ColA,ColB,ColC\nValA1,ValB1,ValC1\nValA2,\${selectedTextOrPlaceholder},ValC2'; placeholder="데이터"; selStart=text.indexOf(',')+1; selEnd=text.length - (text.indexOf(',') + placeholder.length +1); break;
+            }
+             insertTextAndSelect(text, selStart, selEnd, placeholder);
+        }
+        
+        // --- 최종 초기화 실행 ---
+        initializeEditor();
+    });
+</script>
+
 </body>
 </html>
