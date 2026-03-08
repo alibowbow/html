@@ -1035,7 +1035,7 @@
                         <input type="password" id="geminiApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 Gemini API 키를 입력하세요">
                         <label for="geminiModelSelect">Gemini 모델:</label>
                         <select id="geminiModelSelect">
-                            <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                            <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
                         </select>
                     </div>
 
@@ -1546,7 +1546,7 @@
                 // Vibe Coding AI settings
                 aiModelProvider: 'gemini',
                 geminiApiKey: '',
-                geminiModel: 'gemini-2.0-flash', // Updated default based on 2.0-flash availability
+                geminiModel: DEFAULT_GEMINI_MODEL, // Updated default based on Gemini 3 Flash preview availability
                 openAiApiKey: '',
                 openAiModel: 'gpt-4o', // Fixed model
                 anthropicApiKey: '',
@@ -1608,7 +1608,16 @@
             const anthropicApiKeyInput = document.getElementById('anthropicApiKeyInput');
             const aiSystemPromptInput = document.getElementById('aiSystemPromptInput'); 
             const PERSISTED_SECRET_KEYS = ['geminiApiKey', 'openAiApiKey', 'anthropicApiKey'];
+            const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
             let legacySecretStorageCleared = false;
+
+            function normalizeGeminiModel(model) {
+                if (!model || model === 'gemini-2.0-flash') {
+                    return DEFAULT_GEMINI_MODEL;
+                }
+
+                return model;
+            }
 
             function getSerializableEditorSettings(source = editorState) {
                 return {
@@ -1660,6 +1669,7 @@
                         const parsedSession = JSON.parse(savedSession);
                         if (parsedSession && parsedSession.editorSettings) {
                             const sanitizedSessionSettings = sanitizePersistedEditorSettings(parsedSession.editorSettings);
+                            sanitizedSessionSettings.geminiModel = normalizeGeminiModel(sanitizedSessionSettings.geminiModel);
                             if (JSON.stringify(parsedSession.editorSettings) !== JSON.stringify(sanitizedSessionSettings)) {
                                 localStorage.setItem('editorSession', JSON.stringify({
                                     ...parsedSession,
@@ -4040,6 +4050,7 @@
                 // Load AI settings
                 aiModelProviderSelect.value = editorState.aiModelProvider;
                 geminiApiKeyInput.value = editorState.geminiApiKey || '';
+                editorState.geminiModel = normalizeGeminiModel(editorState.geminiModel);
                 geminiModelSelect.value = editorState.geminiModel;
                 openAiApiKeyInput.value = editorState.openAiApiKey || '';
                 anthropicApiKeyInput.value = editorState.anthropicApiKey || '';
@@ -4062,7 +4073,7 @@
                 // Save AI settings
                 editorState.aiModelProvider = aiModelProviderSelect.value;
                 editorState.geminiApiKey = geminiApiKeyInput.value.trim();
-                editorState.geminiModel = geminiModelSelect.value;
+                editorState.geminiModel = normalizeGeminiModel(geminiModelSelect.value);
                 editorState.openAiApiKey = openAiApiKeyInput.value.trim();
                 editorState.anthropicApiKey = anthropicApiKeyInput.value.trim();
                 editorState.aiSystemPrompt = aiSystemPromptInput.value.trim();
@@ -4098,7 +4109,7 @@
                         
                         // Load AI settings (ensure they are strings, not null if empty)
                         editorState.aiModelProvider = parsed.aiModelProvider || 'gemini';
-                        editorState.geminiModel = parsed.geminiModel || 'gemini-2.0-flash';
+                        editorState.geminiModel = normalizeGeminiModel(parsed.geminiModel);
                         editorState.openAiModel = parsed.openAiModel || 'gpt-4o';
                         editorState.anthropicModel = parsed.anthropicModel || 'claude-3-opus-20240229';
                         editorState.aiSystemPrompt = parsed.aiSystemPrompt || '';
