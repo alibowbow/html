@@ -3,15 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="브라우저에서 실행되는 멀티파일 텍스트 편집기. 미리보기, 세션 저장, AI 작업, 마크다운/JSON/XML/CSV 도구를 한 화면에서 제공합니다.">
+    <meta name="theme-color" content="#111827">
+    <meta name="color-scheme" content="dark light">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="텍스트 편집기 Pro - 멀티파일 미리보기, AI, Vibe Coding">
+    <meta property="og:description" content="브라우저에서 실행되는 멀티파일 텍스트 편집기와 AI 보조 도구">
+    <meta property="og:url" content="https://alibowbow.github.io/html/">
     <title>텍스트 편집기 Pro - 멀티파일 미리보기, AI, Vibe Coding</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="./tailwind.generated.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css" id="highlightTheme">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script> <!-- JSZip for project export -->
+    <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script> <!-- JSZip for project export -->
     <style>
         :root {
             --bg-primary: #111827; 
@@ -287,6 +297,10 @@
             flex-direction: column; 
             max-height: 85vh; 
             transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .modal-content:focus {
+            outline: 2px solid var(--border-focus);
+            outline-offset: 2px;
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-shrink: 0; }
         .modal-title { font-size: 1.25rem; font-weight: 600; color: var(--text-accent); }
@@ -596,22 +610,32 @@
 
         @media (max-width: 768px) { 
              .toolbar {
-                padding: 0.3rem 0.7rem;
-                gap: 0.15rem;
-                justify-content: space-around; 
+                padding: 0.5rem 0.7rem;
+                gap: 0.35rem;
+                justify-content: flex-start; 
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+            }
+            .toolbar > * {
+                flex: 0 0 auto;
+            }
+            .dropdown {
+                margin-right: 0;
             }
             .custom-button {
-                padding: 0.4rem 0.5rem;
+                padding: 0.45rem 0.65rem;
                 font-size: 0.8rem;
             }
             .custom-button .sm\:inline.hidden { 
-                 display: none !important;
+                 display: inline !important;
             }
              .custom-button i {
                 margin-right: 0; 
             }
             .dropdown-content {
-                min-width: 180px;
+                min-width: 220px;
             }
             header {
                 padding: 0.5rem 0.7rem;
@@ -634,6 +658,12 @@
             }
             .top-bar-actions .custom-button {
                 padding: 0.4rem; 
+            }
+            .autosave-indicator {
+                display: none;
+            }
+            #vibeCodingPanel {
+                width: min(100vw, 360px);
             }
         }
 
@@ -989,7 +1019,7 @@
                     </select>
                 </div>
                  <hr class="my-4 border-border-color">
-                <div>
+                <form id="aiSettingsForm" class="space-y-4" onsubmit="return false;">
                     <h3 class="text-lg font-semibold mb-2 text-text-accent">✨ Vibe Coding AI 설정</h3>
                     <div>
                         <label for="aiModelProviderSelect">AI 모델 제공자:</label>
@@ -1002,7 +1032,7 @@
 
                     <div id="geminiSettings" class="ai-settings-group">
                         <label for="geminiApiKeyInput">Gemini API 키:</label>
-                        <input type="password" id="geminiApiKeyInput" placeholder="여기에 Gemini API 키를 입력하세요">
+                        <input type="password" id="geminiApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 Gemini API 키를 입력하세요">
                         <label for="geminiModelSelect">Gemini 모델:</label>
                         <select id="geminiModelSelect">
                             <option value="gemini-2.0-flash">gemini-2.0-flash</option>
@@ -1011,14 +1041,14 @@
 
                     <div id="openaiSettings" class="ai-settings-group hidden">
                         <label for="openAiApiKeyInput">OpenAI API 키:</label>
-                        <input type="password" id="openAiApiKeyInput" placeholder="여기에 OpenAI API 키를 입력하세요">
+                        <input type="password" id="openAiApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 OpenAI API 키를 입력하세요">
                         <label for="openAiModelDisplay">OpenAI 모델:</label>
                         <input type="text" id="openAiModelDisplay" value="gpt-4o" readonly class="!mb-1rem">
                     </div>
 
                     <div id="anthropicSettings" class="ai-settings-group hidden">
                         <label for="anthropicApiKeyInput">Anthropic API 키:</label>
-                        <input type="password" id="anthropicApiKeyInput" placeholder="여기에 Anthropic API 키를 입력하세요">
+                        <input type="password" id="anthropicApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 Anthropic API 키를 입력하세요">
                         <label for="anthropicModelDisplay">Anthropic 모델:</label>
                         <input type="text" id="anthropicModelDisplay" value="claude-3-opus-20240229" readonly class="!mb-1rem">
                     </div>
@@ -1029,8 +1059,8 @@
                         <p class="text-xs text-text-secondary mt-1">API의 기본 성격과 행동을 정의합니다. (제공자별로 다르게 적용될 수 있음)</p>
                     </div>
 
-                    <p class="text-xs text-text-secondary mt-1">API 키는 브라우저의 로컬 저장소에만 저장됩니다.</p>
-                </div>
+                    <p id="apiKeyStorageNotice" class="text-xs text-text-secondary mt-1">API 키는 현재 탭 메모리에만 유지되며, 새로고침하면 자동으로 지워집니다.</p>
+                </form>
                 <button id="saveSettingsButton" class="custom-button bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-lg w-full mt-6" aria-label="설정 저장">
                     <i class="fas fa-save"></i> 설정 저장
                 </button>
@@ -1577,6 +1607,249 @@
             const anthropicSettings = document.getElementById('anthropicSettings');
             const anthropicApiKeyInput = document.getElementById('anthropicApiKeyInput');
             const aiSystemPromptInput = document.getElementById('aiSystemPromptInput'); 
+            const PERSISTED_SECRET_KEYS = ['geminiApiKey', 'openAiApiKey', 'anthropicApiKey'];
+            let legacySecretStorageCleared = false;
+
+            function getSerializableEditorSettings(source = editorState) {
+                return {
+                    fontSize: source.fontSize,
+                    fontFamily: source.fontFamily,
+                    tabSize: source.tabSize,
+                    autoSave: source.autoSave,
+                    autoSaveInterval: source.autoSaveInterval,
+                    showLineNumbers: source.showLineNumbers,
+                    wordWrap: source.wordWrap,
+                    aiModelProvider: source.aiModelProvider,
+                    geminiModel: source.geminiModel,
+                    openAiModel: source.openAiModel,
+                    anthropicModel: source.anthropicModel,
+                    aiSystemPrompt: source.aiSystemPrompt,
+                    vibeChatHistory: source.vibeChatHistory,
+                    defaultNewTabType: source.defaultNewTabType
+                };
+            }
+
+            function sanitizePersistedEditorSettings(settings = {}) {
+                const sanitizedSettings = { ...(settings || {}) };
+                PERSISTED_SECRET_KEYS.forEach((key) => delete sanitizedSettings[key]);
+                return sanitizedSettings;
+            }
+
+            function persistEditorSettings() {
+                localStorage.setItem('editorSettings_v2', JSON.stringify(getSerializableEditorSettings()));
+            }
+
+            function sanitizePersistedStorage() {
+                const savedSettings = localStorage.getItem('editorSettings_v2');
+                if (savedSettings) {
+                    try {
+                        const parsedSettings = JSON.parse(savedSettings);
+                        const sanitizedSettings = sanitizePersistedEditorSettings(parsedSettings);
+                        if (JSON.stringify(parsedSettings) !== JSON.stringify(sanitizedSettings)) {
+                            localStorage.setItem('editorSettings_v2', JSON.stringify(sanitizedSettings));
+                            legacySecretStorageCleared = true;
+                        }
+                    } catch (error) {
+                        console.error('Failed to sanitize saved settings:', error);
+                    }
+                }
+
+                const savedSession = localStorage.getItem('editorSession');
+                if (savedSession) {
+                    try {
+                        const parsedSession = JSON.parse(savedSession);
+                        if (parsedSession && parsedSession.editorSettings) {
+                            const sanitizedSessionSettings = sanitizePersistedEditorSettings(parsedSession.editorSettings);
+                            if (JSON.stringify(parsedSession.editorSettings) !== JSON.stringify(sanitizedSessionSettings)) {
+                                localStorage.setItem('editorSession', JSON.stringify({
+                                    ...parsedSession,
+                                    editorSettings: sanitizedSessionSettings
+                                }));
+                                legacySecretStorageCleared = true;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Failed to sanitize saved session:', error);
+                    }
+                }
+            }
+
+            function getOpenModal() {
+                return document.querySelector('.modal-overlay.show');
+            }
+
+            function getModalFocusableElements(modal) {
+                return Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+                    .filter((element) => !element.disabled && element.getAttribute('aria-hidden') !== 'true' && element.offsetParent !== null);
+            }
+
+            function handleModalOpen(modal) {
+                modal.setAttribute('aria-hidden', 'false');
+                modal._previouslyFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+                const modalContent = modal.querySelector('.modal-content');
+                if (modalContent && !modalContent.hasAttribute('tabindex')) {
+                    modalContent.setAttribute('tabindex', '-1');
+                }
+
+                document.body.style.overflow = 'hidden';
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        const preferredFocus = modal.querySelector('[autofocus], input:not([type="hidden"]), textarea, select, button');
+                        const fallbackFocus = modal.querySelector('.modal-content') || modal;
+                        (preferredFocus || fallbackFocus)?.focus();
+                    });
+                });
+            }
+
+            function handleModalClose(modal) {
+                modal.setAttribute('aria-hidden', 'true');
+
+                if (!getOpenModal()) {
+                    document.body.style.overflow = '';
+                }
+
+                const previousFocus = modal._previouslyFocusedElement;
+                if (previousFocus && previousFocus.isConnected) {
+                    setTimeout(() => previousFocus.focus(), 0);
+                }
+            }
+
+            function trapFocusInOpenModal(event) {
+                const modal = getOpenModal();
+                if (!modal) return;
+
+                const focusableElements = getModalFocusableElements(modal);
+                if (focusableElements.length === 0) {
+                    event.preventDefault();
+                    modal.querySelector('.modal-content')?.focus();
+                    return;
+                }
+
+                if (!modal.contains(document.activeElement)) {
+                    event.preventDefault();
+                    focusableElements[0].focus();
+                    return;
+                }
+
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+
+                if (event.shiftKey && document.activeElement === firstElement) {
+                    event.preventDefault();
+                    lastElement.focus();
+                } else if (!event.shiftKey && document.activeElement === lastElement) {
+                    event.preventDefault();
+                    firstElement.focus();
+                }
+            }
+
+            function setupModalAccessibility() {
+                const modalObserver = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.type !== 'attributes') return;
+                        const modal = mutation.target;
+                        if (modal.classList.contains('show')) {
+                            handleModalOpen(modal);
+                        } else {
+                            handleModalClose(modal);
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.modal-overlay').forEach((modal) => {
+                    modal.setAttribute('aria-hidden', modal.classList.contains('show') ? 'false' : 'true');
+                    modal.querySelector('.modal-content')?.setAttribute('tabindex', '-1');
+                    modalObserver.observe(modal, { attributes: true, attributeFilter: ['class'] });
+                    modal.addEventListener('mousedown', (event) => {
+                        if (event.target === modal) {
+                            modal.classList.remove('show');
+                        }
+                    });
+                });
+            }
+
+            async function writeTextToClipboard(text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    return;
+                }
+
+                const tempTextarea = document.createElement('textarea');
+                tempTextarea.value = text;
+                tempTextarea.setAttribute('readonly', '');
+                tempTextarea.style.position = 'fixed';
+                tempTextarea.style.opacity = '0';
+                tempTextarea.style.pointerEvents = 'none';
+                document.body.appendChild(tempTextarea);
+                tempTextarea.focus();
+                tempTextarea.select();
+
+                const didCopy = document.execCommand('copy');
+                document.body.removeChild(tempTextarea);
+
+                if (!didCopy) {
+                    throw new Error('Clipboard API is not available.');
+                }
+            }
+
+            async function copySelectedText() {
+                const selectedText = textInput.value.substring(textInput.selectionStart, textInput.selectionEnd);
+                if (!selectedText) {
+                    showMessage('복사할 텍스트를 먼저 선택하세요.', 'info');
+                    return;
+                }
+
+                try {
+                    await writeTextToClipboard(selectedText);
+                    showMessage('선택한 내용이 클립보드에 복사되었습니다.', 'success');
+                } catch (error) {
+                    showMessage('클립보드 복사 실패. 브라우저 권한을 확인하세요.', 'error');
+                    console.error('Clipboard copy error:', error);
+                }
+            }
+
+            async function copyAllText() {
+                if (!textInput.value) {
+                    showMessage('복사할 내용이 없습니다.', 'info');
+                    return;
+                }
+
+                try {
+                    await writeTextToClipboard(textInput.value);
+                    textInput.focus();
+                    showMessage('모든 내용이 클립보드에 복사되었습니다.', 'success');
+                } catch (error) {
+                    showMessage('클립보드 복사 실패. 브라우저 권한을 확인하세요.', 'error');
+                    console.error('Clipboard copy all error:', error);
+                }
+            }
+
+            async function pasteFromClipboard() {
+                try {
+                    if (!navigator.clipboard || !window.isSecureContext) {
+                        throw new Error('Clipboard read access is not available.');
+                    }
+
+                    const pastedText = await navigator.clipboard.readText();
+                    if (!pastedText) {
+                        showMessage('클립보드에 붙여넣을 내용이 없습니다.', 'info');
+                        return;
+                    }
+
+                    saveToUndoStack();
+                    textInput.setRangeText(pastedText, textInput.selectionStart, textInput.selectionEnd, 'end');
+                    setTabModified(activeTabId, true);
+                    updateLineNumbers();
+                    updateStats();
+                    textInput.focus();
+                    showMessage('클립보드 내용을 붙여넣었습니다.', 'success');
+                } catch (error) {
+                    showMessage('붙여넣기 실패. 브라우저의 클립보드 권한을 확인하세요.', 'error');
+                    console.error('Clipboard paste error:', error);
+                }
+            }
 
             // Debounced functions for performance
             const debouncedUpdateLineNumbers = debounce(updateLineNumbers, 200);
@@ -1584,6 +1857,8 @@
 
 
             function initializeEditor() {
+                sanitizePersistedStorage();
+                setupModalAccessibility();
                 loadSettings(); 
                 createNewTab(true); // Create initial tab based on default settings
                 updateLineNumbers();
@@ -1596,6 +1871,9 @@
                 setupDropdownToggles(); 
                 setupVisualViewportListener(); 
                 setupVibeCoding(); 
+                if (legacySecretStorageCleared) {
+                    showMessage('보안을 위해 저장된 API 키를 삭제했습니다. 키는 현재 탭에서만 유지됩니다.', 'info', 5000);
+                }
             }
 
             // --- THEME AND BASIC UI FUNCTIONS ---
@@ -2656,25 +2934,7 @@
                         // fileHandle cannot be serialized, will be lost on reload
                     })),
                     activeTabId: activeTabId,
-                    editorSettings: { // Only save serializable settings
-                        fontSize: editorState.fontSize,
-                        fontFamily: editorState.fontFamily,
-                        tabSize: editorState.tabSize,
-                        autoSave: editorState.autoSave,
-                        autoSaveInterval: editorState.autoSaveInterval,
-                        showLineNumbers: editorState.showLineNumbers,
-                        wordWrap: editorState.wordWrap,
-                        aiModelProvider: editorState.aiModelProvider,
-                        geminiApiKey: editorState.geminiApiKey,
-                        geminiModel: editorState.geminiModel,
-                        openAiApiKey: editorState.openAiApiKey,
-                        openAiModel: editorState.openAiModel,
-                        anthropicApiKey: editorState.anthropicApiKey,
-                        anthropicModel: editorState.anthropicModel,
-                        aiSystemPrompt: editorState.aiSystemPrompt,
-                        vibeChatHistory: editorState.vibeChatHistory, // Save chat history
-                        defaultNewTabType: editorState.defaultNewTabType // Save new default tab type
-                    }
+                    editorSettings: getSerializableEditorSettings()
                 };
                 try {
                     localStorage.setItem('editorSession', JSON.stringify(sessionData));
@@ -2735,12 +2995,9 @@
                     // Load editor settings
                     if (sessionData.editorSettings) {
                         // Merge with existing editorState, ensuring defaults are preserved for new fields
-                        editorState = { ...editorState, ...sessionData.editorSettings };
-                        
-                        // Ensure AI keys are not null/undefined if they were loaded as empty strings
-                        editorState.geminiApiKey = editorState.geminiApiKey || '';
-                        editorState.openAiApiKey = editorState.openAiApiKey || '';
-                        editorState.anthropicApiKey = editorState.anthropicApiKey || '';
+                        const sanitizedSessionSettings = sanitizePersistedEditorSettings(sessionData.editorSettings);
+                        editorState = { ...editorState, ...sanitizedSessionSettings };
+
                         editorState.aiSystemPrompt = editorState.aiSystemPrompt || '';
                         editorState.vibeChatHistory = editorState.vibeChatHistory || []; // Load chat history
                         editorState.defaultNewTabType = editorState.defaultNewTabType || 'txt'; // Load new default tab type
@@ -3345,6 +3602,11 @@
                     const isModalOpen = !!document.querySelector('.modal-overlay.show'); 
                     const isVibePanelOpen = vibeCodingPanel.classList.contains('open');
 
+                    if (isModalOpen && e.key === 'Tab') {
+                        trapFocusInOpenModal(e);
+                        if (e.defaultPrevented) return;
+                    }
+
                     if (isVibePanelOpen && !isModalOpen && e.key === 'Escape') {
                         if (activeElement === vibeCodingInput) {
                             // Do nothing, let the input handle its own blur or other escape behavior
@@ -3554,7 +3816,8 @@
                 document.getElementById('undoButton').addEventListener('click', undo);
                 document.getElementById('redoButton').addEventListener('click', redo);
                 document.getElementById('cutButton').addEventListener('click', () => { saveToUndoStack(); document.execCommand('cut'); setTabModified(activeTabId, true); updateStats(); });
-                document.getElementById('copyButton').addEventListener('click', () => document.execCommand('copy'));
+                document.getElementById('copyButton').addEventListener('click', copySelectedText);
+                document.getElementById('pasteButton').addEventListener('click', pasteFromClipboard);
                 
                 document.getElementById('findReplaceButton').addEventListener('click', () => { 
                     findReplaceModal.classList.add('show'); 
@@ -3591,22 +3854,7 @@
                 });
 
                 document.getElementById('selectAllButton').addEventListener('click', () => textInput.select());
-                document.getElementById('copyAllButton').addEventListener('click', () => {
-    // 1. 텍스트 에어리어의 모든 텍스트를 선택합니다.
-    textInput.select();
-    
-    try {
-        document.execCommand('copy');
-        showMessage('모든 내용이 클립보드에 복사되었습니다.', 'success');
-    } catch (err) {
-        showMessage('클립보드 복사 실패. 브라우저 보안 정책을 확인하세요.', 'error');
-        console.error('클립보드 복사 오류:', err);
-    }
-    
-    // 3. 복사 후에 텍스트 에어리어의 초점을 유지하고, 선택을 해제합니다.
-    textInput.focus();
-    textInput.selectionStart = textInput.selectionEnd; // 선택 해제
-});
+                document.getElementById('copyAllButton').addEventListener('click', copyAllText);
                 document.getElementById('clearAllButton').addEventListener('click', async () => {
                     const confirmed = await showConfirmDialog('모두 지우기 확인', '정말로 현재 탭의 모든 내용을 지우시겠습니까? 이 작업은 되돌릴 수 없습니다.');
                     if (confirmed) {
@@ -3821,13 +4069,13 @@
 
 
                 applySettingsToUI(); 
-                localStorage.setItem('editorSettings_v2', JSON.stringify(editorState)); 
+                persistEditorSettings(); 
                 
                 updateAutosaveStatus('idle'); 
                 if (editorState.autoSave) startAutoSaveTimer(); else clearTimeout(editorState.autoSaveTimerId);
 
                 document.getElementById('settingsModal').classList.remove('show');
-                showMessage('설정이 저장되었습니다.', 'success');
+                showMessage('설정이 저장되었습니다. API 키는 현재 탭에서만 유지됩니다.', 'success');
             }
 
             function loadSettings() {
@@ -3835,7 +4083,7 @@
                 const savedSettings = localStorage.getItem('editorSettings_v2');
                 if (savedSettings) {
                     try {
-                        const parsed = JSON.parse(savedSettings);
+                        const parsed = sanitizePersistedEditorSettings(JSON.parse(savedSettings));
                         // Using Object.assign to merge, but explicitly setting defaults for new properties if undefined
                         editorState = { ...editorState, ...parsed };
                         
@@ -3850,11 +4098,8 @@
                         
                         // Load AI settings (ensure they are strings, not null if empty)
                         editorState.aiModelProvider = parsed.aiModelProvider || 'gemini';
-                        editorState.geminiApiKey = parsed.geminiApiKey || '';
                         editorState.geminiModel = parsed.geminiModel || 'gemini-2.0-flash';
-                        editorState.openAiApiKey = parsed.openAiApiKey || '';
                         editorState.openAiModel = parsed.openAiModel || 'gpt-4o';
-                        editorState.anthropicApiKey = parsed.anthropicApiKey || '';
                         editorState.anthropicModel = parsed.anthropicModel || 'claude-3-opus-20240229';
                         editorState.aiSystemPrompt = parsed.aiSystemPrompt || '';
                         editorState.vibeChatHistory = parsed.vibeChatHistory || []; // Load chat history
