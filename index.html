@@ -42,6 +42,7 @@
             --purple-accent: #8B5CF6; 
             --scrollbar-track: #1f2937;
             --scrollbar-thumb: #4b5563;
+            --current-line-bg: rgba(255,255,255,0.06);
         }
 
         .light-theme {
@@ -63,6 +64,7 @@
             --purple-accent: #7c3aed;
             --scrollbar-track: #f3f4f6;
             --scrollbar-thumb: #d1d5db;
+            --current-line-bg: rgba(37,99,235,0.08);
         }
         
         body { 
@@ -232,26 +234,83 @@
             border: 1px solid var(--border-color); 
             border-radius: 0.375rem; 
         }
-        #textInput { 
-            flex-grow: 1; 
-            overflow-y: auto; 
-            width: 100%; 
-            resize: none; 
-            white-space: pre; 
-            line-height: 1.6; 
-            font-size: 16px; 
-            background-color: var(--bg-tertiary); 
-            color: var(--text-primary); 
-            border: none; 
-            border-top-right-radius: 0.375rem; 
-            border-bottom-right-radius: 0.375rem; 
-            padding: 0.75rem; 
+        #textInput {
+            flex-grow: 1;
+            overflow-y: auto;
+            width: 100%;
+            resize: none;
+            white-space: pre;
+            line-height: 1.6;
+            font-size: 16px;
+            position: relative;
+            z-index: 3;
+            background-color: transparent;
+            color: transparent;
+            caret-color: var(--text-primary);
+            border: none;
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            padding: 0.75rem;
             font-family: 'JetBrains Mono', monospace;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
-        #textInput:focus { outline: none; } 
+        #textInput:focus { outline: none; }
         .editor-area:focus-within { outline: 2px solid var(--border-focus); border-color: var(--border-focus); }
         .editor-area.highlight-find-match #textInput::selection { background-color: rgba(234, 179, 8, 0.3) !important; }
+
+        /* Live syntax highlighting overlay (sits behind the transparent textarea). */
+        .code-input-wrap {
+            position: relative;
+            display: flex;
+            flex-grow: 1;
+            min-width: 0;
+            background-color: var(--bg-tertiary);
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            transition: background-color 0.3s ease;
+        }
+        #highlightOverlay, #findHighlightLayer {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            padding: 0.75rem;
+            border: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+            pointer-events: none;
+            white-space: pre;
+            line-height: 1.6;
+            font-size: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+        }
+        #highlightOverlay { z-index: 2; }
+        #findHighlightLayer { z-index: 1; color: transparent; }
+        #highlightOverlay code {
+            display: block;
+            margin: 0;
+            padding: 0;
+            background: transparent !important;
+            font: inherit;
+            line-height: inherit;
+            white-space: inherit;
+        }
+        #findHighlightLayer mark {
+            background-color: rgba(250, 204, 21, 0.35);
+            color: transparent;
+            border-radius: 2px;
+        }
+        #currentLineHighlight {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 1.6em;
+            background-color: var(--current-line-bg);
+            pointer-events: none;
+            z-index: 0;
+        }
 
         #lineNumberContainer { 
             width: 50px; 
@@ -926,7 +985,12 @@
                 <div class="textarea-wrapper">
                     <div class="editor-area">
                         <div id="lineNumberContainer"></div>
-                        <textarea id="textInput" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요. 파일을 끌어다 놓을 수도 있습니다." spellcheck="false"></textarea>
+                        <div class="code-input-wrap">
+                            <div id="currentLineHighlight" aria-hidden="true"></div>
+                            <div id="findHighlightLayer" aria-hidden="true"></div>
+                            <pre id="highlightOverlay" aria-hidden="true"><code></code></pre>
+                            <textarea id="textInput" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요. 파일을 끌어다 놓을 수도 있습니다." spellcheck="false"></textarea>
+                        </div>
                     </div>
                 </div>
             </main>
@@ -936,6 +1000,8 @@
                 <span class="stats-item">단어: <span id="wordCount">0</span></span>
                 <span class="stats-item">줄: <span id="lineCount">1</span></span>
                 <span class="stats-item"><span id="cursorPosition">위치: 1:1</span></span>
+                <span class="stats-item" id="selectionStatItem" style="display:none;">선택: <span id="selectionStat">0</span></span>
+                <span class="stats-item">언어: <span id="languageStat">Text</span></span>
             </div>
         </div>
     </div>
@@ -1050,7 +1116,7 @@
                         <label for="anthropicApiKeyInput">Anthropic API 키:</label>
                         <input type="password" id="anthropicApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 Anthropic API 키를 입력하세요">
                         <label for="anthropicModelDisplay">Anthropic 모델:</label>
-                        <input type="text" id="anthropicModelDisplay" value="claude-3-opus-20240229" readonly class="!mb-1rem">
+                        <input type="text" id="anthropicModelDisplay" value="claude-opus-4-8" readonly class="!mb-1rem">
                     </div>
 
                     <div class="mt-4">
@@ -1550,13 +1616,35 @@
                 openAiApiKey: '',
                 openAiModel: 'gpt-4o', // Fixed model
                 anthropicApiKey: '',
-                anthropicModel: 'claude-3-opus-20240229', // Fixed model
+                anthropicModel: 'claude-opus-4-8', // Fixed model
                 aiSystemPrompt: '', // New setting for custom system prompt
                 vibeChatHistory: [], // Stores chat history for Vibe AI
                 defaultNewTabType: 'txt' // New setting
             };
             
             const textInput = document.getElementById('textInput');
+            const highlightOverlay = document.getElementById('highlightOverlay');
+            const highlightCode = highlightOverlay ? highlightOverlay.querySelector('code') : null;
+            const findHighlightLayer = document.getElementById('findHighlightLayer');
+            const currentLineHighlight = document.getElementById('currentLineHighlight');
+            const EDITOR_PAIRS = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
+            const EDITOR_OPENERS = { '(': ')', '[': ']', '{': '}' };
+            const EDITOR_CLOSERS = new Set([')', ']', '}', '"', "'", '`']);
+            const EDITOR_LANG_LABELS = {
+                javascript: 'JS', typescript: 'TS', xml: 'HTML/XML', css: 'CSS', scss: 'SCSS',
+                json: 'JSON', markdown: 'MD', python: 'PY', java: 'Java', c: 'C', cpp: 'C++',
+                csharp: 'C#', go: 'Go', rust: 'Rust', ruby: 'Ruby', php: 'PHP', bash: 'Shell',
+                yaml: 'YAML', sql: 'SQL', plaintext: 'Text'
+            };
+            const MAX_HIGHLIGHT_LENGTH = 100000; // Skip live highlighting above this size to stay responsive.
+            const EDITOR_HIGHLIGHT_LANGS = {
+                js: 'javascript', mjs: 'javascript', cjs: 'javascript', jsx: 'javascript',
+                ts: 'typescript', tsx: 'typescript', html: 'xml', htm: 'xml', xml: 'xml', svg: 'xml',
+                css: 'css', scss: 'scss', json: 'json', md: 'markdown', markdown: 'markdown',
+                py: 'python', java: 'java', c: 'c', h: 'c', cpp: 'cpp', cc: 'cpp', hpp: 'cpp',
+                cs: 'csharp', go: 'go', rs: 'rust', rb: 'ruby', php: 'php', sh: 'bash', bash: 'bash',
+                yml: 'yaml', yaml: 'yaml', sql: 'sql'
+            };
             const fileInput = document.getElementById('fileInput');
             const messageBox = document.getElementById('messageBox');
             const lineNumberContainer = document.getElementById('lineNumberContainer');
@@ -1704,6 +1792,10 @@
 
                 document.body.style.overflow = 'hidden';
 
+                if (modal === findReplaceModal && findInput && findInput.value) {
+                    findText(false, false); // show live count + highlight all matches without stealing focus
+                }
+
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         const preferredFocus = modal.querySelector('[autofocus], input:not([type="hidden"]), textarea, select, button');
@@ -1715,6 +1807,8 @@
 
             function handleModalClose(modal) {
                 modal.setAttribute('aria-hidden', 'true');
+
+                if (modal === findReplaceModal) renderFindHighlights(); // clear match highlights
 
                 if (!getOpenModal()) {
                     document.body.style.overflow = '';
@@ -2280,7 +2374,200 @@
                 }
             }
             
+            function getEditorHighlightLanguage() {
+                const activeTab = tabs.find(tab => tab.id === activeTabId);
+                const ext = (getFileExtension(activeTab ? activeTab.title : '') || '').toLowerCase();
+                const lang = EDITOR_HIGHLIGHT_LANGS[ext];
+                if (lang && typeof hljs !== 'undefined' && hljs.getLanguage(lang)) return lang;
+                return 'plaintext';
+            }
+
+            function syncOverlayScroll() {
+                const st = textInput.scrollTop, sl = textInput.scrollLeft;
+                if (highlightOverlay) { highlightOverlay.scrollTop = st; highlightOverlay.scrollLeft = sl; }
+                if (findHighlightLayer) { findHighlightLayer.scrollTop = st; findHighlightLayer.scrollLeft = sl; }
+            }
+
+            function escapeOverlayHtml(str) {
+                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            function updateHighlight() {
+                if (!highlightCode) return;
+                const value = textInput.value;
+                // Keep the overlays' content box identical to the textarea's, even when a scrollbar appears.
+                const scrollbarWidth = Math.max(0, textInput.offsetWidth - textInput.clientWidth);
+                const padRight = (12 + scrollbarWidth) + 'px';
+                highlightOverlay.style.paddingRight = padRight;
+                if (findHighlightLayer) findHighlightLayer.style.paddingRight = padRight;
+                if (typeof hljs === 'undefined' || value.length > MAX_HIGHLIGHT_LENGTH) {
+                    highlightCode.className = '';
+                    highlightCode.textContent = value + '\n';
+                } else {
+                    const lang = getEditorHighlightLanguage();
+                    let highlighted;
+                    try {
+                        highlighted = hljs.highlight(value, { language: lang, ignoreIllegals: true }).value;
+                    } catch (e) {
+                        highlighted = escapeOverlayHtml(value);
+                    }
+                    // hljs escapes its output, so the trailing newline keeps the overlay as tall as the textarea.
+                    highlightCode.className = 'hljs language-' + lang;
+                    highlightCode.innerHTML = highlighted + '\n';
+                }
+                renderFindHighlights();
+                updateCurrentLineHighlight();
+                syncOverlayScroll();
+            }
+
+            function renderFindHighlights() {
+                if (!findHighlightLayer) return;
+                const matches = editorState.findMatches || [];
+                const value = textInput.value;
+                if (!findReplaceModal.classList.contains('show') || matches.length === 0 || value.length > MAX_HIGHLIGHT_LENGTH) {
+                    if (findHighlightLayer.childNodes.length) findHighlightLayer.textContent = '';
+                    return;
+                }
+                let html = '';
+                let last = 0;
+                matches.forEach((m) => {
+                    if (m.start < last) return; // ignore overlaps
+                    html += escapeOverlayHtml(value.slice(last, m.start));
+                    html += '<mark>' + escapeOverlayHtml(value.slice(m.start, m.end)) + '</mark>';
+                    last = m.end;
+                });
+                html += escapeOverlayHtml(value.slice(last)) + '\n';
+                findHighlightLayer.innerHTML = html;
+            }
+
+            function updateCurrentLineHighlight() {
+                if (!currentLineHighlight) return;
+                if (textInput.selectionStart !== textInput.selectionEnd) {
+                    currentLineHighlight.style.display = 'none';
+                    return;
+                }
+                const cs = getComputedStyle(textInput);
+                const lineHeight = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) * 1.6) || 24;
+                const padTop = parseFloat(cs.paddingTop) || 0;
+                const lineIndex = textInput.value.slice(0, textInput.selectionStart).split('\n').length - 1;
+                const top = padTop + lineIndex * lineHeight - textInput.scrollTop;
+                currentLineHighlight.style.display = 'block';
+                currentLineHighlight.style.height = lineHeight + 'px';
+                currentLineHighlight.style.transform = `translateY(${top}px)`;
+            }
+
+            function updateStatusExtras() {
+                const selItem = document.getElementById('selectionStatItem');
+                const selStat = document.getElementById('selectionStat');
+                const langStat = document.getElementById('languageStat');
+                if (selItem && selStat) {
+                    const len = textInput.selectionEnd - textInput.selectionStart;
+                    if (len > 0) {
+                        const lines = textInput.value.slice(textInput.selectionStart, textInput.selectionEnd).split('\n').length;
+                        selStat.textContent = lines > 1 ? `${len}자 · ${lines}줄` : `${len}자`;
+                        selItem.style.display = '';
+                    } else {
+                        selItem.style.display = 'none';
+                    }
+                }
+                if (langStat) {
+                    const lang = getEditorHighlightLanguage();
+                    langStat.textContent = EDITOR_LANG_LABELS[lang] || lang;
+                }
+            }
+
+            function refreshAfterEdit() {
+                const currentTab = tabs.find(tab => tab.id === activeTabId);
+                if (currentTab) currentTab.content = textInput.value;
+                setTabModified(activeTabId, true);
+                updateLineNumbers();
+                updateStats();
+                if (editorState.autoSave) startAutoSaveTimer();
+            }
+
+            function editorIsWordChar(ch) { return ch ? /[\w$]/.test(ch) : false; }
+
+            // Editing ergonomics for the code input: auto-indent, auto-close pairs, skip-over, pair-backspace.
+            function handleEditorTypingKey(e) {
+                if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return false;
+                const value = textInput.value;
+                const start = textInput.selectionStart;
+                const end = textInput.selectionEnd;
+
+                if (e.key === 'Enter') {
+                    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                    const indent = (value.slice(lineStart, start).match(/^[ \t]*/) || [''])[0];
+                    const before = value[start - 1];
+                    const after = value[end];
+                    if (start === end && before && EDITOR_OPENERS[before]) {
+                        e.preventDefault();
+                        saveToUndoStack();
+                        const tabChars = ' '.repeat(editorState.tabSize);
+                        if (after === EDITOR_OPENERS[before]) {
+                            textInput.setRangeText('\n' + indent + tabChars + '\n' + indent, start, end, 'end');
+                            const caret = start + 1 + indent.length + tabChars.length;
+                            textInput.selectionStart = textInput.selectionEnd = caret;
+                        } else {
+                            textInput.setRangeText('\n' + indent + tabChars, start, end, 'end');
+                        }
+                        refreshAfterEdit();
+                        return true;
+                    }
+                    if (indent.length > 0) {
+                        e.preventDefault();
+                        saveToUndoStack();
+                        textInput.setRangeText('\n' + indent, start, end, 'end');
+                        refreshAfterEdit();
+                        return true;
+                    }
+                    return false;
+                }
+
+                if (EDITOR_PAIRS[e.key]) {
+                    const open = e.key, close = EDITOR_PAIRS[e.key];
+                    if (start !== end) { // wrap the current selection
+                        e.preventDefault();
+                        saveToUndoStack();
+                        textInput.setRangeText(open + value.slice(start, end) + close, start, end, 'preserve');
+                        textInput.selectionStart = start + 1;
+                        textInput.selectionEnd = end + 1;
+                        refreshAfterEdit();
+                        return true;
+                    }
+                    const isQuote = (open === '"' || open === "'" || open === '`');
+                    if (isQuote && (editorIsWordChar(value[start - 1]) || editorIsWordChar(value[start]))) {
+                        return false; // a quote next to a word: insert a single character (e.g. don't)
+                    }
+                    e.preventDefault();
+                    saveToUndoStack();
+                    textInput.setRangeText(open + close, start, end, 'end');
+                    textInput.selectionStart = textInput.selectionEnd = start + 1;
+                    refreshAfterEdit();
+                    return true;
+                }
+
+                if (EDITOR_CLOSERS.has(e.key) && start === end && value[start] === e.key) {
+                    e.preventDefault(); // skip over an auto-inserted closer
+                    textInput.selectionStart = textInput.selectionEnd = start + 1;
+                    updateCursorPosition();
+                    return true;
+                }
+
+                if (e.key === 'Backspace' && start === end && start > 0 &&
+                    EDITOR_PAIRS[value[start - 1]] && EDITOR_PAIRS[value[start - 1]] === value[start]) {
+                    e.preventDefault(); // delete an empty pair in one keystroke
+                    saveToUndoStack();
+                    textInput.setRangeText('', start - 1, start + 1, 'end');
+                    textInput.selectionStart = textInput.selectionEnd = start - 1;
+                    refreshAfterEdit();
+                    return true;
+                }
+
+                return false;
+            }
+
             function updateLineNumbers() {
+                updateHighlight();
                 if (!editorState.showLineNumbers) {
                     lineNumberContainer.innerHTML = ''; 
                     lineNumberContainer.style.display = 'none';
@@ -2325,6 +2612,8 @@
                 
                 editorState.cursorPosition = { line: currentLineNumber, column: currentColumnNumber };
                 document.getElementById('cursorPosition').textContent = `위치: ${currentLineNumber}:${currentColumnNumber}`;
+                updateStatusExtras();
+                updateCurrentLineHighlight();
             }
 
             function showMessage(message, type = 'info', duration = 3000) {
@@ -2375,9 +2664,9 @@
             }
 
             // --- FIND/REPLACE, UNDO/REDO ---
-            function findText(isNext = false) {
+            function findText(isNext = false, moveSelection = true) {
                 const searchText = findInput.value;
-                editorState.lastSearchTerm = searchText; 
+                editorState.lastSearchTerm = searchText;
                 const content = textInput.value;
                 const useRegex = regexCheckbox.checked;
                 const caseSensitive = matchCaseCheckbox.checked;
@@ -2387,7 +2676,8 @@
                     findReplaceMessage.textContent = '찾을 내용을 입력하세요.';
                     editorState.findMatches = [];
                     editorState.currentMatchIndex = -1;
-                    textInput.focus(); 
+                    renderFindHighlights();
+                    if (moveSelection) textInput.focus();
                     return;
                 }
 
@@ -2411,20 +2701,26 @@
                     if (matches.length === 0) {
                         findReplaceMessage.textContent = '일치하는 항목이 없습니다.';
                         editorState.currentMatchIndex = -1;
+                    } else if (!moveSelection) {
+                        // Live update while typing: show the total without stealing focus/selection.
+                        editorState.currentMatchIndex = -1;
+                        findReplaceMessage.textContent = `${matches.length}개 일치`;
                     } else {
-                        if (isNext) { 
+                        if (isNext) {
                             editorState.currentMatchIndex = (editorState.currentMatchIndex + 1) % matches.length;
-                        } else { 
-                            editorState.currentMatchIndex = 0; 
+                        } else {
+                            editorState.currentMatchIndex = 0;
                         }
                         highlightMatch(editorState.currentMatchIndex);
                         findReplaceMessage.textContent = `${editorState.currentMatchIndex + 1}/${matches.length} 일치`;
                     }
+                    renderFindHighlights();
                 } catch (e) {
                     findReplaceMessage.textContent = '잘못된 정규식입니다.';
                     showMessage('정규식 오류: ' + e.message, 'error');
                     editorState.findMatches = [];
                     editorState.currentMatchIndex = -1;
+                    renderFindHighlights();
                 }
             }
 
@@ -2507,8 +2803,9 @@
                 updateStats();
                 
                 findReplaceMessage.textContent = `${replacedCount}개 항목을 모두 바꿨습니다.`;
-                editorState.findMatches = []; 
+                editorState.findMatches = [];
                 editorState.currentMatchIndex = -1;
+                renderFindHighlights(); // clear now-stale match highlights
                 showMessage(`${replacedCount}개 항목을 모두 바꿨습니다.`, 'success');
             }
             
@@ -3082,8 +3379,6 @@
             }
 
             function bundleProject(files) {
-              console.log("[Bundle] Starting project bundle. Available files (map keys are lowercased):", JSON.parse(JSON.stringify(files)));
-              
               let actualIndexHtmlContent;
               let indexHtmlFilename;
 
@@ -3528,10 +3823,9 @@
                                 systemInstruction: { parts: [{ text: systemInstruction }] },
                                 contents: [{ role: "user", parts: [{ text: userQuery }] }]
                             };
-                            console.log("Gemini (AI Modal) API Payload:", JSON.stringify(geminiPayload, null, 2));
-                            const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${editorState.geminiModel}:generateContent?key=${editorState.geminiApiKey}`, {
+                            const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${editorState.geminiModel}:generateContent`, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': editorState.geminiApiKey },
                                 body: JSON.stringify(geminiPayload)
                             });
                             const geminiResult = await geminiResponse.json();
@@ -3549,7 +3843,6 @@
                                 temperature: 0.7,
                                 max_tokens: 1000,
                             };
-                            console.log("OpenAI (AI Modal) API Payload:", JSON.stringify(openaiPayload, null, 2));
                             const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
                                 method: 'POST',
                                 headers: {
@@ -3569,15 +3862,14 @@
                                 system: systemInstruction,
                                 messages: [{ role: "user", content: userQuery }],
                                 max_tokens: 1000,
-                                temperature: 0.7,
                             };
-                            console.log("Anthropic (AI Modal) API Payload:", JSON.stringify(anthropicPayload, null, 2));
                             const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'x-api-key': editorState.anthropicApiKey,
-                                    'anthropic-version': '2023-06-01'
+                                    'anthropic-version': '2023-06-01',
+                                    'anthropic-dangerous-direct-browser-access': 'true'
                                 },
                                 body: JSON.stringify(anthropicPayload)
                             });
@@ -3753,24 +4045,31 @@
                                 }
                             }
                             setTabModified(activeTabId, true);
-                            updateCursorPosition(); 
-                            updateLineNumbers(); 
+                            updateCursorPosition();
+                            updateLineNumbers();
+                        } else {
+                            handleEditorTypingKey(e);
                         }
                     }
                 });
             }
-            
+
             // --- EVENT LISTENERS ---
             function setupEventListeners() {
+                let findRecomputeTimer = null;
                 textInput.addEventListener('input', () => {
-                    saveToUndoStack(); 
+                    saveToUndoStack();
                     debouncedUpdateLineNumbers(); // Debounced
                     debouncedUpdateStats();      // Debounced
                     const currentTab = tabs.find(tab => tab.id === activeTabId);
                     if (currentTab) {
                         setTabModified(activeTabId, textInput.value !== (editorState.lastSavedStates[activeTabId] || currentTab.lastSavedContent || ''));
-                        currentTab.content = textInput.value; 
+                        currentTab.content = textInput.value;
                         if (currentTab.modified && editorState.autoSave) startAutoSaveTimer();
+                    }
+                    if (findReplaceModal.classList.contains('show') && findInput.value) {
+                        clearTimeout(findRecomputeTimer);
+                        findRecomputeTimer = setTimeout(() => findText(false, false), 200);
                     }
                 });
                 textInput.addEventListener('paste', async (e) => {
@@ -3793,9 +4092,10 @@
                     }
                 });
 
-                textInput.addEventListener('scroll', () => { if(editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop; });
+                textInput.addEventListener('scroll', () => { if(editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop; syncOverlayScroll(); updateCurrentLineHighlight(); });
                 textInput.addEventListener('click', updateCursorPosition);
-                textInput.addEventListener('keyup', updateCursorPosition); 
+                textInput.addEventListener('keyup', updateCursorPosition);
+                textInput.addEventListener('select', () => { updateStatusExtras(); updateCurrentLineHighlight(); });
                 
                 fileInput.addEventListener('change', handleFileLoad);
                 document.getElementById('newFileButton').addEventListener('click', () => createNewTab());
@@ -3929,12 +4229,12 @@
                 findNextButton.addEventListener('click', findNext);
                 replaceButton.addEventListener('click', replaceCurrent);
                 replaceAllButton.addEventListener('click', replaceAllFound);
-                // Removed input event listener from findInput to prevent constant searching
-                // findInput.addEventListener('input', () => { 
-                //     if (findInput.value !== editorState.lastSearchTerm) {
-                //         findText(false); 
-                //     }
-                // }); 
+                // Live search: update the match count and highlight all matches as you type (debounced, no focus steal).
+                let findLiveTimer = null;
+                findInput.addEventListener('input', () => {
+                    clearTimeout(findLiveTimer);
+                    findLiveTimer = setTimeout(() => findText(false, false), 150);
+                });
                 findInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
@@ -4111,7 +4411,8 @@
                         editorState.aiModelProvider = parsed.aiModelProvider || 'gemini';
                         editorState.geminiModel = normalizeGeminiModel(parsed.geminiModel);
                         editorState.openAiModel = parsed.openAiModel || 'gpt-4o';
-                        editorState.anthropicModel = parsed.anthropicModel || 'claude-3-opus-20240229';
+                        // Map the retired claude-3-opus model (and any missing value) to the current default.
+                        editorState.anthropicModel = (parsed.anthropicModel && parsed.anthropicModel !== 'claude-3-opus-20240229') ? parsed.anthropicModel : 'claude-opus-4-8';
                         editorState.aiSystemPrompt = parsed.aiSystemPrompt || '';
                         editorState.vibeChatHistory = parsed.vibeChatHistory || []; // Load chat history
 
@@ -4127,8 +4428,19 @@
                 
                 lineNumberContainer.style.display = editorState.showLineNumbers ? 'block' : 'none';
                 textInput.style.whiteSpace = editorState.wordWrap ? 'pre-wrap' : 'pre';
-                textInput.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal'; 
-                updateLineNumbers(); 
+                textInput.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
+
+                [highlightOverlay, findHighlightLayer].forEach((el) => {
+                    if (!el) return;
+                    el.style.fontSize = `${editorState.fontSize}px`;
+                    el.style.fontFamily = editorState.fontFamily;
+                    el.style.whiteSpace = editorState.wordWrap ? 'pre-wrap' : 'pre';
+                    el.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
+                });
+                if (highlightCode) {
+                    highlightCode.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
+                }
+                updateLineNumbers();
             }
 
             function setupAiProviderVisibility() {
@@ -4564,7 +4876,7 @@
 
             // Internal API call functions, separated for clarity
             async function callGeminiApiInternal(systemInstruction, finalUserQuery) {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${editorState.geminiModel}:generateContent?key=${editorState.geminiApiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${editorState.geminiModel}:generateContent`;
                 
                 // Construct chat history for Gemini API
                 // Gemini API expects `contents` to be strictly alternating user/model turns.
@@ -4596,11 +4908,9 @@
                     contents: contents
                 };
                 
-                console.log("Gemini API Payload:", JSON.stringify(payload, null, 2));
-
                 const response = await fetch(apiUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': editorState.geminiApiKey },
                     body: JSON.stringify(payload)
                 });
 
@@ -4645,8 +4955,6 @@
                     max_tokens: 1000,
                 };
                 
-                console.log("OpenAI API Payload:", JSON.stringify(payload, null, 2));
-
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
@@ -4693,17 +5001,15 @@
                     system: systemInstruction, // System prompt is a separate field for Anthropic
                     messages: messages,
                     max_tokens: 1000,
-                    temperature: 0.7,
                 };
-
-                console.log("Anthropic API Payload:", JSON.stringify(payload, null, 2));
 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'x-api-key': editorState.anthropicApiKey,
-                        'anthropic-version': '2023-06-01'
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
                     },
                     body: JSON.stringify(payload)
                 });
