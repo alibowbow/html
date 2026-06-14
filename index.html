@@ -232,26 +232,67 @@
             border: 1px solid var(--border-color); 
             border-radius: 0.375rem; 
         }
-        #textInput { 
-            flex-grow: 1; 
-            overflow-y: auto; 
-            width: 100%; 
-            resize: none; 
-            white-space: pre; 
-            line-height: 1.6; 
-            font-size: 16px; 
-            background-color: var(--bg-tertiary); 
-            color: var(--text-primary); 
-            border: none; 
-            border-top-right-radius: 0.375rem; 
-            border-bottom-right-radius: 0.375rem; 
-            padding: 0.75rem; 
+        #textInput {
+            flex-grow: 1;
+            overflow-y: auto;
+            width: 100%;
+            resize: none;
+            white-space: pre;
+            line-height: 1.6;
+            font-size: 16px;
+            position: relative;
+            z-index: 1;
+            background-color: transparent;
+            color: transparent;
+            caret-color: var(--text-primary);
+            border: none;
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            padding: 0.75rem;
             font-family: 'JetBrains Mono', monospace;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
-        #textInput:focus { outline: none; } 
+        #textInput:focus { outline: none; }
         .editor-area:focus-within { outline: 2px solid var(--border-focus); border-color: var(--border-focus); }
         .editor-area.highlight-find-match #textInput::selection { background-color: rgba(234, 179, 8, 0.3) !important; }
+
+        /* Live syntax highlighting overlay (sits behind the transparent textarea). */
+        .code-input-wrap {
+            position: relative;
+            display: flex;
+            flex-grow: 1;
+            min-width: 0;
+            background-color: var(--bg-tertiary);
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            transition: background-color 0.3s ease;
+        }
+        #highlightOverlay {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            padding: 0.75rem;
+            border: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+            pointer-events: none;
+            white-space: pre;
+            line-height: 1.6;
+            font-size: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            z-index: 0;
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+        }
+        #highlightOverlay code {
+            display: block;
+            margin: 0;
+            padding: 0;
+            background: transparent !important;
+            font: inherit;
+            line-height: inherit;
+            white-space: inherit;
+        }
 
         #lineNumberContainer { 
             width: 50px; 
@@ -926,7 +967,10 @@
                 <div class="textarea-wrapper">
                     <div class="editor-area">
                         <div id="lineNumberContainer"></div>
-                        <textarea id="textInput" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요. 파일을 끌어다 놓을 수도 있습니다." spellcheck="false"></textarea>
+                        <div class="code-input-wrap">
+                            <pre id="highlightOverlay" aria-hidden="true"><code></code></pre>
+                            <textarea id="textInput" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요. 파일을 끌어다 놓을 수도 있습니다." spellcheck="false"></textarea>
+                        </div>
                     </div>
                 </div>
             </main>
@@ -1050,7 +1094,7 @@
                         <label for="anthropicApiKeyInput">Anthropic API 키:</label>
                         <input type="password" id="anthropicApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 Anthropic API 키를 입력하세요">
                         <label for="anthropicModelDisplay">Anthropic 모델:</label>
-                        <input type="text" id="anthropicModelDisplay" value="claude-3-opus-20240229" readonly class="!mb-1rem">
+                        <input type="text" id="anthropicModelDisplay" value="claude-opus-4-8" readonly class="!mb-1rem">
                     </div>
 
                     <div class="mt-4">
@@ -1550,13 +1594,24 @@
                 openAiApiKey: '',
                 openAiModel: 'gpt-4o', // Fixed model
                 anthropicApiKey: '',
-                anthropicModel: 'claude-3-opus-20240229', // Fixed model
+                anthropicModel: 'claude-opus-4-8', // Fixed model
                 aiSystemPrompt: '', // New setting for custom system prompt
                 vibeChatHistory: [], // Stores chat history for Vibe AI
                 defaultNewTabType: 'txt' // New setting
             };
             
             const textInput = document.getElementById('textInput');
+            const highlightOverlay = document.getElementById('highlightOverlay');
+            const highlightCode = highlightOverlay ? highlightOverlay.querySelector('code') : null;
+            const MAX_HIGHLIGHT_LENGTH = 100000; // Skip live highlighting above this size to stay responsive.
+            const EDITOR_HIGHLIGHT_LANGS = {
+                js: 'javascript', mjs: 'javascript', cjs: 'javascript', jsx: 'javascript',
+                ts: 'typescript', tsx: 'typescript', html: 'xml', htm: 'xml', xml: 'xml', svg: 'xml',
+                css: 'css', scss: 'scss', json: 'json', md: 'markdown', markdown: 'markdown',
+                py: 'python', java: 'java', c: 'c', h: 'c', cpp: 'cpp', cc: 'cpp', hpp: 'cpp',
+                cs: 'csharp', go: 'go', rs: 'rust', rb: 'ruby', php: 'php', sh: 'bash', bash: 'bash',
+                yml: 'yaml', yaml: 'yaml', sql: 'sql'
+            };
             const fileInput = document.getElementById('fileInput');
             const messageBox = document.getElementById('messageBox');
             const lineNumberContainer = document.getElementById('lineNumberContainer');
@@ -2280,7 +2335,47 @@
                 }
             }
             
+            function getEditorHighlightLanguage() {
+                const activeTab = tabs.find(tab => tab.id === activeTabId);
+                const ext = (getFileExtension(activeTab ? activeTab.title : '') || '').toLowerCase();
+                const lang = EDITOR_HIGHLIGHT_LANGS[ext];
+                if (lang && typeof hljs !== 'undefined' && hljs.getLanguage(lang)) return lang;
+                return 'plaintext';
+            }
+
+            function syncOverlayScroll() {
+                if (!highlightOverlay) return;
+                highlightOverlay.scrollTop = textInput.scrollTop;
+                highlightOverlay.scrollLeft = textInput.scrollLeft;
+            }
+
+            function updateHighlight() {
+                if (!highlightCode) return;
+                const value = textInput.value;
+                // Keep the overlay's content box identical to the textarea's, even when a scrollbar appears.
+                const scrollbarWidth = Math.max(0, textInput.offsetWidth - textInput.clientWidth);
+                highlightOverlay.style.paddingRight = (12 + scrollbarWidth) + 'px';
+                if (typeof hljs === 'undefined' || value.length > MAX_HIGHLIGHT_LENGTH) {
+                    highlightCode.className = '';
+                    highlightCode.textContent = value + '\n';
+                    syncOverlayScroll();
+                    return;
+                }
+                const lang = getEditorHighlightLanguage();
+                let highlighted;
+                try {
+                    highlighted = hljs.highlight(value, { language: lang, ignoreIllegals: true }).value;
+                } catch (e) {
+                    highlighted = value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                }
+                // hljs escapes its output, so the trailing newline keeps the overlay as tall as the textarea.
+                highlightCode.className = 'hljs language-' + lang;
+                highlightCode.innerHTML = highlighted + '\n';
+                syncOverlayScroll();
+            }
+
             function updateLineNumbers() {
+                updateHighlight();
                 if (!editorState.showLineNumbers) {
                     lineNumberContainer.innerHTML = ''; 
                     lineNumberContainer.style.display = 'none';
@@ -3082,8 +3177,6 @@
             }
 
             function bundleProject(files) {
-              console.log("[Bundle] Starting project bundle. Available files (map keys are lowercased):", JSON.parse(JSON.stringify(files)));
-              
               let actualIndexHtmlContent;
               let indexHtmlFilename;
 
@@ -3528,10 +3621,9 @@
                                 systemInstruction: { parts: [{ text: systemInstruction }] },
                                 contents: [{ role: "user", parts: [{ text: userQuery }] }]
                             };
-                            console.log("Gemini (AI Modal) API Payload:", JSON.stringify(geminiPayload, null, 2));
-                            const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${editorState.geminiModel}:generateContent?key=${editorState.geminiApiKey}`, {
+                            const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${editorState.geminiModel}:generateContent`, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': editorState.geminiApiKey },
                                 body: JSON.stringify(geminiPayload)
                             });
                             const geminiResult = await geminiResponse.json();
@@ -3549,7 +3641,6 @@
                                 temperature: 0.7,
                                 max_tokens: 1000,
                             };
-                            console.log("OpenAI (AI Modal) API Payload:", JSON.stringify(openaiPayload, null, 2));
                             const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
                                 method: 'POST',
                                 headers: {
@@ -3569,15 +3660,14 @@
                                 system: systemInstruction,
                                 messages: [{ role: "user", content: userQuery }],
                                 max_tokens: 1000,
-                                temperature: 0.7,
                             };
-                            console.log("Anthropic (AI Modal) API Payload:", JSON.stringify(anthropicPayload, null, 2));
                             const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'x-api-key': editorState.anthropicApiKey,
-                                    'anthropic-version': '2023-06-01'
+                                    'anthropic-version': '2023-06-01',
+                                    'anthropic-dangerous-direct-browser-access': 'true'
                                 },
                                 body: JSON.stringify(anthropicPayload)
                             });
@@ -3793,7 +3883,7 @@
                     }
                 });
 
-                textInput.addEventListener('scroll', () => { if(editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop; });
+                textInput.addEventListener('scroll', () => { if(editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop; syncOverlayScroll(); });
                 textInput.addEventListener('click', updateCursorPosition);
                 textInput.addEventListener('keyup', updateCursorPosition); 
                 
@@ -4111,7 +4201,8 @@
                         editorState.aiModelProvider = parsed.aiModelProvider || 'gemini';
                         editorState.geminiModel = normalizeGeminiModel(parsed.geminiModel);
                         editorState.openAiModel = parsed.openAiModel || 'gpt-4o';
-                        editorState.anthropicModel = parsed.anthropicModel || 'claude-3-opus-20240229';
+                        // Map the retired claude-3-opus model (and any missing value) to the current default.
+                        editorState.anthropicModel = (parsed.anthropicModel && parsed.anthropicModel !== 'claude-3-opus-20240229') ? parsed.anthropicModel : 'claude-opus-4-8';
                         editorState.aiSystemPrompt = parsed.aiSystemPrompt || '';
                         editorState.vibeChatHistory = parsed.vibeChatHistory || []; // Load chat history
 
@@ -4127,8 +4218,17 @@
                 
                 lineNumberContainer.style.display = editorState.showLineNumbers ? 'block' : 'none';
                 textInput.style.whiteSpace = editorState.wordWrap ? 'pre-wrap' : 'pre';
-                textInput.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal'; 
-                updateLineNumbers(); 
+                textInput.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
+
+                if (highlightOverlay) {
+                    highlightOverlay.style.fontSize = `${editorState.fontSize}px`;
+                    highlightOverlay.style.fontFamily = editorState.fontFamily;
+                    highlightOverlay.style.whiteSpace = editorState.wordWrap ? 'pre-wrap' : 'pre';
+                }
+                if (highlightCode) {
+                    highlightCode.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
+                }
+                updateLineNumbers();
             }
 
             function setupAiProviderVisibility() {
@@ -4564,7 +4664,7 @@
 
             // Internal API call functions, separated for clarity
             async function callGeminiApiInternal(systemInstruction, finalUserQuery) {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${editorState.geminiModel}:generateContent?key=${editorState.geminiApiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${editorState.geminiModel}:generateContent`;
                 
                 // Construct chat history for Gemini API
                 // Gemini API expects `contents` to be strictly alternating user/model turns.
@@ -4596,11 +4696,9 @@
                     contents: contents
                 };
                 
-                console.log("Gemini API Payload:", JSON.stringify(payload, null, 2));
-
                 const response = await fetch(apiUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': editorState.geminiApiKey },
                     body: JSON.stringify(payload)
                 });
 
@@ -4645,8 +4743,6 @@
                     max_tokens: 1000,
                 };
                 
-                console.log("OpenAI API Payload:", JSON.stringify(payload, null, 2));
-
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
@@ -4693,17 +4789,15 @@
                     system: systemInstruction, // System prompt is a separate field for Anthropic
                     messages: messages,
                     max_tokens: 1000,
-                    temperature: 0.7,
                 };
-
-                console.log("Anthropic API Payload:", JSON.stringify(payload, null, 2));
 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'x-api-key': editorState.anthropicApiKey,
-                        'anthropic-version': '2023-06-01'
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
                     },
                     body: JSON.stringify(payload)
                 });
