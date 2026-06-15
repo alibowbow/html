@@ -29,80 +29,91 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css" id="highlightTheme">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css">
     <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script> <!-- JSZip for project export -->
     <style>
         :root {
-            --bg-primary: #0f1420;
-            --bg-secondary: #161d2b;
-            --bg-tertiary: #1f2738;
-            --text-primary: #e4e8f1;
-            --text-secondary: #97a3b6;
-            --text-accent: #93c5fd;
-            --border-color: #2a3346;
-            --border-focus: #5b8def;
-            --button-bg: #273143;
-            --button-hover: #323e54;
-            --button-active: #3b4763;
-            --button-disabled: #1e2636;
-            --success-color: #10b981;
-            --error-color: #ef4444;
-            --info-color: #3b82f6;
-            --purple-accent: #8b5cf6;
+            --bg-primary: #0c111b;
+            --bg-secondary: #121826;
+            --bg-tertiary: #1a2130;
+            --surface-1: rgba(255,255,255,0.045);
+            --surface-2: rgba(255,255,255,0.09);
+            --text-primary: #eaeef7;
+            --text-secondary: #9aa6bd;
+            --text-muted: #6b7689;
+            --text-accent: #b7c3ff;
+            --border-color: rgba(255,255,255,0.09);
+            --border-strong: rgba(255,255,255,0.16);
+            --border-focus: #6e7bff;
+            --button-bg: rgba(255,255,255,0.045);
+            --button-hover: rgba(255,255,255,0.09);
+            --button-active: rgba(255,255,255,0.14);
+            --button-disabled: rgba(255,255,255,0.03);
+            --success-color: #34d399;
+            --error-color: #fb7185;
+            --info-color: #60a5fa;
+            --purple-accent: #a78bfa;
             --scrollbar-track: transparent;
-            --scrollbar-thumb: #3a4660;
+            --scrollbar-thumb: rgba(255,255,255,0.16);
             --current-line-bg: rgba(255,255,255,0.05);
-            --accent: #4f7df7;
-            --accent-strong: #3d6ae6;
+            --accent: #6e7bff;
+            --accent-strong: #8b95ff;
             --accent-contrast: #ffffff;
-            --accent-rgb: 79,125,247;
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
-            --shadow-md: 0 10px 30px -12px rgba(0,0,0,0.55);
-            --shadow-lg: 0 24px 60px -18px rgba(0,0,0,0.7);
-            --radius: 0.5rem;
+            --accent-rgb: 110,123,255;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+            --shadow-md: 0 12px 32px -12px rgba(0,0,0,0.6);
+            --shadow-lg: 0 30px 70px -24px rgba(0,0,0,0.78);
+            --radius: 0.625rem;
+            --radius-lg: 1rem;
         }
 
         .light-theme {
-            --bg-primary: #eef1f6;
+            --bg-primary: #eceef5;
             --bg-secondary: #ffffff;
-            --bg-tertiary: #f6f8fb;
+            --bg-tertiary: #f4f6fb;
+            --surface-1: rgba(15,23,42,0.035);
+            --surface-2: rgba(15,23,42,0.07);
             --text-primary: #0f172a;
-            --text-secondary: #5b6675;
-            --text-accent: #2454c6;
-            --border-color: #dde3ec;
-            --border-focus: #2563eb;
-            --button-bg: #eef1f6;
-            --button-hover: #e2e7f0;
-            --button-active: #ccd5e3;
-            --button-disabled: #eef1f6;
+            --text-secondary: #51607a;
+            --text-muted: #8590a4;
+            --text-accent: #4f46e5;
+            --border-color: rgba(15,23,42,0.10);
+            --border-strong: rgba(15,23,42,0.16);
+            --border-focus: #6366f1;
+            --button-bg: rgba(15,23,42,0.04);
+            --button-hover: rgba(15,23,42,0.08);
+            --button-active: rgba(15,23,42,0.12);
+            --button-disabled: rgba(15,23,42,0.03);
             --success-color: #059669;
-            --error-color: #dc2626;
+            --error-color: #e11d48;
             --info-color: #2563eb;
             --purple-accent: #7c3aed;
             --scrollbar-track: transparent;
-            --scrollbar-thumb: #c3ccda;
-            --current-line-bg: rgba(37,99,235,0.07);
-            --accent: #2563eb;
-            --accent-strong: #1d4ed8;
+            --scrollbar-thumb: rgba(15,23,42,0.2);
+            --current-line-bg: rgba(99,102,241,0.07);
+            --accent: #6366f1;
+            --accent-strong: #4f46e5;
             --accent-contrast: #ffffff;
-            --accent-rgb: 37,99,235;
+            --accent-rgb: 99,102,241;
             --shadow-sm: 0 1px 2px rgba(15,23,42,0.08);
-            --shadow-md: 0 10px 30px -12px rgba(15,23,42,0.14);
-            --shadow-lg: 0 24px 60px -18px rgba(15,23,42,0.22);
+            --shadow-md: 0 12px 32px -12px rgba(15,23,42,0.16);
+            --shadow-lg: 0 30px 70px -24px rgba(15,23,42,0.24);
         }
         
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
             overflow-x: hidden;
             min-height: 100vh;
             background-color: var(--bg-primary);
-            background-image: radial-gradient(1100px 520px at 50% -8%, rgba(var(--accent-rgb), 0.10), transparent 60%);
+            background-image: radial-gradient(1200px 600px at 50% -10%, rgba(var(--accent-rgb), 0.16), transparent 60%);
             background-attachment: fixed;
             color: var(--text-primary);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            letter-spacing: -0.005em;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
         ::selection { background-color: rgba(var(--accent-rgb), 0.32); }
@@ -231,7 +242,7 @@
             background-color: var(--bg-secondary);
             border: 1px solid var(--border-color);
             box-shadow: var(--shadow-lg);
-            border-radius: 0.9rem;
+            border-radius: var(--radius-lg);
             padding: 0;
             overflow: hidden;
             transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -253,14 +264,14 @@
         }
         
         header {
-            padding: 0.85rem 1.5rem;
-            background-color: var(--bg-primary);
+            padding: 0.9rem 1.5rem;
+            background: linear-gradient(180deg, rgba(var(--accent-rgb),0.10), transparent 72%), var(--bg-primary);
             border-bottom: 1px solid var(--border-color);
             box-shadow: inset 0 2px 0 0 var(--accent);
             flex-shrink: 0;
         }
         .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
-        .editor-title { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text-accent); }
+        .editor-title { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text-accent); }
         .top-bar-actions { display: flex; gap: 0.5rem; }
 
         .toolbar { 
@@ -291,9 +302,10 @@
             display: flex;
             flex-direction: column;
             border: 1px solid var(--border-color);
-            border-radius: 0.375rem;
+            border-radius: 0.75rem;
             overflow: hidden;
             background-color: var(--bg-secondary);
+            box-shadow: var(--shadow-sm);
         }
         #livePreviewPane.hidden { display: none; }
         .live-preview-header {
@@ -334,13 +346,14 @@
             .editor-split { flex-direction: column; }
             #livePreviewPane { min-height: 240px; }
         }
-        .editor-area { 
-            display: flex; 
-            overflow: hidden; 
-            align-items: stretch; 
-            flex-grow: 1; 
-            border: 1px solid var(--border-color); 
-            border-radius: 0.375rem; 
+        .editor-area {
+            display: flex;
+            overflow: hidden;
+            align-items: stretch;
+            flex-grow: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-sm);
         }
         #textInput {
             flex-grow: 1;
@@ -544,10 +557,10 @@
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin { animation: spin 1s linear infinite; }
         
-        .stats-bar { 
-            font-size: 0.8rem; 
-            color: var(--text-secondary); 
-            padding: 0.6rem 1.5rem; 
+        .stats-bar {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            padding: 0.6rem 1.5rem;
             background-color: var(--bg-primary); 
             border-top: 1px solid var(--border-color); 
             display: flex; 
