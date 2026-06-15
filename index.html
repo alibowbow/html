@@ -283,6 +283,57 @@
             padding: 0 1.5rem 1.5rem 1.5rem; 
         }
         .textarea-wrapper { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; min-height: 0; margin-top:1rem; }
+        .editor-split { display: flex; flex-grow: 1; min-height: 0; gap: 0.75rem; }
+        .editor-split > .editor-area { flex: 1 1 0; min-width: 0; }
+        #livePreviewPane {
+            flex: 1 1 0;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            overflow: hidden;
+            background-color: var(--bg-secondary);
+        }
+        #livePreviewPane.hidden { display: none; }
+        .live-preview-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            background-color: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .live-preview-title { font-weight: 600; color: var(--text-primary); margin-right: auto; }
+        .live-preview-header select {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.2rem 0.4rem;
+            font-size: 0.8rem;
+        }
+        .live-preview-icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            padding: 0.15rem 0.35rem;
+            border-radius: 0.3rem;
+            transition: color 0.2s ease, background-color 0.2s ease;
+        }
+        .live-preview-icon-btn:hover { color: var(--text-primary); background-color: var(--button-hover); }
+        #livePreviewFrame { flex-grow: 1; width: 100%; border: 0; background-color: #ffffff; }
+        .custom-button[aria-pressed="true"] { background-color: var(--accent); color: #fff; border-color: transparent; }
+        @media (max-width: 768px) {
+            .editor-split { flex-direction: column; }
+            #livePreviewPane { min-height: 240px; }
+        }
         .editor-area { 
             display: flex; 
             overflow: hidden; 
@@ -945,6 +996,9 @@
                 <div class="top-bar">
                     <span class="editor-title">텍스트 편집기 Pro 🚀</span>
                     <div class="top-bar-actions">
+                        <button id="livePreviewToggleButton" class="custom-button toolbar-button" title="실시간 미리보기 토글 (Ctrl+Shift+P)" aria-pressed="false">
+                            <i class="fas fa-eye"></i> <span class="sm:inline hidden">실시간 미리보기</span>
+                        </button>
                         <button id="vibeCodingToggleButton" class="custom-button toolbar-button" title="Vibe Coding AI 도우미 열기/닫기">
                             ✨ <span class="sm:inline hidden">Vibe AI</span>
                         </button>
@@ -1063,13 +1117,35 @@
 
             <main>
                 <div class="textarea-wrapper">
-                    <div class="editor-area">
-                        <div id="lineNumberContainer"></div>
-                        <div class="code-input-wrap">
-                            <div id="currentLineHighlight" aria-hidden="true"></div>
-                            <div id="findHighlightLayer" aria-hidden="true"></div>
-                            <pre id="highlightOverlay" aria-hidden="true"><code></code></pre>
-                            <textarea id="textInput" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요. 파일을 끌어다 놓을 수도 있습니다." spellcheck="false"></textarea>
+                    <div class="editor-split">
+                        <div class="editor-area">
+                            <div id="lineNumberContainer"></div>
+                            <div class="code-input-wrap">
+                                <div id="currentLineHighlight" aria-hidden="true"></div>
+                                <div id="findHighlightLayer" aria-hidden="true"></div>
+                                <pre id="highlightOverlay" aria-hidden="true"><code></code></pre>
+                                <textarea id="textInput" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요. 파일을 끌어다 놓을 수도 있습니다." spellcheck="false"></textarea>
+                            </div>
+                        </div>
+                        <div id="livePreviewPane" class="hidden">
+                            <div class="live-preview-header">
+                                <i class="fas fa-eye" aria-hidden="true"></i>
+                                <span class="live-preview-title">실시간 미리보기</span>
+                                <select id="livePreviewType" title="미리보기 형식" aria-label="미리보기 형식">
+                                    <option value="auto">자동</option>
+                                    <option value="html">HTML</option>
+                                    <option value="markdown">Markdown</option>
+                                    <option value="json">JSON</option>
+                                    <option value="xml">XML</option>
+                                    <option value="css">CSS</option>
+                                    <option value="js">JavaScript</option>
+                                    <option value="csv">CSV</option>
+                                    <option value="project">프로젝트</option>
+                                </select>
+                                <button id="livePreviewPopoutButton" class="live-preview-icon-btn" title="새 창으로 열기" aria-label="새 창으로 열기"><i class="fas fa-external-link-alt"></i></button>
+                                <button id="livePreviewCloseButton" class="live-preview-icon-btn" title="미리보기 닫기" aria-label="실시간 미리보기 닫기">&times;</button>
+                            </div>
+                            <iframe id="livePreviewFrame" title="실시간 미리보기" sandbox="allow-scripts allow-popups allow-modals allow-forms"></iframe>
                         </div>
                     </div>
                 </div>
@@ -1699,7 +1775,9 @@
                 anthropicModel: 'claude-opus-4-8', // Fixed model
                 aiSystemPrompt: '', // New setting for custom system prompt
                 vibeChatHistory: [], // Stores chat history for Vibe AI
-                defaultNewTabType: 'txt' // New setting
+                defaultNewTabType: 'txt', // New setting
+                livePreview: false, // Live preview pane enabled
+                livePreviewType: 'auto' // auto | html | markdown | json | xml | css | js | csv | project
             };
             
             const textInput = document.getElementById('textInput');
@@ -1707,6 +1785,10 @@
             const highlightCode = highlightOverlay ? highlightOverlay.querySelector('code') : null;
             const findHighlightLayer = document.getElementById('findHighlightLayer');
             const currentLineHighlight = document.getElementById('currentLineHighlight');
+            const livePreviewPane = document.getElementById('livePreviewPane');
+            const livePreviewFrame = document.getElementById('livePreviewFrame');
+            const livePreviewTypeSelect = document.getElementById('livePreviewType');
+            const livePreviewToggleButton = document.getElementById('livePreviewToggleButton');
             const EDITOR_PAIRS = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
             const EDITOR_OPENERS = { '(': ')', '[': ']', '{': '}' };
             const EDITOR_CLOSERS = new Set([')', ']', '}', '"', "'", '`']);
@@ -1802,7 +1884,9 @@
                     anthropicModel: source.anthropicModel,
                     aiSystemPrompt: source.aiSystemPrompt,
                     vibeChatHistory: source.vibeChatHistory,
-                    defaultNewTabType: source.defaultNewTabType
+                    defaultNewTabType: source.defaultNewTabType,
+                    livePreview: source.livePreview,
+                    livePreviewType: source.livePreviewType
                 };
             }
 
@@ -2037,6 +2121,7 @@
 
             // Debounced functions for performance
             const debouncedUpdateLineNumbers = debounce(updateLineNumbers, 200);
+            const debouncedLivePreview = debounce(renderLivePreview, 300);
             const debouncedUpdateStats = debounce(updateStats, 200);
 
 
@@ -2648,6 +2733,7 @@
 
             function updateLineNumbers() {
                 updateHighlight();
+                if (editorState.livePreview) debouncedLivePreview();
                 if (!editorState.showLineNumbers) {
                     lineNumberContainer.innerHTML = ''; 
                     lineNumberContainer.style.display = 'none';
@@ -3556,8 +3642,17 @@
                     showMessage('팝업이 차단되었을 수 있습니다. 확인해주세요.', 'error');
                     return;
                 }
-                
+                const built = buildPreviewDocument(content, type);
+                previewWindow.document.open();
+                previewWindow.document.write(built.html);
+                previewWindow.document.close();
+            }
+
+            // Builds the full preview HTML document for a content/type. Shared by the pop-out
+            // window and the live preview pane. Returns { html, error }.
+            function buildPreviewDocument(content, type) {
                 let previewHtmlContent = '';
+                let hadError = false;
                 const currentThemeIsLight = document.body.classList.contains('light-theme');
                 
                 const highlightThemeStyle = document.getElementById('highlightTheme')?.getAttribute('href') || 
@@ -3604,6 +3699,7 @@
                             break;
                     }
                 } catch (e) {
+                     hadError = true;
                      previewHtmlContent = `<div style="color: red; padding: 10px; background-color: rgba(255,0,0,0.1); border-radius: 6px; border: 1px solid red;"><strong>오류:</strong> ${e.message}</div><pre style="margin-top:10px; padding:10px; background-color: ${currentThemeIsLight ? '#f0f0f0' : '#2a2a2a'}; border-radius:4px;">${content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>`;
                 }
 
@@ -3622,9 +3718,44 @@
                 </style>
                 </head><body>${previewHtmlContent}</body></html>`;
                 
-                previewWindow.document.open();
-                previewWindow.document.write(finalHtml);
-                previewWindow.document.close();
+                return { html: finalHtml, error: hadError };
+            }
+
+            // --- LIVE PREVIEW ---
+            function resolveLivePreviewType() {
+                let t = livePreviewTypeSelect ? livePreviewTypeSelect.value : (editorState.livePreviewType || 'auto');
+                if (t === 'auto') {
+                    const activeTab = tabs.find(tab => tab.id === activeTabId);
+                    const ext = (getFileExtension(activeTab ? activeTab.title : '') || '').toLowerCase();
+                    const map = { html: 'html', htm: 'html', md: 'markdown', markdown: 'markdown', json: 'json', xml: 'xml', svg: 'xml', js: 'js', mjs: 'js', cjs: 'js', css: 'css', csv: 'csv' };
+                    t = map[ext] || 'html';
+                }
+                return t;
+            }
+
+            function renderLivePreview() {
+                if (!livePreviewPane || !livePreviewFrame || livePreviewPane.classList.contains('hidden')) return;
+                if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined' || typeof hljs === 'undefined') return;
+                const type = resolveLivePreviewType();
+                try {
+                    if (type === 'project') {
+                        livePreviewFrame.srcdoc = bundleProject(getFilesMap());
+                    } else {
+                        livePreviewFrame.srcdoc = buildPreviewDocument(textInput.value, type).html;
+                    }
+                } catch (e) {
+                    const msg = ((e && e.message) ? e.message : String(e)).replace(/</g, '&lt;');
+                    livePreviewFrame.srcdoc = buildPreviewDocument('<div style="color:#ef4444;padding:12px;font-family:sans-serif;">미리보기 오류: ' + msg + '</div>', 'html').html;
+                }
+            }
+
+            function setLivePreview(show) {
+                if (!livePreviewPane) return;
+                editorState.livePreview = !!show;
+                livePreviewPane.classList.toggle('hidden', !show);
+                if (livePreviewToggleButton) livePreviewToggleButton.setAttribute('aria-pressed', show ? 'true' : 'false');
+                if (show) renderLivePreview();
+                try { persistEditorSettings(); } catch (e) {}
             }
 
             function convertCsvToHtmlTable(csvText) {
@@ -4012,6 +4143,12 @@
                     }
 
                     if (!isModalOpen || (isModalOpen && !isInputFocused)) {
+                        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
+                            e.preventDefault();
+                            setLivePreview(!editorState.livePreview);
+                            showMessage(`실시간 미리보기 ${editorState.livePreview ? '켜짐' : '꺼짐'}.`, 'info', 1500);
+                            return;
+                        }
                         if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
                              e.preventDefault();
                              vibeCodingPanel.classList.toggle('open');
@@ -4274,9 +4411,36 @@
                         console.error("Project preview error:", e);
                     }
                 });
-                document.getElementById('toggleWordWrapButton').addEventListener('click', () => { 
-                    editorState.wordWrap = !editorState.wordWrap; 
-                    applySettingsToUI(); 
+                if (livePreviewToggleButton) {
+                    livePreviewToggleButton.addEventListener('click', () => {
+                        setLivePreview(!editorState.livePreview);
+                        showMessage(`실시간 미리보기 ${editorState.livePreview ? '켜짐' : '꺼짐'}.`, 'info', 1500);
+                    });
+                }
+                if (livePreviewTypeSelect) {
+                    livePreviewTypeSelect.addEventListener('change', () => {
+                        editorState.livePreviewType = livePreviewTypeSelect.value;
+                        try { persistEditorSettings(); } catch (e) {}
+                        renderLivePreview();
+                    });
+                }
+                const livePreviewCloseBtn = document.getElementById('livePreviewCloseButton');
+                if (livePreviewCloseBtn) livePreviewCloseBtn.addEventListener('click', () => setLivePreview(false));
+                const livePreviewPopoutBtn = document.getElementById('livePreviewPopoutButton');
+                if (livePreviewPopoutBtn) {
+                    livePreviewPopoutBtn.addEventListener('click', () => {
+                        const type = resolveLivePreviewType();
+                        if (type === 'project') {
+                            try { openPreviewWindow(bundleProject(getFilesMap()), 'html'); }
+                            catch (e) { showMessage(`프로젝트 미리보기 오류: ${e.message}`, 'error'); }
+                        } else {
+                            openPreviewWindow(textInput.value, type);
+                        }
+                    });
+                }
+                document.getElementById('toggleWordWrapButton').addEventListener('click', () => {
+                    editorState.wordWrap = !editorState.wordWrap;
+                    applySettingsToUI();
                     showMessage(`자동 줄 바꿈 ${editorState.wordWrap ? '활성' : '비활성'}.`, 'info');
                 });
                 document.getElementById('toggleLineNumbersButton').addEventListener('click', () => { 
@@ -4519,6 +4683,11 @@
                 });
                 if (highlightCode) {
                     highlightCode.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
+                }
+                if (livePreviewTypeSelect) livePreviewTypeSelect.value = editorState.livePreviewType || 'auto';
+                if (livePreviewPane) {
+                    livePreviewPane.classList.toggle('hidden', !editorState.livePreview);
+                    if (livePreviewToggleButton) livePreviewToggleButton.setAttribute('aria-pressed', editorState.livePreview ? 'true' : 'false');
                 }
                 updateLineNumbers();
             }
