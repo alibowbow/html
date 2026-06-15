@@ -1004,6 +1004,107 @@
             filter: brightness(110%);
         }
 
+        /* ===================== Sidebar app shell — layout rebuild ===================== */
+        #mainContainer {
+            display: grid;
+            grid-template-columns: 264px minmax(0, 1fr);
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            grid-template-areas:
+                "brand tabs"
+                "nav   main"
+                "stat  stat";
+            max-width: 1540px;
+        }
+        header {
+            grid-area: brand;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.1rem 0.9rem 0.9rem;
+        }
+        .top-bar { flex-direction: column; align-items: stretch; gap: 0.8rem; }
+        .editor-title { font-size: 1.2rem; line-height: 1.25; display: flex; align-items: center; gap: 0.55rem; }
+        .editor-title::before {
+            content: "";
+            width: 0.62rem;
+            height: 1.35rem;
+            border-radius: 3px;
+            background: var(--accent);
+            flex-shrink: 0;
+        }
+        .top-bar-actions { flex-wrap: wrap; gap: 0.3rem; }
+        .top-bar-actions .custom-button { padding: 0.42rem 0.5rem; }
+        .top-bar-actions .custom-button .sm\:inline { display: none !important; }
+
+        .tab-container {
+            grid-area: tabs;
+            align-items: flex-end;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 0.85rem;
+        }
+
+        .toolbar {
+            grid-area: nav;
+            flex-direction: column;
+            flex-wrap: nowrap;
+            align-items: stretch;
+            gap: 0.12rem;
+            margin: 0;
+            padding: 0.7rem 0.6rem 1rem;
+            border: none;
+            border-right: 1px solid var(--border-color);
+            border-radius: 0;
+            box-shadow: none;
+            background-color: var(--bg-secondary);
+            overflow: visible;
+        }
+        .toolbar .dropdown { width: 100%; margin: 0; display: block; }
+        .toolbar .dropdown > .dropdown-toggle,
+        .toolbar > .custom-button {
+            width: 100%;
+            justify-content: flex-start;
+            padding: 0.55rem 0.65rem;
+            border-color: transparent;
+            background-color: transparent;
+        }
+        .toolbar .dropdown > .dropdown-toggle:hover:not(:disabled),
+        .toolbar > .custom-button:hover:not(:disabled) {
+            background-color: var(--surface-2);
+            border-color: transparent;
+            transform: none;
+            box-shadow: none;
+        }
+        .toolbar .dropdown-content { left: calc(100% + 8px); top: 0; right: auto; margin: 0; }
+        .toolbar .autosave-indicator { margin-top: auto; padding: 0.6rem 0.65rem 0; }
+
+        main { grid-area: main; padding: 0.85rem 1rem 0; }
+        #statsBar { grid-area: stat; border-top: 1px solid var(--border-color); }
+
+        @media (max-width: 880px) {
+            #mainContainer {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+                grid-template-areas: "brand" "tabs" "nav" "main" "stat";
+            }
+            header { border-right: none; }
+            .top-bar { flex-direction: row; align-items: center; justify-content: space-between; }
+            .editor-title { font-size: 1.15rem; }
+            .toolbar {
+                flex-direction: row;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                overflow-y: visible;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                gap: 0.3rem;
+                padding: 0.5rem 0.7rem;
+            }
+            .toolbar .dropdown { width: auto; }
+            .toolbar .dropdown > .dropdown-toggle, .toolbar > .custom-button { width: auto; }
+            .toolbar .dropdown-content { left: 0; top: 100%; }
+            .toolbar .autosave-indicator { margin-top: 0; }
+            .tab-container { align-items: stretch; }
+        }
     </style>
 </head>
 <body>
