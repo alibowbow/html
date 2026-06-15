@@ -163,15 +163,15 @@
 
         /* Semantic action buttons — restore meaning with refined, theme-aware color (overrides the Tailwind utilities). */
         .custom-button.bg-blue-600,
-        .custom-button.bg-sky-600 { background-color: var(--accent); color: #fff; border-color: transparent; }
+        .custom-button.bg-sky-600 { background-image: linear-gradient(135deg, #6e7bff, #8b5cf6); background-color: var(--accent); color: #fff; border-color: transparent; box-shadow: 0 6px 16px -8px rgba(110,123,255,0.85); }
+        .custom-button.bg-green-600 { background-image: linear-gradient(135deg, #2dd4bf, #10b981); background-color: var(--success-color); color: #fff; border-color: transparent; box-shadow: 0 6px 16px -8px rgba(16,185,129,0.75); }
+        .custom-button.bg-red-600 { background-image: linear-gradient(135deg, #fb7185, #ef4444); background-color: var(--error-color); color: #fff; border-color: transparent; box-shadow: 0 6px 16px -8px rgba(239,68,68,0.7); }
+        .custom-button.bg-purple-600 { background-image: linear-gradient(135deg, #a78bfa, #ec4899); background-color: var(--purple-accent); color: #fff; border-color: transparent; box-shadow: 0 6px 16px -8px rgba(167,139,250,0.7); }
         .custom-button.bg-blue-600:hover:not(:disabled),
-        .custom-button.bg-sky-600:hover:not(:disabled) { background-color: var(--accent-strong); border-color: transparent; }
-        .custom-button.bg-green-600 { background-color: var(--success-color); color: #fff; border-color: transparent; }
-        .custom-button.bg-green-600:hover:not(:disabled) { background-color: var(--success-color); border-color: transparent; filter: brightness(1.08); }
-        .custom-button.bg-red-600 { background-color: var(--error-color); color: #fff; border-color: transparent; }
-        .custom-button.bg-red-600:hover:not(:disabled) { background-color: var(--error-color); border-color: transparent; filter: brightness(1.08); }
-        .custom-button.bg-purple-600 { background-color: var(--purple-accent); color: #fff; border-color: transparent; }
-        .custom-button.bg-purple-600:hover:not(:disabled) { background-color: var(--purple-accent); border-color: transparent; filter: brightness(1.1); }
+        .custom-button.bg-sky-600:hover:not(:disabled),
+        .custom-button.bg-green-600:hover:not(:disabled),
+        .custom-button.bg-red-600:hover:not(:disabled),
+        .custom-button.bg-purple-600:hover:not(:disabled) { border-color: transparent; filter: brightness(1.08); }
         .custom-button.bg-gray-600,
         .custom-button.bg-gray-700 { background-color: var(--button-bg); color: var(--text-primary); }
         
@@ -264,25 +264,30 @@
         }
         
         header {
-            padding: 0.9rem 1.5rem;
-            background: linear-gradient(180deg, rgba(var(--accent-rgb),0.10), transparent 72%), var(--bg-primary);
-            border-bottom: 1px solid var(--border-color);
-            box-shadow: inset 0 2px 0 0 var(--accent);
+            padding: 1.1rem 1.5rem;
+            background: linear-gradient(120deg, #6e7bff 0%, #8b5cf6 48%, #22d3ee 135%);
+            border-bottom: none;
             flex-shrink: 0;
         }
         .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
-        .editor-title { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text-accent); }
+        .editor-title { font-size: 1.45rem; font-weight: 800; letter-spacing: -0.02em; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.22); }
         .top-bar-actions { display: flex; gap: 0.5rem; }
+        header .custom-button { background-color: rgba(255,255,255,0.16); color: #fff; border-color: rgba(255,255,255,0.28); }
+        header .custom-button:hover:not(:disabled) { background-color: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.42); }
+        header .custom-button[aria-pressed="true"] { background-color: #fff; color: #4f46e5; border-color: #fff; }
 
-        .toolbar { 
-            background-color: var(--bg-secondary); 
-            padding: 0.5rem 1.5rem; 
-            border-bottom: 1px solid var(--border-color); 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 0.25rem; 
-            align-items: center; 
-            flex-shrink: 0; 
+        .toolbar {
+            background-color: var(--bg-secondary);
+            margin: 0.75rem 1rem 0;
+            padding: 0.5rem 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.875rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            align-items: center;
+            flex-shrink: 0;
         }
         
         main { 
