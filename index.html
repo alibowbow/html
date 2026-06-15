@@ -3,8 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+      // Register a network-first service worker so a plain refresh always loads the latest version.
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(function () {});
+        });
+      }
+    </script>
     <meta name="description" content="브라우저에서 실행되는 멀티파일 텍스트 편집기. 미리보기, 세션 저장, AI 작업, 마크다운/JSON/XML/CSV 도구를 한 화면에서 제공합니다.">
-    <meta name="theme-color" content="#111827">
+    <meta name="theme-color" content="#0f1420">
     <meta name="color-scheme" content="dark light">
     <meta property="og:type" content="website">
     <meta property="og:title" content="텍스트 편집기 Pro - 멀티파일 미리보기, AI, Vibe Coding">
@@ -24,88 +35,134 @@
     <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script> <!-- JSZip for project export -->
     <style>
         :root {
-            --bg-primary: #111827; 
-            --bg-secondary: #1f2937; 
-            --bg-tertiary: #283140; 
-            --text-primary: #d1d5db; 
-            --text-secondary: #9ca3af; 
-            --text-accent: #93c5fd; 
-            --border-color: #374151; 
-            --border-focus: #60a5fa; 
-            --button-bg: #374151; 
-            --button-hover: #4b5563; 
-            --button-active: #4a5568; 
-            --button-disabled: #374151; 
-            --success-color: #10B981; 
-            --error-color: #EF4444; 
-            --info-color: #3B82F6; 
-            --purple-accent: #8B5CF6; 
-            --scrollbar-track: #1f2937;
-            --scrollbar-thumb: #4b5563;
+            --bg-primary: #0f1420;
+            --bg-secondary: #161d2b;
+            --bg-tertiary: #1f2738;
+            --text-primary: #e4e8f1;
+            --text-secondary: #97a3b6;
+            --text-accent: #93c5fd;
+            --border-color: #2a3346;
+            --border-focus: #5b8def;
+            --button-bg: #273143;
+            --button-hover: #323e54;
+            --button-active: #3b4763;
+            --button-disabled: #1e2636;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --info-color: #3b82f6;
+            --purple-accent: #8b5cf6;
+            --scrollbar-track: transparent;
+            --scrollbar-thumb: #3a4660;
+            --current-line-bg: rgba(255,255,255,0.05);
+            --accent: #4f7df7;
+            --accent-strong: #3d6ae6;
+            --accent-contrast: #ffffff;
+            --accent-rgb: 79,125,247;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
+            --shadow-md: 0 10px 30px -12px rgba(0,0,0,0.55);
+            --shadow-lg: 0 24px 60px -18px rgba(0,0,0,0.7);
+            --radius: 0.5rem;
         }
 
         .light-theme {
-            --bg-primary: #f3f4f6; 
-            --bg-secondary: #ffffff; 
-            --bg-tertiary: #f9fafb; 
-            --text-primary: #111827; 
-            --text-secondary: #4b5563; 
-            --text-accent: #1e40af; 
-            --border-color: #d1d5db; 
-            --border-focus: #3b82f6; 
-            --button-bg: #e5e7eb; 
-            --button-hover: #d1d5db; 
-            --button-active: #9ca3af; 
-            --button-disabled: #e5e7eb; 
+            --bg-primary: #eef1f6;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f6f8fb;
+            --text-primary: #0f172a;
+            --text-secondary: #5b6675;
+            --text-accent: #2454c6;
+            --border-color: #dde3ec;
+            --border-focus: #2563eb;
+            --button-bg: #eef1f6;
+            --button-hover: #e2e7f0;
+            --button-active: #ccd5e3;
+            --button-disabled: #eef1f6;
             --success-color: #059669;
             --error-color: #dc2626;
             --info-color: #2563eb;
             --purple-accent: #7c3aed;
-            --scrollbar-track: #f3f4f6;
-            --scrollbar-thumb: #d1d5db;
+            --scrollbar-track: transparent;
+            --scrollbar-thumb: #c3ccda;
+            --current-line-bg: rgba(37,99,235,0.07);
+            --accent: #2563eb;
+            --accent-strong: #1d4ed8;
+            --accent-contrast: #ffffff;
+            --accent-rgb: 37,99,235;
+            --shadow-sm: 0 1px 2px rgba(15,23,42,0.08);
+            --shadow-md: 0 10px 30px -12px rgba(15,23,42,0.14);
+            --shadow-lg: 0 24px 60px -18px rgba(15,23,42,0.22);
         }
         
-        body { 
-            font-family: 'Inter', sans-serif; 
-            overflow-x: hidden; 
-            background-color: var(--bg-primary); 
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+            background-color: var(--bg-primary);
+            background-image: radial-gradient(1100px 520px at 50% -8%, rgba(var(--accent-rgb), 0.10), transparent 60%);
+            background-attachment: fixed;
             color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
-        
-        ::-webkit-scrollbar { width: 10px; height: 10px; }
-        ::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 5px; }
-        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--button-hover); }
-        * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); }
+        ::selection { background-color: rgba(var(--accent-rgb), 0.32); }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-        .custom-button { 
-            transition: all 0.2s ease; 
-            display: inline-flex; 
-            align-items: center; 
+        ::-webkit-scrollbar { width: 12px; height: 12px; }
+        ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--button-hover); background-clip: content-box; }
+        ::-webkit-scrollbar-corner { background: transparent; }
+        * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+        }
+
+        .custom-button {
+            transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.08s ease, box-shadow 0.18s ease, color 0.18s ease;
+            display: inline-flex;
+            align-items: center;
             justify-content: center;
             background-color: var(--button-bg);
             color: var(--text-primary);
-            border: 1px solid var(--border-color); 
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-weight: 500;
         }
         .custom-button i { margin-right: 0.35rem; }
-        .custom-button:hover:not(:disabled) { background-color: var(--button-hover); filter: brightness(110%); }
-        .custom-button:active:not(:disabled) { transform: scale(0.96); background-color: var(--button-active); }
-        .custom-button:disabled { 
-            background-color: var(--button-disabled) !important; 
-            color: var(--text-secondary) !important; 
-            cursor: not-allowed; 
-            filter: grayscale(80%); 
+        .custom-button:hover:not(:disabled) { background-color: var(--button-hover); border-color: var(--button-active); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+        .custom-button:active:not(:disabled) { transform: translateY(0) scale(0.98); background-color: var(--button-active); box-shadow: none; }
+        .custom-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .custom-button:disabled {
+            background-color: var(--button-disabled) !important;
+            color: var(--text-secondary) !important;
+            cursor: not-allowed;
+            opacity: 0.55;
             border-color: var(--border-color) !important;
         }
-        
-        .toolbar-button { 
-            background-color: var(--button-bg); 
-            color: var(--text-primary); 
-            padding: 0.5rem 0.75rem; 
-            border-radius: 0.375rem; 
+
+        .toolbar-button {
+            background-color: var(--button-bg);
+            color: var(--text-primary);
+            padding: 0.45rem 0.7rem;
+            border-radius: var(--radius);
+            font-size: 0.875rem;
         }
         .toolbar-button:hover:not(:disabled) { background-color: var(--button-hover); }
+
+        /* Semantic action buttons — restore meaning with refined, theme-aware color (overrides the Tailwind utilities). */
+        .custom-button.bg-blue-600,
+        .custom-button.bg-sky-600 { background-color: var(--accent); color: #fff; border-color: transparent; }
+        .custom-button.bg-blue-600:hover:not(:disabled),
+        .custom-button.bg-sky-600:hover:not(:disabled) { background-color: var(--accent-strong); border-color: transparent; }
+        .custom-button.bg-green-600 { background-color: var(--success-color); color: #fff; border-color: transparent; }
+        .custom-button.bg-green-600:hover:not(:disabled) { background-color: var(--success-color); border-color: transparent; filter: brightness(1.08); }
+        .custom-button.bg-red-600 { background-color: var(--error-color); color: #fff; border-color: transparent; }
+        .custom-button.bg-red-600:hover:not(:disabled) { background-color: var(--error-color); border-color: transparent; filter: brightness(1.08); }
+        .custom-button.bg-purple-600 { background-color: var(--purple-accent); color: #fff; border-color: transparent; }
+        .custom-button.bg-purple-600:hover:not(:disabled) { background-color: var(--purple-accent); border-color: transparent; filter: brightness(1.1); }
+        .custom-button.bg-gray-600,
+        .custom-button.bg-gray-700 { background-color: var(--button-bg); color: var(--text-primary); }
         
         .dropdown { position: relative; display: inline-block; margin-right: 0.25rem; }
         .dropdown-content { 
@@ -113,9 +170,9 @@
             position: absolute; 
             background-color: var(--bg-secondary); 
             min-width: 240px; 
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.3); 
-            z-index: 100; 
-            border-radius: 0.375rem; 
+            box-shadow: var(--shadow-md);
+            z-index: 100;
+            border-radius: 0.6rem;
             padding: 0.5rem 0; 
             margin-top: 0.25rem; 
             max-height: 70vh; 
@@ -144,14 +201,14 @@
             left: 50%; 
             transform: translateX(-50%) translateY(100px); 
             padding: 12px 20px; 
-            border-radius: 8px; 
-            font-size: 0.875rem; 
-            z-index: 1050; 
-            opacity: 0; 
-            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; 
-            visibility: hidden; 
-            white-space: nowrap; 
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            font-size: 0.875rem;
+            z-index: 1050;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+            visibility: hidden;
+            white-space: nowrap;
+            box-shadow: var(--shadow-md);
         }
         .message-box.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
         .message-box.success { background-color: var(--success-color); color: white; }
@@ -171,12 +228,13 @@
             flex-direction: column; 
             width: 100%; 
             max-width: 1400px; 
-            background-color: var(--bg-secondary); 
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); 
-            border-radius: 0.75rem; 
-            padding: 0; 
-            overflow: hidden; 
-            transition: all 0.3s ease;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            border-radius: 0.9rem;
+            padding: 0;
+            overflow: hidden;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
         #mainContainer.fullscreen { 
             position: fixed; 
@@ -194,14 +252,15 @@
             transition: padding-bottom 0.2s ease-out; 
         }
         
-        header { 
-            padding: 0.75rem 1.5rem; 
-            background-color: var(--bg-primary); 
-            border-bottom: 1px solid var(--border-color); 
-            flex-shrink: 0; 
+        header {
+            padding: 0.85rem 1.5rem;
+            background-color: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: inset 0 2px 0 0 var(--accent);
+            flex-shrink: 0;
         }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; }
-        .editor-title { font-size: 1.25rem; font-weight: 600; color: var(--text-accent); }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+        .editor-title { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text-accent); }
         .top-bar-actions { display: flex; gap: 0.5rem; }
 
         .toolbar { 
@@ -224,6 +283,57 @@
             padding: 0 1.5rem 1.5rem 1.5rem; 
         }
         .textarea-wrapper { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; min-height: 0; margin-top:1rem; }
+        .editor-split { display: flex; flex-grow: 1; min-height: 0; gap: 0.75rem; }
+        .editor-split > .editor-area { flex: 1 1 0; min-width: 0; }
+        #livePreviewPane {
+            flex: 1 1 0;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            overflow: hidden;
+            background-color: var(--bg-secondary);
+        }
+        #livePreviewPane.hidden { display: none; }
+        .live-preview-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            background-color: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .live-preview-title { font-weight: 600; color: var(--text-primary); margin-right: auto; }
+        .live-preview-header select {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.2rem 0.4rem;
+            font-size: 0.8rem;
+        }
+        .live-preview-icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            padding: 0.15rem 0.35rem;
+            border-radius: 0.3rem;
+            transition: color 0.2s ease, background-color 0.2s ease;
+        }
+        .live-preview-icon-btn:hover { color: var(--text-primary); background-color: var(--button-hover); }
+        #livePreviewFrame { flex-grow: 1; width: 100%; border: 0; background-color: #ffffff; }
+        .custom-button[aria-pressed="true"] { background-color: var(--accent); color: #fff; border-color: transparent; }
+        @media (max-width: 768px) {
+            .editor-split { flex-direction: column; }
+            #livePreviewPane { min-height: 240px; }
+        }
         .editor-area { 
             display: flex; 
             overflow: hidden; 
@@ -232,26 +342,83 @@
             border: 1px solid var(--border-color); 
             border-radius: 0.375rem; 
         }
-        #textInput { 
-            flex-grow: 1; 
-            overflow-y: auto; 
-            width: 100%; 
-            resize: none; 
-            white-space: pre; 
-            line-height: 1.6; 
-            font-size: 16px; 
-            background-color: var(--bg-tertiary); 
-            color: var(--text-primary); 
-            border: none; 
-            border-top-right-radius: 0.375rem; 
-            border-bottom-right-radius: 0.375rem; 
-            padding: 0.75rem; 
+        #textInput {
+            flex-grow: 1;
+            overflow-y: auto;
+            width: 100%;
+            resize: none;
+            white-space: pre;
+            line-height: 1.6;
+            font-size: 16px;
+            position: relative;
+            z-index: 3;
+            background-color: transparent;
+            color: transparent;
+            caret-color: var(--text-primary);
+            border: none;
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            padding: 0.75rem;
             font-family: 'JetBrains Mono', monospace;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
-        #textInput:focus { outline: none; } 
-        .editor-area:focus-within { outline: 2px solid var(--border-focus); border-color: var(--border-focus); }
+        #textInput:focus { outline: none; }
+        .editor-area:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2); }
         .editor-area.highlight-find-match #textInput::selection { background-color: rgba(234, 179, 8, 0.3) !important; }
+
+        /* Live syntax highlighting overlay (sits behind the transparent textarea). */
+        .code-input-wrap {
+            position: relative;
+            display: flex;
+            flex-grow: 1;
+            min-width: 0;
+            background-color: var(--bg-tertiary);
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            transition: background-color 0.3s ease;
+        }
+        #highlightOverlay, #findHighlightLayer {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            padding: 0.75rem;
+            border: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+            pointer-events: none;
+            white-space: pre;
+            line-height: 1.6;
+            font-size: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+        }
+        #highlightOverlay { z-index: 2; }
+        #findHighlightLayer { z-index: 1; color: transparent; }
+        #highlightOverlay code {
+            display: block;
+            margin: 0;
+            padding: 0;
+            background: transparent !important;
+            font: inherit;
+            line-height: inherit;
+            white-space: inherit;
+        }
+        #findHighlightLayer mark {
+            background-color: rgba(250, 204, 21, 0.35);
+            color: transparent;
+            border-radius: 2px;
+        }
+        #currentLineHighlight {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 1.6em;
+            background-color: var(--current-line-bg);
+            pointer-events: none;
+            z-index: 0;
+        }
 
         #lineNumberContainer { 
             width: 50px; 
@@ -274,30 +441,34 @@
         .modal-overlay { 
             position: fixed; 
             inset: 0; 
-            background-color: rgba(17, 24, 39, 0.85); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            z-index: 1020; 
+            background-color: rgba(8, 12, 20, 0.62);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1020;
             padding: 1rem; 
             opacity: 0; 
             visibility: hidden; 
             transition: opacity 0.3s ease, visibility 0.3s ease; 
         }
         .modal-overlay.show { opacity: 1; visibility: visible; }
-        .modal-content { 
-            background-color: var(--bg-secondary); 
-            border: 1px solid var(--border-color); 
-            border-radius: 0.75rem; 
-            padding: 1.5rem; 
-            width: 90%; 
-            max-width: 550px; 
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
-            display: flex; 
-            flex-direction: column; 
-            max-height: 85vh; 
-            transition: background-color 0.3s ease, border-color 0.3s ease;
+        .modal-content {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.9rem;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 550px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+            transform: translateY(10px) scale(0.985);
+            transition: transform 0.25s cubic-bezier(.2,.7,.2,1), opacity 0.25s ease, background-color 0.3s ease, border-color 0.3s ease;
         }
+        .modal-overlay.show .modal-content { transform: translateY(0) scale(1); }
         .modal-content:focus {
             outline: 2px solid var(--border-focus);
             outline-offset: 2px;
@@ -388,6 +559,7 @@
             transition: background-color 0.3s ease, color 0.3s ease;
         }
         .stats-item { white-space: nowrap; }
+        .stats-item span { color: var(--text-primary); font-weight: 600; }
         
         .find-replace-form label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: var(--text-primary); }
         .find-replace-form input[type="text"] { 
@@ -403,6 +575,7 @@
         .find-replace-form input[type="text"]:focus {
             outline: none;
             border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.25);
         }
         .find-replace-form .checkbox-group { display: flex; align-items: center; margin-bottom: 0.75rem; }
         .find-replace-form input[type="checkbox"] { margin-right: 0.5rem; }
@@ -426,7 +599,9 @@
         .settings-form input:focus {
             outline: none;
             border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.25);
         }
+        input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color: var(--accent); }
         .settings-form .checkbox-container {
             display: flex;
             align-items: center;
@@ -450,25 +625,35 @@
             display: none;
         }
         .tab {
-            padding: 0.5rem 1rem;
-            border-top-left-radius: 0.375rem;
-            border-top-right-radius: 0.375rem;
-            margin: 0.25rem 0.25rem 0 0;
-            background-color: var(--bg-secondary);
+            padding: 0.5rem 0.9rem;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+            margin: 0.3rem 0.15rem 0 0;
+            background-color: transparent;
             color: var(--text-secondary);
-            border: 1px solid var(--border-color);
+            border: 1px solid transparent;
             border-bottom: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             white-space: nowrap;
-            transition: all 0.2s ease;
+            position: relative;
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
         .tab.active {
-            background-color: var(--bg-secondary); 
-            color: var(--text-accent);
-            border-bottom: 1px solid var(--bg-secondary); 
-            margin-bottom: -1px; 
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+            border-bottom: 1px solid var(--bg-secondary);
+            margin-bottom: -1px;
+        }
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0; top: 0;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 2px 2px 0 0;
         }
         .tab-title {
             max-width: 150px;
@@ -738,18 +923,23 @@
             line-height: 1.5;
         }
         .chat-message {
-            margin-bottom: 1rem;
-            padding: 0.75rem;
-            border-radius: 0.375rem;
+            margin-bottom: 0.85rem;
+            padding: 0.7rem 0.9rem;
+            border-radius: 0.85rem;
+            line-height: 1.55;
+            box-shadow: var(--shadow-sm);
         }
         .chat-message.user {
-            background-color: var(--bg-tertiary);
-            margin-left: 20%;
-            text-align: right;
+            background-color: var(--accent);
+            color: var(--accent-contrast);
+            margin-left: 18%;
+            border-bottom-right-radius: 0.25rem;
         }
         .chat-message.ai {
-            background-color: var(--button-bg);
-            margin-right: 20%;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            margin-right: 12%;
+            border-bottom-left-radius: 0.25rem;
         }
         .chat-message pre { /* For code blocks from AI */
             background-color: var(--bg-primary) !important; 
@@ -806,6 +996,9 @@
                 <div class="top-bar">
                     <span class="editor-title">텍스트 편집기 Pro 🚀</span>
                     <div class="top-bar-actions">
+                        <button id="livePreviewToggleButton" class="custom-button toolbar-button" title="실시간 미리보기 토글 (Ctrl+Shift+P)" aria-pressed="false">
+                            <i class="fas fa-eye"></i> <span class="sm:inline hidden">실시간 미리보기</span>
+                        </button>
                         <button id="vibeCodingToggleButton" class="custom-button toolbar-button" title="Vibe Coding AI 도우미 열기/닫기">
                             ✨ <span class="sm:inline hidden">Vibe AI</span>
                         </button>
@@ -924,9 +1117,36 @@
 
             <main>
                 <div class="textarea-wrapper">
-                    <div class="editor-area">
-                        <div id="lineNumberContainer"></div>
-                        <textarea id="textInput" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요. 파일을 끌어다 놓을 수도 있습니다." spellcheck="false"></textarea>
+                    <div class="editor-split">
+                        <div class="editor-area">
+                            <div id="lineNumberContainer"></div>
+                            <div class="code-input-wrap">
+                                <div id="currentLineHighlight" aria-hidden="true"></div>
+                                <div id="findHighlightLayer" aria-hidden="true"></div>
+                                <pre id="highlightOverlay" aria-hidden="true"><code></code></pre>
+                                <textarea id="textInput" placeholder="여기에 텍스트를 입력하거나 파일을 불러오세요. 파일을 끌어다 놓을 수도 있습니다." spellcheck="false"></textarea>
+                            </div>
+                        </div>
+                        <div id="livePreviewPane" class="hidden">
+                            <div class="live-preview-header">
+                                <i class="fas fa-eye" aria-hidden="true"></i>
+                                <span class="live-preview-title">실시간 미리보기</span>
+                                <select id="livePreviewType" title="미리보기 형식" aria-label="미리보기 형식">
+                                    <option value="auto">자동</option>
+                                    <option value="html">HTML</option>
+                                    <option value="markdown">Markdown</option>
+                                    <option value="json">JSON</option>
+                                    <option value="xml">XML</option>
+                                    <option value="css">CSS</option>
+                                    <option value="js">JavaScript</option>
+                                    <option value="csv">CSV</option>
+                                    <option value="project">프로젝트</option>
+                                </select>
+                                <button id="livePreviewPopoutButton" class="live-preview-icon-btn" title="새 창으로 열기" aria-label="새 창으로 열기"><i class="fas fa-external-link-alt"></i></button>
+                                <button id="livePreviewCloseButton" class="live-preview-icon-btn" title="미리보기 닫기" aria-label="실시간 미리보기 닫기">&times;</button>
+                            </div>
+                            <iframe id="livePreviewFrame" title="실시간 미리보기" sandbox="allow-scripts allow-popups allow-modals allow-forms"></iframe>
+                        </div>
                     </div>
                 </div>
             </main>
@@ -936,6 +1156,8 @@
                 <span class="stats-item">단어: <span id="wordCount">0</span></span>
                 <span class="stats-item">줄: <span id="lineCount">1</span></span>
                 <span class="stats-item"><span id="cursorPosition">위치: 1:1</span></span>
+                <span class="stats-item" id="selectionStatItem" style="display:none;">선택: <span id="selectionStat">0</span></span>
+                <span class="stats-item">언어: <span id="languageStat">Text</span></span>
             </div>
         </div>
     </div>
@@ -1050,7 +1272,7 @@
                         <label for="anthropicApiKeyInput">Anthropic API 키:</label>
                         <input type="password" id="anthropicApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 Anthropic API 키를 입력하세요">
                         <label for="anthropicModelDisplay">Anthropic 모델:</label>
-                        <input type="text" id="anthropicModelDisplay" value="claude-3-opus-20240229" readonly class="!mb-1rem">
+                        <input type="text" id="anthropicModelDisplay" value="claude-opus-4-8" readonly class="!mb-1rem">
                     </div>
 
                     <div class="mt-4">
@@ -1550,13 +1772,41 @@
                 openAiApiKey: '',
                 openAiModel: 'gpt-4o', // Fixed model
                 anthropicApiKey: '',
-                anthropicModel: 'claude-3-opus-20240229', // Fixed model
+                anthropicModel: 'claude-opus-4-8', // Fixed model
                 aiSystemPrompt: '', // New setting for custom system prompt
                 vibeChatHistory: [], // Stores chat history for Vibe AI
-                defaultNewTabType: 'txt' // New setting
+                defaultNewTabType: 'txt', // New setting
+                livePreview: false, // Live preview pane enabled
+                livePreviewType: 'auto' // auto | html | markdown | json | xml | css | js | csv | project
             };
             
             const textInput = document.getElementById('textInput');
+            const highlightOverlay = document.getElementById('highlightOverlay');
+            const highlightCode = highlightOverlay ? highlightOverlay.querySelector('code') : null;
+            const findHighlightLayer = document.getElementById('findHighlightLayer');
+            const currentLineHighlight = document.getElementById('currentLineHighlight');
+            const livePreviewPane = document.getElementById('livePreviewPane');
+            const livePreviewFrame = document.getElementById('livePreviewFrame');
+            const livePreviewTypeSelect = document.getElementById('livePreviewType');
+            const livePreviewToggleButton = document.getElementById('livePreviewToggleButton');
+            const EDITOR_PAIRS = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
+            const EDITOR_OPENERS = { '(': ')', '[': ']', '{': '}' };
+            const EDITOR_CLOSERS = new Set([')', ']', '}', '"', "'", '`']);
+            const EDITOR_LANG_LABELS = {
+                javascript: 'JS', typescript: 'TS', xml: 'HTML/XML', css: 'CSS', scss: 'SCSS',
+                json: 'JSON', markdown: 'MD', python: 'PY', java: 'Java', c: 'C', cpp: 'C++',
+                csharp: 'C#', go: 'Go', rust: 'Rust', ruby: 'Ruby', php: 'PHP', bash: 'Shell',
+                yaml: 'YAML', sql: 'SQL', plaintext: 'Text'
+            };
+            const MAX_HIGHLIGHT_LENGTH = 100000; // Skip live highlighting above this size to stay responsive.
+            const EDITOR_HIGHLIGHT_LANGS = {
+                js: 'javascript', mjs: 'javascript', cjs: 'javascript', jsx: 'javascript',
+                ts: 'typescript', tsx: 'typescript', html: 'xml', htm: 'xml', xml: 'xml', svg: 'xml',
+                css: 'css', scss: 'scss', json: 'json', md: 'markdown', markdown: 'markdown',
+                py: 'python', java: 'java', c: 'c', h: 'c', cpp: 'cpp', cc: 'cpp', hpp: 'cpp',
+                cs: 'csharp', go: 'go', rs: 'rust', rb: 'ruby', php: 'php', sh: 'bash', bash: 'bash',
+                yml: 'yaml', yaml: 'yaml', sql: 'sql'
+            };
             const fileInput = document.getElementById('fileInput');
             const messageBox = document.getElementById('messageBox');
             const lineNumberContainer = document.getElementById('lineNumberContainer');
@@ -1634,7 +1884,9 @@
                     anthropicModel: source.anthropicModel,
                     aiSystemPrompt: source.aiSystemPrompt,
                     vibeChatHistory: source.vibeChatHistory,
-                    defaultNewTabType: source.defaultNewTabType
+                    defaultNewTabType: source.defaultNewTabType,
+                    livePreview: source.livePreview,
+                    livePreviewType: source.livePreviewType
                 };
             }
 
@@ -1704,6 +1956,10 @@
 
                 document.body.style.overflow = 'hidden';
 
+                if (modal === findReplaceModal && findInput && findInput.value) {
+                    findText(false, false); // show live count + highlight all matches without stealing focus
+                }
+
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         const preferredFocus = modal.querySelector('[autofocus], input:not([type="hidden"]), textarea, select, button');
@@ -1715,6 +1971,8 @@
 
             function handleModalClose(modal) {
                 modal.setAttribute('aria-hidden', 'true');
+
+                if (modal === findReplaceModal) renderFindHighlights(); // clear match highlights
 
                 if (!getOpenModal()) {
                     document.body.style.overflow = '';
@@ -1863,6 +2121,7 @@
 
             // Debounced functions for performance
             const debouncedUpdateLineNumbers = debounce(updateLineNumbers, 200);
+            const debouncedLivePreview = debounce(renderLivePreview, 300);
             const debouncedUpdateStats = debounce(updateStats, 200);
 
 
@@ -2280,7 +2539,201 @@
                 }
             }
             
+            function getEditorHighlightLanguage() {
+                const activeTab = tabs.find(tab => tab.id === activeTabId);
+                const ext = (getFileExtension(activeTab ? activeTab.title : '') || '').toLowerCase();
+                const lang = EDITOR_HIGHLIGHT_LANGS[ext];
+                if (lang && typeof hljs !== 'undefined' && hljs.getLanguage(lang)) return lang;
+                return 'plaintext';
+            }
+
+            function syncOverlayScroll() {
+                const st = textInput.scrollTop, sl = textInput.scrollLeft;
+                if (highlightOverlay) { highlightOverlay.scrollTop = st; highlightOverlay.scrollLeft = sl; }
+                if (findHighlightLayer) { findHighlightLayer.scrollTop = st; findHighlightLayer.scrollLeft = sl; }
+            }
+
+            function escapeOverlayHtml(str) {
+                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            function updateHighlight() {
+                if (!highlightCode) return;
+                const value = textInput.value;
+                // Keep the overlays' content box identical to the textarea's, even when a scrollbar appears.
+                const scrollbarWidth = Math.max(0, textInput.offsetWidth - textInput.clientWidth);
+                const padRight = (12 + scrollbarWidth) + 'px';
+                highlightOverlay.style.paddingRight = padRight;
+                if (findHighlightLayer) findHighlightLayer.style.paddingRight = padRight;
+                if (typeof hljs === 'undefined' || value.length > MAX_HIGHLIGHT_LENGTH) {
+                    highlightCode.className = '';
+                    highlightCode.textContent = value + '\n';
+                } else {
+                    const lang = getEditorHighlightLanguage();
+                    let highlighted;
+                    try {
+                        highlighted = hljs.highlight(value, { language: lang, ignoreIllegals: true }).value;
+                    } catch (e) {
+                        highlighted = escapeOverlayHtml(value);
+                    }
+                    // hljs escapes its output, so the trailing newline keeps the overlay as tall as the textarea.
+                    highlightCode.className = 'hljs language-' + lang;
+                    highlightCode.innerHTML = highlighted + '\n';
+                }
+                renderFindHighlights();
+                updateCurrentLineHighlight();
+                syncOverlayScroll();
+            }
+
+            function renderFindHighlights() {
+                if (!findHighlightLayer) return;
+                const matches = editorState.findMatches || [];
+                const value = textInput.value;
+                if (!findReplaceModal.classList.contains('show') || matches.length === 0 || value.length > MAX_HIGHLIGHT_LENGTH) {
+                    if (findHighlightLayer.childNodes.length) findHighlightLayer.textContent = '';
+                    return;
+                }
+                let html = '';
+                let last = 0;
+                matches.forEach((m) => {
+                    if (m.start < last) return; // ignore overlaps
+                    html += escapeOverlayHtml(value.slice(last, m.start));
+                    html += '<mark>' + escapeOverlayHtml(value.slice(m.start, m.end)) + '</mark>';
+                    last = m.end;
+                });
+                html += escapeOverlayHtml(value.slice(last)) + '\n';
+                findHighlightLayer.innerHTML = html;
+            }
+
+            function updateCurrentLineHighlight() {
+                if (!currentLineHighlight) return;
+                if (textInput.selectionStart !== textInput.selectionEnd) {
+                    currentLineHighlight.style.display = 'none';
+                    return;
+                }
+                const cs = getComputedStyle(textInput);
+                const lineHeight = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) * 1.6) || 24;
+                const padTop = parseFloat(cs.paddingTop) || 0;
+                const lineIndex = textInput.value.slice(0, textInput.selectionStart).split('\n').length - 1;
+                const top = padTop + lineIndex * lineHeight - textInput.scrollTop;
+                currentLineHighlight.style.display = 'block';
+                currentLineHighlight.style.height = lineHeight + 'px';
+                currentLineHighlight.style.transform = `translateY(${top}px)`;
+            }
+
+            function updateStatusExtras() {
+                const selItem = document.getElementById('selectionStatItem');
+                const selStat = document.getElementById('selectionStat');
+                const langStat = document.getElementById('languageStat');
+                if (selItem && selStat) {
+                    const len = textInput.selectionEnd - textInput.selectionStart;
+                    if (len > 0) {
+                        const lines = textInput.value.slice(textInput.selectionStart, textInput.selectionEnd).split('\n').length;
+                        selStat.textContent = lines > 1 ? `${len}자 · ${lines}줄` : `${len}자`;
+                        selItem.style.display = '';
+                    } else {
+                        selItem.style.display = 'none';
+                    }
+                }
+                if (langStat) {
+                    const lang = getEditorHighlightLanguage();
+                    langStat.textContent = EDITOR_LANG_LABELS[lang] || lang;
+                }
+            }
+
+            function refreshAfterEdit() {
+                const currentTab = tabs.find(tab => tab.id === activeTabId);
+                if (currentTab) currentTab.content = textInput.value;
+                setTabModified(activeTabId, true);
+                updateLineNumbers();
+                updateStats();
+                if (editorState.autoSave) startAutoSaveTimer();
+            }
+
+            function editorIsWordChar(ch) { return ch ? /[\w$]/.test(ch) : false; }
+
+            // Editing ergonomics for the code input: auto-indent, auto-close pairs, skip-over, pair-backspace.
+            function handleEditorTypingKey(e) {
+                if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return false;
+                const value = textInput.value;
+                const start = textInput.selectionStart;
+                const end = textInput.selectionEnd;
+
+                if (e.key === 'Enter') {
+                    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                    const indent = (value.slice(lineStart, start).match(/^[ \t]*/) || [''])[0];
+                    const before = value[start - 1];
+                    const after = value[end];
+                    if (start === end && before && EDITOR_OPENERS[before]) {
+                        e.preventDefault();
+                        saveToUndoStack();
+                        const tabChars = ' '.repeat(editorState.tabSize);
+                        if (after === EDITOR_OPENERS[before]) {
+                            textInput.setRangeText('\n' + indent + tabChars + '\n' + indent, start, end, 'end');
+                            const caret = start + 1 + indent.length + tabChars.length;
+                            textInput.selectionStart = textInput.selectionEnd = caret;
+                        } else {
+                            textInput.setRangeText('\n' + indent + tabChars, start, end, 'end');
+                        }
+                        refreshAfterEdit();
+                        return true;
+                    }
+                    if (indent.length > 0) {
+                        e.preventDefault();
+                        saveToUndoStack();
+                        textInput.setRangeText('\n' + indent, start, end, 'end');
+                        refreshAfterEdit();
+                        return true;
+                    }
+                    return false;
+                }
+
+                if (EDITOR_PAIRS[e.key]) {
+                    const open = e.key, close = EDITOR_PAIRS[e.key];
+                    if (start !== end) { // wrap the current selection
+                        e.preventDefault();
+                        saveToUndoStack();
+                        textInput.setRangeText(open + value.slice(start, end) + close, start, end, 'preserve');
+                        textInput.selectionStart = start + 1;
+                        textInput.selectionEnd = end + 1;
+                        refreshAfterEdit();
+                        return true;
+                    }
+                    const isQuote = (open === '"' || open === "'" || open === '`');
+                    if (isQuote && (editorIsWordChar(value[start - 1]) || editorIsWordChar(value[start]))) {
+                        return false; // a quote next to a word: insert a single character (e.g. don't)
+                    }
+                    e.preventDefault();
+                    saveToUndoStack();
+                    textInput.setRangeText(open + close, start, end, 'end');
+                    textInput.selectionStart = textInput.selectionEnd = start + 1;
+                    refreshAfterEdit();
+                    return true;
+                }
+
+                if (EDITOR_CLOSERS.has(e.key) && start === end && value[start] === e.key) {
+                    e.preventDefault(); // skip over an auto-inserted closer
+                    textInput.selectionStart = textInput.selectionEnd = start + 1;
+                    updateCursorPosition();
+                    return true;
+                }
+
+                if (e.key === 'Backspace' && start === end && start > 0 &&
+                    EDITOR_PAIRS[value[start - 1]] && EDITOR_PAIRS[value[start - 1]] === value[start]) {
+                    e.preventDefault(); // delete an empty pair in one keystroke
+                    saveToUndoStack();
+                    textInput.setRangeText('', start - 1, start + 1, 'end');
+                    textInput.selectionStart = textInput.selectionEnd = start - 1;
+                    refreshAfterEdit();
+                    return true;
+                }
+
+                return false;
+            }
+
             function updateLineNumbers() {
+                updateHighlight();
+                if (editorState.livePreview) debouncedLivePreview();
                 if (!editorState.showLineNumbers) {
                     lineNumberContainer.innerHTML = ''; 
                     lineNumberContainer.style.display = 'none';
@@ -2325,6 +2778,8 @@
                 
                 editorState.cursorPosition = { line: currentLineNumber, column: currentColumnNumber };
                 document.getElementById('cursorPosition').textContent = `위치: ${currentLineNumber}:${currentColumnNumber}`;
+                updateStatusExtras();
+                updateCurrentLineHighlight();
             }
 
             function showMessage(message, type = 'info', duration = 3000) {
@@ -2375,9 +2830,9 @@
             }
 
             // --- FIND/REPLACE, UNDO/REDO ---
-            function findText(isNext = false) {
+            function findText(isNext = false, moveSelection = true) {
                 const searchText = findInput.value;
-                editorState.lastSearchTerm = searchText; 
+                editorState.lastSearchTerm = searchText;
                 const content = textInput.value;
                 const useRegex = regexCheckbox.checked;
                 const caseSensitive = matchCaseCheckbox.checked;
@@ -2387,7 +2842,8 @@
                     findReplaceMessage.textContent = '찾을 내용을 입력하세요.';
                     editorState.findMatches = [];
                     editorState.currentMatchIndex = -1;
-                    textInput.focus(); 
+                    renderFindHighlights();
+                    if (moveSelection) textInput.focus();
                     return;
                 }
 
@@ -2411,20 +2867,26 @@
                     if (matches.length === 0) {
                         findReplaceMessage.textContent = '일치하는 항목이 없습니다.';
                         editorState.currentMatchIndex = -1;
+                    } else if (!moveSelection) {
+                        // Live update while typing: show the total without stealing focus/selection.
+                        editorState.currentMatchIndex = -1;
+                        findReplaceMessage.textContent = `${matches.length}개 일치`;
                     } else {
-                        if (isNext) { 
+                        if (isNext) {
                             editorState.currentMatchIndex = (editorState.currentMatchIndex + 1) % matches.length;
-                        } else { 
-                            editorState.currentMatchIndex = 0; 
+                        } else {
+                            editorState.currentMatchIndex = 0;
                         }
                         highlightMatch(editorState.currentMatchIndex);
                         findReplaceMessage.textContent = `${editorState.currentMatchIndex + 1}/${matches.length} 일치`;
                     }
+                    renderFindHighlights();
                 } catch (e) {
                     findReplaceMessage.textContent = '잘못된 정규식입니다.';
                     showMessage('정규식 오류: ' + e.message, 'error');
                     editorState.findMatches = [];
                     editorState.currentMatchIndex = -1;
+                    renderFindHighlights();
                 }
             }
 
@@ -2507,8 +2969,9 @@
                 updateStats();
                 
                 findReplaceMessage.textContent = `${replacedCount}개 항목을 모두 바꿨습니다.`;
-                editorState.findMatches = []; 
+                editorState.findMatches = [];
                 editorState.currentMatchIndex = -1;
+                renderFindHighlights(); // clear now-stale match highlights
                 showMessage(`${replacedCount}개 항목을 모두 바꿨습니다.`, 'success');
             }
             
@@ -3082,8 +3545,6 @@
             }
 
             function bundleProject(files) {
-              console.log("[Bundle] Starting project bundle. Available files (map keys are lowercased):", JSON.parse(JSON.stringify(files)));
-              
               let actualIndexHtmlContent;
               let indexHtmlFilename;
 
@@ -3181,19 +3642,28 @@
                     showMessage('팝업이 차단되었을 수 있습니다. 확인해주세요.', 'error');
                     return;
                 }
-                
+                const built = buildPreviewDocument(content, type);
+                previewWindow.document.open();
+                previewWindow.document.write(built.html);
+                previewWindow.document.close();
+            }
+
+            // Builds the full preview HTML document for a content/type. Shared by the pop-out
+            // window and the live preview pane. Returns { html, error }.
+            function buildPreviewDocument(content, type) {
                 let previewHtmlContent = '';
+                let hadError = false;
                 const currentThemeIsLight = document.body.classList.contains('light-theme');
                 
                 const highlightThemeStyle = document.getElementById('highlightTheme')?.getAttribute('href') || 
                     (currentThemeIsLight ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css' 
                                         : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css');
 
-                const bodyBg = currentThemeIsLight ? '#ffffff' : '#1f2937';
-                const textColor = currentThemeIsLight ? '#111827' : '#d1d5db';
-                const tableBorder = currentThemeIsLight ? '#d1d5db' : '#4b5563';
-                const thBg = currentThemeIsLight ? '#f3f4f6' : '#374151';
-                const evenRowBg = currentThemeIsLight ? '#f9fafb' : '#283140'; 
+                const bodyBg = currentThemeIsLight ? '#ffffff' : '#161d2b';
+                const textColor = currentThemeIsLight ? '#0f172a' : '#e4e8f1';
+                const tableBorder = currentThemeIsLight ? '#dde3ec' : '#2a3346';
+                const thBg = currentThemeIsLight ? '#f6f8fb' : '#1f2738';
+                const evenRowBg = currentThemeIsLight ? '#f6f8fb' : '#1f2738';
 
                 try {
                     switch (type) {
@@ -3229,6 +3699,7 @@
                             break;
                     }
                 } catch (e) {
+                     hadError = true;
                      previewHtmlContent = `<div style="color: red; padding: 10px; background-color: rgba(255,0,0,0.1); border-radius: 6px; border: 1px solid red;"><strong>오류:</strong> ${e.message}</div><pre style="margin-top:10px; padding:10px; background-color: ${currentThemeIsLight ? '#f0f0f0' : '#2a2a2a'}; border-radius:4px;">${content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>`;
                 }
 
@@ -3247,9 +3718,44 @@
                 </style>
                 </head><body>${previewHtmlContent}</body></html>`;
                 
-                previewWindow.document.open();
-                previewWindow.document.write(finalHtml);
-                previewWindow.document.close();
+                return { html: finalHtml, error: hadError };
+            }
+
+            // --- LIVE PREVIEW ---
+            function resolveLivePreviewType() {
+                let t = livePreviewTypeSelect ? livePreviewTypeSelect.value : (editorState.livePreviewType || 'auto');
+                if (t === 'auto') {
+                    const activeTab = tabs.find(tab => tab.id === activeTabId);
+                    const ext = (getFileExtension(activeTab ? activeTab.title : '') || '').toLowerCase();
+                    const map = { html: 'html', htm: 'html', md: 'markdown', markdown: 'markdown', json: 'json', xml: 'xml', svg: 'xml', js: 'js', mjs: 'js', cjs: 'js', css: 'css', csv: 'csv' };
+                    t = map[ext] || 'html';
+                }
+                return t;
+            }
+
+            function renderLivePreview() {
+                if (!livePreviewPane || !livePreviewFrame || livePreviewPane.classList.contains('hidden')) return;
+                if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined' || typeof hljs === 'undefined') return;
+                const type = resolveLivePreviewType();
+                try {
+                    if (type === 'project') {
+                        livePreviewFrame.srcdoc = bundleProject(getFilesMap());
+                    } else {
+                        livePreviewFrame.srcdoc = buildPreviewDocument(textInput.value, type).html;
+                    }
+                } catch (e) {
+                    const msg = ((e && e.message) ? e.message : String(e)).replace(/</g, '&lt;');
+                    livePreviewFrame.srcdoc = buildPreviewDocument('<div style="color:#ef4444;padding:12px;font-family:sans-serif;">미리보기 오류: ' + msg + '</div>', 'html').html;
+                }
+            }
+
+            function setLivePreview(show) {
+                if (!livePreviewPane) return;
+                editorState.livePreview = !!show;
+                livePreviewPane.classList.toggle('hidden', !show);
+                if (livePreviewToggleButton) livePreviewToggleButton.setAttribute('aria-pressed', show ? 'true' : 'false');
+                if (show) renderLivePreview();
+                try { persistEditorSettings(); } catch (e) {}
             }
 
             function convertCsvToHtmlTable(csvText) {
@@ -3528,10 +4034,9 @@
                                 systemInstruction: { parts: [{ text: systemInstruction }] },
                                 contents: [{ role: "user", parts: [{ text: userQuery }] }]
                             };
-                            console.log("Gemini (AI Modal) API Payload:", JSON.stringify(geminiPayload, null, 2));
-                            const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${editorState.geminiModel}:generateContent?key=${editorState.geminiApiKey}`, {
+                            const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${editorState.geminiModel}:generateContent`, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': editorState.geminiApiKey },
                                 body: JSON.stringify(geminiPayload)
                             });
                             const geminiResult = await geminiResponse.json();
@@ -3549,7 +4054,6 @@
                                 temperature: 0.7,
                                 max_tokens: 1000,
                             };
-                            console.log("OpenAI (AI Modal) API Payload:", JSON.stringify(openaiPayload, null, 2));
                             const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
                                 method: 'POST',
                                 headers: {
@@ -3569,15 +4073,14 @@
                                 system: systemInstruction,
                                 messages: [{ role: "user", content: userQuery }],
                                 max_tokens: 1000,
-                                temperature: 0.7,
                             };
-                            console.log("Anthropic (AI Modal) API Payload:", JSON.stringify(anthropicPayload, null, 2));
                             const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'x-api-key': editorState.anthropicApiKey,
-                                    'anthropic-version': '2023-06-01'
+                                    'anthropic-version': '2023-06-01',
+                                    'anthropic-dangerous-direct-browser-access': 'true'
                                 },
                                 body: JSON.stringify(anthropicPayload)
                             });
@@ -3640,6 +4143,12 @@
                     }
 
                     if (!isModalOpen || (isModalOpen && !isInputFocused)) {
+                        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
+                            e.preventDefault();
+                            setLivePreview(!editorState.livePreview);
+                            showMessage(`실시간 미리보기 ${editorState.livePreview ? '켜짐' : '꺼짐'}.`, 'info', 1500);
+                            return;
+                        }
                         if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
                              e.preventDefault();
                              vibeCodingPanel.classList.toggle('open');
@@ -3753,24 +4262,31 @@
                                 }
                             }
                             setTabModified(activeTabId, true);
-                            updateCursorPosition(); 
-                            updateLineNumbers(); 
+                            updateCursorPosition();
+                            updateLineNumbers();
+                        } else {
+                            handleEditorTypingKey(e);
                         }
                     }
                 });
             }
-            
+
             // --- EVENT LISTENERS ---
             function setupEventListeners() {
+                let findRecomputeTimer = null;
                 textInput.addEventListener('input', () => {
-                    saveToUndoStack(); 
+                    saveToUndoStack();
                     debouncedUpdateLineNumbers(); // Debounced
                     debouncedUpdateStats();      // Debounced
                     const currentTab = tabs.find(tab => tab.id === activeTabId);
                     if (currentTab) {
                         setTabModified(activeTabId, textInput.value !== (editorState.lastSavedStates[activeTabId] || currentTab.lastSavedContent || ''));
-                        currentTab.content = textInput.value; 
+                        currentTab.content = textInput.value;
                         if (currentTab.modified && editorState.autoSave) startAutoSaveTimer();
+                    }
+                    if (findReplaceModal.classList.contains('show') && findInput.value) {
+                        clearTimeout(findRecomputeTimer);
+                        findRecomputeTimer = setTimeout(() => findText(false, false), 200);
                     }
                 });
                 textInput.addEventListener('paste', async (e) => {
@@ -3793,9 +4309,10 @@
                     }
                 });
 
-                textInput.addEventListener('scroll', () => { if(editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop; });
+                textInput.addEventListener('scroll', () => { if(editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop; syncOverlayScroll(); updateCurrentLineHighlight(); });
                 textInput.addEventListener('click', updateCursorPosition);
-                textInput.addEventListener('keyup', updateCursorPosition); 
+                textInput.addEventListener('keyup', updateCursorPosition);
+                textInput.addEventListener('select', () => { updateStatusExtras(); updateCurrentLineHighlight(); });
                 
                 fileInput.addEventListener('change', handleFileLoad);
                 document.getElementById('newFileButton').addEventListener('click', () => createNewTab());
@@ -3894,9 +4411,36 @@
                         console.error("Project preview error:", e);
                     }
                 });
-                document.getElementById('toggleWordWrapButton').addEventListener('click', () => { 
-                    editorState.wordWrap = !editorState.wordWrap; 
-                    applySettingsToUI(); 
+                if (livePreviewToggleButton) {
+                    livePreviewToggleButton.addEventListener('click', () => {
+                        setLivePreview(!editorState.livePreview);
+                        showMessage(`실시간 미리보기 ${editorState.livePreview ? '켜짐' : '꺼짐'}.`, 'info', 1500);
+                    });
+                }
+                if (livePreviewTypeSelect) {
+                    livePreviewTypeSelect.addEventListener('change', () => {
+                        editorState.livePreviewType = livePreviewTypeSelect.value;
+                        try { persistEditorSettings(); } catch (e) {}
+                        renderLivePreview();
+                    });
+                }
+                const livePreviewCloseBtn = document.getElementById('livePreviewCloseButton');
+                if (livePreviewCloseBtn) livePreviewCloseBtn.addEventListener('click', () => setLivePreview(false));
+                const livePreviewPopoutBtn = document.getElementById('livePreviewPopoutButton');
+                if (livePreviewPopoutBtn) {
+                    livePreviewPopoutBtn.addEventListener('click', () => {
+                        const type = resolveLivePreviewType();
+                        if (type === 'project') {
+                            try { openPreviewWindow(bundleProject(getFilesMap()), 'html'); }
+                            catch (e) { showMessage(`프로젝트 미리보기 오류: ${e.message}`, 'error'); }
+                        } else {
+                            openPreviewWindow(textInput.value, type);
+                        }
+                    });
+                }
+                document.getElementById('toggleWordWrapButton').addEventListener('click', () => {
+                    editorState.wordWrap = !editorState.wordWrap;
+                    applySettingsToUI();
                     showMessage(`자동 줄 바꿈 ${editorState.wordWrap ? '활성' : '비활성'}.`, 'info');
                 });
                 document.getElementById('toggleLineNumbersButton').addEventListener('click', () => { 
@@ -3929,12 +4473,12 @@
                 findNextButton.addEventListener('click', findNext);
                 replaceButton.addEventListener('click', replaceCurrent);
                 replaceAllButton.addEventListener('click', replaceAllFound);
-                // Removed input event listener from findInput to prevent constant searching
-                // findInput.addEventListener('input', () => { 
-                //     if (findInput.value !== editorState.lastSearchTerm) {
-                //         findText(false); 
-                //     }
-                // }); 
+                // Live search: update the match count and highlight all matches as you type (debounced, no focus steal).
+                let findLiveTimer = null;
+                findInput.addEventListener('input', () => {
+                    clearTimeout(findLiveTimer);
+                    findLiveTimer = setTimeout(() => findText(false, false), 150);
+                });
                 findInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
@@ -4111,7 +4655,8 @@
                         editorState.aiModelProvider = parsed.aiModelProvider || 'gemini';
                         editorState.geminiModel = normalizeGeminiModel(parsed.geminiModel);
                         editorState.openAiModel = parsed.openAiModel || 'gpt-4o';
-                        editorState.anthropicModel = parsed.anthropicModel || 'claude-3-opus-20240229';
+                        // Map the retired claude-3-opus model (and any missing value) to the current default.
+                        editorState.anthropicModel = (parsed.anthropicModel && parsed.anthropicModel !== 'claude-3-opus-20240229') ? parsed.anthropicModel : 'claude-opus-4-8';
                         editorState.aiSystemPrompt = parsed.aiSystemPrompt || '';
                         editorState.vibeChatHistory = parsed.vibeChatHistory || []; // Load chat history
 
@@ -4127,8 +4672,24 @@
                 
                 lineNumberContainer.style.display = editorState.showLineNumbers ? 'block' : 'none';
                 textInput.style.whiteSpace = editorState.wordWrap ? 'pre-wrap' : 'pre';
-                textInput.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal'; 
-                updateLineNumbers(); 
+                textInput.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
+
+                [highlightOverlay, findHighlightLayer].forEach((el) => {
+                    if (!el) return;
+                    el.style.fontSize = `${editorState.fontSize}px`;
+                    el.style.fontFamily = editorState.fontFamily;
+                    el.style.whiteSpace = editorState.wordWrap ? 'pre-wrap' : 'pre';
+                    el.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
+                });
+                if (highlightCode) {
+                    highlightCode.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
+                }
+                if (livePreviewTypeSelect) livePreviewTypeSelect.value = editorState.livePreviewType || 'auto';
+                if (livePreviewPane) {
+                    livePreviewPane.classList.toggle('hidden', !editorState.livePreview);
+                    if (livePreviewToggleButton) livePreviewToggleButton.setAttribute('aria-pressed', editorState.livePreview ? 'true' : 'false');
+                }
+                updateLineNumbers();
             }
 
             function setupAiProviderVisibility() {
@@ -4564,7 +5125,7 @@
 
             // Internal API call functions, separated for clarity
             async function callGeminiApiInternal(systemInstruction, finalUserQuery) {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${editorState.geminiModel}:generateContent?key=${editorState.geminiApiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${editorState.geminiModel}:generateContent`;
                 
                 // Construct chat history for Gemini API
                 // Gemini API expects `contents` to be strictly alternating user/model turns.
@@ -4596,11 +5157,9 @@
                     contents: contents
                 };
                 
-                console.log("Gemini API Payload:", JSON.stringify(payload, null, 2));
-
                 const response = await fetch(apiUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': editorState.geminiApiKey },
                     body: JSON.stringify(payload)
                 });
 
@@ -4645,8 +5204,6 @@
                     max_tokens: 1000,
                 };
                 
-                console.log("OpenAI API Payload:", JSON.stringify(payload, null, 2));
-
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
@@ -4693,17 +5250,15 @@
                     system: systemInstruction, // System prompt is a separate field for Anthropic
                     messages: messages,
                     max_tokens: 1000,
-                    temperature: 0.7,
                 };
-
-                console.log("Anthropic API Payload:", JSON.stringify(payload, null, 2));
 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'x-api-key': editorState.anthropicApiKey,
-                        'anthropic-version': '2023-06-01'
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
                     },
                     body: JSON.stringify(payload)
                 });
