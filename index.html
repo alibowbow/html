@@ -15,18 +15,18 @@
       }
     </script>
     <meta name="description" content="브라우저에서 실행되는 멀티파일 텍스트 편집기. 미리보기, 세션 저장, AI 작업, 마크다운/JSON/XML/CSV 도구를 한 화면에서 제공합니다.">
-    <meta name="theme-color" content="#f4f1e9">
+    <meta name="theme-color" content="#0c0c0f">
     <meta name="color-scheme" content="dark light">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="한지 에디터 — 텍스트·코드 에디터">
+    <meta property="og:title" content="텍스트 에디터">
     <meta property="og:description" content="브라우저에서 실행되는 멀티파일 텍스트 편집기와 AI 보조 도구">
     <meta property="og:url" content="https://alibowbow.github.io/html/">
-    <title>한지 에디터 — 텍스트·코드 에디터</title>
+    <title>텍스트 에디터</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="./tailwind.generated.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css" id="highlightTheme">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css" id="highlightTheme">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css">
@@ -36,75 +36,75 @@
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script> <!-- JSZip for project export -->
     <style>
-        /* Default = "sophisticated dark" (warm near-black + clay accent). Toggle target. */
+        /* Default = minimal dark (cool charcoal + single indigo accent). */
         :root {
-            --bg-primary: #15120f;
-            --bg-secondary: #1c1814;
-            --bg-tertiary: #231e19;
-            --surface-1: rgba(255,255,255,0.045);
-            --surface-2: rgba(255,255,255,0.09);
-            --text-primary: #ece6dc;
-            --text-secondary: #a89e90;
-            --text-muted: #7b7264;
-            --text-accent: #e8a890;
-            --border-color: rgba(255,255,255,0.10);
-            --border-strong: rgba(255,255,255,0.17);
-            --border-focus: #d4795f;
-            --button-bg: rgba(255,255,255,0.05);
-            --button-hover: rgba(255,255,255,0.10);
-            --button-active: rgba(255,255,255,0.15);
+            --bg-primary: #0c0c0f;
+            --bg-secondary: #131316;
+            --bg-tertiary: #17171c;
+            --surface-1: rgba(255,255,255,0.04);
+            --surface-2: rgba(255,255,255,0.08);
+            --text-primary: #e7e7ea;
+            --text-secondary: #9a9aa4;
+            --text-muted: #6a6a74;
+            --text-accent: #a5a6f6;
+            --border-color: rgba(255,255,255,0.08);
+            --border-strong: rgba(255,255,255,0.14);
+            --border-focus: #6366f1;
+            --button-bg: rgba(255,255,255,0.04);
+            --button-hover: rgba(255,255,255,0.08);
+            --button-active: rgba(255,255,255,0.12);
             --button-disabled: rgba(255,255,255,0.03);
-            --success-color: #4ade80;
+            --success-color: #34d399;
             --error-color: #f87171;
             --info-color: #60a5fa;
-            --purple-accent: #c4b5fd;
+            --purple-accent: #8b8bf5;
             --scrollbar-track: transparent;
-            --scrollbar-thumb: rgba(255,255,255,0.16);
-            --current-line-bg: rgba(255,255,255,0.05);
-            --accent: #d4795f;
-            --accent-strong: #e3917a;
-            --accent-contrast: #1c1814;
-            --accent-rgb: 212,121,95;
+            --scrollbar-thumb: rgba(255,255,255,0.14);
+            --current-line-bg: rgba(255,255,255,0.04);
+            --accent: #6366f1;
+            --accent-strong: #818cf8;
+            --accent-contrast: #ffffff;
+            --accent-rgb: 99,102,241;
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
-            --shadow-md: 0 14px 34px -16px rgba(0,0,0,0.65);
-            --shadow-lg: 0 30px 70px -28px rgba(0,0,0,0.8);
+            --shadow-md: 0 12px 30px -14px rgba(0,0,0,0.7);
+            --shadow-lg: 0 28px 64px -28px rgba(0,0,0,0.85);
             --radius: 0.5rem;
-            --radius-lg: 0.875rem;
-            --font-serif: 'Noto Serif KR', 'Fraunces', Georgia, 'Times New Roman', serif;
+            --radius-lg: 0.75rem;
+            --font-serif: 'Pretendard', 'Inter', sans-serif;
         }
 
-        /* Primary = "paper light" editorial (default on first load via loadTheme). */
+        /* Alternate = clean light (white surfaces + indigo accent). */
         .light-theme {
-            --bg-primary: #f3f0e8;
-            --bg-secondary: #fbf9f3;
-            --bg-tertiary: #fffdf7;
-            --surface-1: rgba(43,38,32,0.04);
-            --surface-2: rgba(43,38,32,0.08);
-            --text-primary: #2b2620;
-            --text-secondary: #6d645a;
-            --text-muted: #9b9286;
-            --text-accent: #a1432c;
-            --border-color: #e7e0d2;
-            --border-strong: #d8cfbd;
-            --border-focus: #b1543b;
-            --button-bg: #fbf9f3;
-            --button-hover: #f1ece1;
-            --button-active: #e7e0d2;
-            --button-disabled: #f1ece1;
-            --success-color: #2f7d54;
-            --error-color: #b3402f;
-            --info-color: #2f6db3;
-            --purple-accent: #7c5ca8;
+            --bg-primary: #f6f6f8;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #ffffff;
+            --surface-1: rgba(17,17,20,0.035);
+            --surface-2: rgba(17,17,20,0.07);
+            --text-primary: #18181b;
+            --text-secondary: #555560;
+            --text-muted: #8a8a94;
+            --text-accent: #4f46e5;
+            --border-color: #e6e6ea;
+            --border-strong: #d6d6dc;
+            --border-focus: #6366f1;
+            --button-bg: rgba(17,17,20,0.035);
+            --button-hover: rgba(17,17,20,0.07);
+            --button-active: rgba(17,17,20,0.11);
+            --button-disabled: rgba(17,17,20,0.03);
+            --success-color: #059669;
+            --error-color: #e11d48;
+            --info-color: #2563eb;
+            --purple-accent: #6d5ef0;
             --scrollbar-track: transparent;
-            --scrollbar-thumb: #d8cfbd;
-            --current-line-bg: rgba(177,84,59,0.06);
-            --accent: #b1543b;
-            --accent-strong: #97432e;
+            --scrollbar-thumb: rgba(17,17,20,0.18);
+            --current-line-bg: rgba(99,102,241,0.06);
+            --accent: #4f46e5;
+            --accent-strong: #4338ca;
             --accent-contrast: #ffffff;
-            --accent-rgb: 177,84,59;
-            --shadow-sm: 0 1px 2px rgba(43,38,32,0.06);
-            --shadow-md: 0 14px 32px -18px rgba(43,38,32,0.22);
-            --shadow-lg: 0 28px 60px -28px rgba(43,38,32,0.28);
+            --accent-rgb: 79,70,229;
+            --shadow-sm: 0 1px 2px rgba(17,17,20,0.06);
+            --shadow-md: 0 12px 30px -14px rgba(17,17,20,0.14);
+            --shadow-lg: 0 28px 64px -28px rgba(17,17,20,0.22);
         }
         
         body {
@@ -1112,7 +1112,7 @@
         <div id="mainContainer">
             <header>
                 <div class="top-bar">
-                    <span class="editor-title">한지 에디터</span>
+                    <span class="editor-title">텍스트 에디터</span>
                     <div class="top-bar-actions">
                         <button id="livePreviewToggleButton" class="custom-button toolbar-button" title="실시간 미리보기 토글 (Ctrl+Shift+P)" aria-pressed="false">
                             <i class="fas fa-eye"></i> <span class="sm:inline hidden">실시간 미리보기</span>
@@ -2271,7 +2271,7 @@
                     '<i class="fas fa-moon"></i>' : 
                     '<i class="fas fa-sun"></i>';
                 themeToggleButton.title = `테마 변경 (현재 ${isDarkTheme ? '어두운' : '밝은'} 테마)`;
-                localStorage.setItem('editorTheme', isDarkTheme ? 'dark' : 'light');
+                localStorage.setItem('uiTheme', isDarkTheme ? 'dark' : 'light');
                 
                 const newHighlightStyle = isDarkTheme ? 
                     'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css' :
@@ -2283,8 +2283,8 @@
             });
             
             function loadTheme() {
-                const savedTheme = localStorage.getItem('editorTheme');
-                const isLightTheme = savedTheme !== 'dark'; // default = light (paper) editorial
+                const savedTheme = localStorage.getItem('uiTheme');
+                const isLightTheme = savedTheme === 'light'; // default = dark (minimal)
                 if (isLightTheme) {
                     document.body.classList.add('light-theme');
                     themeToggleButton.innerHTML = '<i class="fas fa-sun"></i>';
