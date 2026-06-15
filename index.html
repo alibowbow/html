@@ -15,7 +15,7 @@
       }
     </script>
     <meta name="description" content="브라우저에서 실행되는 멀티파일 텍스트 편집기. 미리보기, 세션 저장, AI 작업, 마크다운/JSON/XML/CSV 도구를 한 화면에서 제공합니다.">
-    <meta name="theme-color" content="#0c0c0f">
+    <meta name="theme-color" content="#edebf9">
     <meta name="color-scheme" content="dark light">
     <meta property="og:type" content="website">
     <meta property="og:title" content="텍스트 에디터">
@@ -26,7 +26,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="./tailwind.generated.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css" id="highlightTheme">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css" id="highlightTheme">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css">
@@ -61,50 +61,52 @@
             --scrollbar-track: transparent;
             --scrollbar-thumb: rgba(255,255,255,0.14);
             --current-line-bg: rgba(255,255,255,0.04);
-            --accent: #6366f1;
-            --accent-strong: #818cf8;
+            --accent: #8b5cf6;
+            --accent-strong: #a78bfa;
             --accent-contrast: #ffffff;
-            --accent-rgb: 99,102,241;
+            --accent-rgb: 139,92,246;
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
-            --shadow-md: 0 12px 30px -14px rgba(0,0,0,0.7);
+            --shadow-md: 0 16px 40px -20px rgba(0,0,0,0.7);
             --shadow-lg: 0 28px 64px -28px rgba(0,0,0,0.85);
             --radius: 0.5rem;
-            --radius-lg: 0.75rem;
+            --radius-lg: 1.25rem;
             --font-serif: 'Pretendard', 'Inter', sans-serif;
+            --app-gradient: radial-gradient(1100px 600px at 50% -12%, rgba(139,92,246,0.16), transparent 60%);
         }
 
-        /* Alternate = clean light (white surfaces + indigo accent). */
+        /* Default = soft lavender light (reference). */
         .light-theme {
-            --bg-primary: #f6f6f8;
+            --bg-primary: #edebf9;
             --bg-secondary: #ffffff;
             --bg-tertiary: #ffffff;
-            --surface-1: rgba(17,17,20,0.035);
-            --surface-2: rgba(17,17,20,0.07);
-            --text-primary: #18181b;
-            --text-secondary: #555560;
-            --text-muted: #8a8a94;
-            --text-accent: #4f46e5;
-            --border-color: #e6e6ea;
-            --border-strong: #d6d6dc;
-            --border-focus: #6366f1;
-            --button-bg: rgba(17,17,20,0.035);
-            --button-hover: rgba(17,17,20,0.07);
-            --button-active: rgba(17,17,20,0.11);
-            --button-disabled: rgba(17,17,20,0.03);
-            --success-color: #059669;
+            --surface-1: rgba(99,72,160,0.05);
+            --surface-2: rgba(99,72,160,0.10);
+            --text-primary: #211f33;
+            --text-secondary: #5d5a72;
+            --text-muted: #9893ad;
+            --text-accent: #7c3aed;
+            --border-color: #e7e4f4;
+            --border-strong: #d6d1ec;
+            --border-focus: #8b5cf6;
+            --button-bg: #ffffff;
+            --button-hover: #f3f1fc;
+            --button-active: #e9e5f8;
+            --button-disabled: #f3f1fc;
+            --success-color: #16a34a;
             --error-color: #e11d48;
             --info-color: #2563eb;
-            --purple-accent: #6d5ef0;
+            --purple-accent: #8b5cf6;
             --scrollbar-track: transparent;
-            --scrollbar-thumb: rgba(17,17,20,0.18);
-            --current-line-bg: rgba(99,102,241,0.06);
-            --accent: #4f46e5;
-            --accent-strong: #4338ca;
+            --scrollbar-thumb: #d6d1ec;
+            --current-line-bg: rgba(139,92,246,0.06);
+            --accent: #8b5cf6;
+            --accent-strong: #7c3aed;
             --accent-contrast: #ffffff;
-            --accent-rgb: 79,70,229;
-            --shadow-sm: 0 1px 2px rgba(17,17,20,0.06);
-            --shadow-md: 0 12px 30px -14px rgba(17,17,20,0.14);
-            --shadow-lg: 0 28px 64px -28px rgba(17,17,20,0.22);
+            --accent-rgb: 139,92,246;
+            --shadow-sm: 0 1px 2px rgba(60,40,110,0.06);
+            --shadow-md: 0 16px 40px -20px rgba(76,52,140,0.28);
+            --shadow-lg: 0 30px 70px -28px rgba(76,52,140,0.32);
+            --app-gradient: linear-gradient(135deg, #f3f2fd 0%, #ece8fb 48%, #e6e0fa 100%);
         }
         
         body {
@@ -112,6 +114,8 @@
             overflow-x: hidden;
             min-height: 100vh;
             background-color: var(--bg-primary);
+            background-image: var(--app-gradient);
+            background-attachment: fixed;
             color: var(--text-primary);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -1004,106 +1008,116 @@
             filter: brightness(110%);
         }
 
-        /* ===================== Sidebar app shell — layout rebuild ===================== */
+        /* ===================== Reference layout: soft lavender, top-stacked ===================== */
+        .main-container-wrapper { padding: 1.75rem 1.5rem; }
         #mainContainer {
-            display: grid;
-            grid-template-columns: 264px minmax(0, 1fr);
-            grid-template-rows: auto minmax(0, 1fr) auto;
-            grid-template-areas:
-                "brand tabs"
-                "nav   main"
-                "stat  stat";
-            max-width: 1540px;
-        }
-        header {
-            grid-area: brand;
-            background-color: var(--bg-secondary);
-            border-right: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1.1rem 0.9rem 0.9rem;
-        }
-        .top-bar { flex-direction: column; align-items: stretch; gap: 0.8rem; }
-        .editor-title { font-size: 1.2rem; line-height: 1.25; display: flex; align-items: center; gap: 0.55rem; }
-        .editor-title::before {
-            content: "";
-            width: 0.62rem;
-            height: 1.35rem;
-            border-radius: 3px;
-            background: var(--accent);
-            flex-shrink: 0;
-        }
-        .top-bar-actions { flex-wrap: wrap; gap: 0.3rem; }
-        .top-bar-actions .custom-button { padding: 0.42rem 0.5rem; }
-        .top-bar-actions .custom-button .sm\:inline { display: none !important; }
-
-        .tab-container {
-            grid-area: tabs;
-            align-items: flex-end;
-            border-bottom: 1px solid var(--border-color);
-            padding: 0 0.85rem;
-        }
-
-        .toolbar {
-            grid-area: nav;
+            display: flex;
             flex-direction: column;
-            flex-wrap: nowrap;
-            align-items: stretch;
-            gap: 0.12rem;
-            margin: 0;
-            padding: 0.7rem 0.6rem 1rem;
+            background: transparent;
             border: none;
-            border-right: 1px solid var(--border-color);
-            border-radius: 0;
             box-shadow: none;
-            background-color: var(--bg-secondary);
+            border-radius: 0;
+            max-width: 1180px;
             overflow: visible;
         }
-        .toolbar .dropdown { width: 100%; margin: 0; display: block; }
-        .toolbar .dropdown > .dropdown-toggle,
-        .toolbar > .custom-button {
-            width: 100%;
-            justify-content: flex-start;
-            padding: 0.55rem 0.65rem;
-            border-color: transparent;
-            background-color: transparent;
-        }
-        .toolbar .dropdown > .dropdown-toggle:hover:not(:disabled),
-        .toolbar > .custom-button:hover:not(:disabled) {
-            background-color: var(--surface-2);
-            border-color: transparent;
-            transform: none;
+        header {
+            background: transparent;
+            border: none;
             box-shadow: none;
+            padding: 0 0.25rem 1.2rem;
         }
-        .toolbar .dropdown-content { left: calc(100% + 8px); top: 0; right: auto; margin: 0; }
-        .toolbar .autosave-indicator { margin-top: auto; padding: 0.6rem 0.65rem 0; }
+        .top-bar { flex-direction: row; align-items: center; gap: 0.85rem; }
+        .app-logo {
+            width: 46px; height: 46px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 13px;
+            background: linear-gradient(135deg, #a78bfa, #ec4899);
+            color: #fff; font-size: 1.2rem;
+            box-shadow: 0 10px 22px -8px rgba(139,92,246,0.65);
+        }
+        .brand-text { display: flex; flex-direction: column; line-height: 1.15; margin-right: auto; }
+        .editor-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.01em; color: var(--text-primary); }
+        .editor-title::before { content: none; }
+        .editor-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+        .app-search {
+            display: flex; align-items: center; gap: 0.55rem;
+            min-width: 230px;
+            padding: 0.55rem 0.95rem;
+            border-radius: 999px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            color: var(--text-muted);
+            cursor: text;
+            font-size: 0.85rem;
+        }
+        .app-search i { color: var(--text-muted); }
+        .app-search .kbd { margin-left: auto; }
+        .top-bar-actions { flex-wrap: nowrap; gap: 0.5rem; }
+        .top-bar-actions .custom-button {
+            width: 44px; height: 44px; padding: 0;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            color: var(--text-secondary);
+        }
+        .top-bar-actions .custom-button i { margin: 0; }
+        .top-bar-actions .custom-button .sm\:inline { display: none !important; }
+        .top-bar-actions .custom-button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+        .top-bar-actions .custom-button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: transparent; }
 
-        main { grid-area: main; padding: 0.85rem 1rem 0; }
-        #statsBar { grid-area: stat; border-top: 1px solid var(--border-color); }
+        .tab-container { background: transparent; border-bottom: none; padding: 0 0.75rem; margin-bottom: -1px; }
+        .tab { background: transparent; border-color: transparent; }
+        .tab.active { background: var(--bg-secondary); border-color: var(--border-color); border-bottom-color: var(--bg-secondary); }
 
-        @media (max-width: 880px) {
-            #mainContainer {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-                grid-template-areas: "brand" "tabs" "nav" "main" "stat";
-            }
-            header { border-right: none; }
-            .top-bar { flex-direction: row; align-items: center; justify-content: space-between; }
-            .editor-title { font-size: 1.15rem; }
-            .toolbar {
-                flex-direction: row;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                overflow-y: visible;
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
-                gap: 0.3rem;
-                padding: 0.5rem 0.7rem;
-            }
-            .toolbar .dropdown { width: auto; }
-            .toolbar .dropdown > .dropdown-toggle, .toolbar > .custom-button { width: auto; }
-            .toolbar .dropdown-content { left: 0; top: 100%; }
-            .toolbar .autosave-indicator { margin-top: 0; }
-            .tab-container { align-items: stretch; }
+        .toolbar {
+            margin: 0;
+            gap: 0.1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            box-shadow: none;
+            padding: 0.5rem 0.85rem;
+        }
+        .toolbar .dropdown > .dropdown-toggle, .toolbar > .custom-button {
+            background: transparent; border-color: transparent; padding: 0.45rem 0.7rem;
+        }
+        .toolbar .dropdown > .dropdown-toggle:hover:not(:disabled), .toolbar > .custom-button:hover:not(:disabled) {
+            background: var(--surface-1); border-color: transparent; transform: none; box-shadow: none;
+        }
+        .toolbar .dropdown-content { left: 0; top: 100%; }
+        .toolbar .autosave-indicator { margin-left: auto; color: var(--success-color); }
+
+        main { padding: 0; }
+        .textarea-wrapper { margin-top: 0; }
+        .editor-area {
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            background-color: var(--bg-secondary);
+            box-shadow: var(--shadow-md);
+        }
+        .code-input-wrap {
+            background-image: radial-gradient(135% 95% at 100% 100%, rgba(139,92,246,0.13), transparent 50%);
+        }
+        #statsBar {
+            background: transparent;
+            border: none;
+            padding: 0.9rem 0.5rem 0;
+            color: var(--text-muted);
+        }
+        .stats-item span { color: var(--text-secondary); }
+        .mode-indicator { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text-secondary); }
+        .mode-indicator::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+        @media (max-width: 760px) {
+            .main-container-wrapper { padding: 0.7rem; }
+            .top-bar { flex-wrap: wrap; }
+            .app-search { order: 5; flex: 1 1 100%; min-width: 0; }
+            .brand-text { margin-right: 0; }
         }
     </style>
 </head>
@@ -1112,7 +1126,14 @@
         <div id="mainContainer">
             <header>
                 <div class="top-bar">
-                    <span class="editor-title">텍스트 에디터</span>
+                    <div class="app-logo" aria-hidden="true"><i class="fas fa-feather-pointed"></i></div>
+                    <div class="brand-text">
+                        <span class="editor-title">텍스트 에디터</span>
+                        <span class="editor-subtitle">깔끔하고 강력한 텍스트 편집기</span>
+                    </div>
+                    <div class="app-search" id="appSearch" role="button" tabindex="0" title="검색 (Ctrl/Cmd+K)">
+                        <i class="fas fa-magnifying-glass"></i><span>검색</span><span class="kbd">⌘K</span>
+                    </div>
                     <div class="top-bar-actions">
                         <button id="livePreviewToggleButton" class="custom-button toolbar-button" title="실시간 미리보기 토글 (Ctrl+Shift+P)" aria-pressed="false">
                             <i class="fas fa-eye"></i> <span class="sm:inline hidden">실시간 미리보기</span>
@@ -1276,6 +1297,7 @@
                 <span class="stats-item"><span id="cursorPosition">위치: 1:1</span></span>
                 <span class="stats-item" id="selectionStatItem" style="display:none;">선택: <span id="selectionStat">0</span></span>
                 <span class="stats-item">언어: <span id="languageStat">Text</span></span>
+                <span class="stats-item mode-indicator" id="modeIndicator" style="margin-left:auto;">라이트 모드</span>
             </div>
         </div>
     </div>
@@ -2272,8 +2294,10 @@
                     '<i class="fas fa-sun"></i>';
                 themeToggleButton.title = `테마 변경 (현재 ${isDarkTheme ? '어두운' : '밝은'} 테마)`;
                 localStorage.setItem('uiTheme', isDarkTheme ? 'dark' : 'light');
-                
-                const newHighlightStyle = isDarkTheme ? 
+                const modeEl = document.getElementById('modeIndicator');
+                if (modeEl) modeEl.textContent = isDarkTheme ? '다크 모드' : '라이트 모드';
+
+                const newHighlightStyle = isDarkTheme ?
                     'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css' :
                     'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css';
                 if (highlightThemeLink) {
@@ -2284,7 +2308,7 @@
             
             function loadTheme() {
                 const savedTheme = localStorage.getItem('uiTheme');
-                const isLightTheme = savedTheme === 'light'; // default = dark (minimal)
+                const isLightTheme = savedTheme !== 'dark'; // default = light (lavender)
                 if (isLightTheme) {
                     document.body.classList.add('light-theme');
                     themeToggleButton.innerHTML = '<i class="fas fa-sun"></i>';
@@ -2296,8 +2320,10 @@
                     themeToggleButton.title = '테마 변경 (현재 어두운 테마)';
                     if (highlightThemeLink) highlightThemeLink.setAttribute('href', 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css');
                 }
+                const modeEl = document.getElementById('modeIndicator');
+                if (modeEl) modeEl.textContent = isLightTheme ? '라이트 모드' : '다크 모드';
             }
-            
+
             function getFileIconClass(filename) {
                 if (!filename) return 'fa-file-alt'; 
                 const extension = filename.split('.').pop().toLowerCase();
@@ -4301,6 +4327,11 @@
                             findInput.focus();
                             findInput.select();
                             findText(false); // Initial search when opening modal
+                        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { // Cmd/Ctrl+K → search
+                            e.preventDefault();
+                            findReplaceModal.classList.add('show');
+                            findInput.focus();
+                            findInput.select();
                         } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') { // Ctrl+G for Go to Line
                             e.preventDefault();
                             goToLineModal.classList.add('show');
@@ -4434,6 +4465,12 @@
                 
                 fileInput.addEventListener('change', handleFileLoad);
                 document.getElementById('newFileButton').addEventListener('click', () => createNewTab());
+                const appSearchEl = document.getElementById('appSearch');
+                if (appSearchEl) {
+                    const openFind = () => { findReplaceModal.classList.add('show'); findInput.focus(); findInput.select(); };
+                    appSearchEl.addEventListener('click', openFind);
+                    appSearchEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFind(); } });
+                }
                 document.getElementById('loadFileButton').addEventListener('click', loadFile);
                 
                 document.getElementById('overwriteFileButton').addEventListener('click', overwriteFile);
