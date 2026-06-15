@@ -3,6 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+      // Register a network-first service worker so a plain refresh always loads the latest version.
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(function () {});
+        });
+      }
+    </script>
     <meta name="description" content="브라우저에서 실행되는 멀티파일 텍스트 편집기. 미리보기, 세션 저장, AI 작업, 마크다운/JSON/XML/CSV 도구를 한 화면에서 제공합니다.">
     <meta name="theme-color" content="#0f1420">
     <meta name="color-scheme" content="dark light">
