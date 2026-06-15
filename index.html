@@ -1017,7 +1017,9 @@
             border: none;
             box-shadow: none;
             border-radius: 0;
+            width: 100%;
             max-width: 1180px;
+            min-width: 0;
             overflow: visible;
         }
         header {
@@ -1115,9 +1117,14 @@
 
         @media (max-width: 760px) {
             .main-container-wrapper { padding: 0.7rem; }
-            .top-bar { flex-wrap: wrap; }
+            .top-bar { flex-wrap: wrap; gap: 0.6rem; }
+            .brand-text { margin-right: 0; flex: 1 1 auto; min-width: 0; }
+            .editor-title { font-size: 1.2rem; }
+            .editor-subtitle { font-size: 0.72rem; }
+            .top-bar-actions { order: 4; flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; }
             .app-search { order: 5; flex: 1 1 100%; min-width: 0; }
-            .brand-text { margin-right: 0; }
+            .stats-bar { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem; padding: 0.8rem 0.25rem 0; }
+            #modeIndicator { margin-left: auto; }
         }
     </style>
 </head>
