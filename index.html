@@ -348,7 +348,57 @@
             transition: color 0.2s ease, background-color 0.2s ease;
         }
         .live-preview-icon-btn:hover { color: var(--text-primary); background-color: var(--button-hover); }
-        #livePreviewFrame { flex-grow: 1; width: 100%; border: 0; background-color: #ffffff; }
+        .live-preview-devicebar {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+            padding: 0.3rem 0.6rem;
+            background-color: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .live-preview-devicebar select {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.18rem 0.4rem;
+            font-size: 0.76rem;
+        }
+        .lp-zoom { display: inline-flex; align-items: center; gap: 0.05rem; }
+        .lp-zoom-value {
+            min-width: 3.4em;
+            text-align: center;
+            background: none;
+            border: 1px solid transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.76rem;
+            line-height: 1;
+            padding: 0.2rem 0.3rem;
+            border-radius: 0.3rem;
+            font-variant-numeric: tabular-nums;
+        }
+        .lp-zoom-value:hover { border-color: var(--border-color); background-color: var(--button-hover); }
+        .live-preview-icon-btn:disabled { opacity: 0.4; cursor: default; }
+        .lp-device-info { margin-left: auto; font-variant-numeric: tabular-nums; opacity: 0.75; padding-right: 0.1rem; }
+        #livePreviewStage {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow: auto;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            background-color: var(--bg-tertiary);
+        }
+        #livePreviewStage.device-mode { padding: 14px; }
+        #livePreviewViewport { width: 100%; height: 100%; }
+        #livePreviewStage.device-mode #livePreviewViewport { flex: none; }
+        #livePreviewFrame { width: 100%; height: 100%; border: 0; background-color: #ffffff; transform-origin: top left; }
+        #livePreviewStage.device-mode #livePreviewFrame { border-radius: 10px; box-shadow: var(--shadow-md); }
         .custom-button[aria-pressed="true"] { background-color: var(--accent); color: #fff; border-color: transparent; }
         @media (max-width: 768px) {
             .editor-split { flex-direction: column; }
@@ -1291,7 +1341,27 @@
                                 <button id="livePreviewPopoutButton" class="live-preview-icon-btn" title="새 창으로 열기" aria-label="새 창으로 열기"><i class="fas fa-external-link-alt"></i></button>
                                 <button id="livePreviewCloseButton" class="live-preview-icon-btn" title="미리보기 닫기" aria-label="실시간 미리보기 닫기">&times;</button>
                             </div>
-                            <iframe id="livePreviewFrame" title="실시간 미리보기" sandbox="allow-scripts allow-popups allow-modals allow-forms"></iframe>
+                            <div class="live-preview-devicebar">
+                                <select id="livePreviewDevice" title="미리보기 화면 크기" aria-label="미리보기 화면 크기">
+                                    <option value="responsive">반응형</option>
+                                    <option value="laptop">노트북 1366</option>
+                                    <option value="tablet">태블릿 768</option>
+                                    <option value="mobileL">모바일 414</option>
+                                    <option value="mobileS">모바일 375</option>
+                                </select>
+                                <div class="lp-zoom" role="group" aria-label="미리보기 확대/축소">
+                                    <button id="livePreviewZoomOut" class="live-preview-icon-btn" title="축소" aria-label="축소"><i class="fas fa-minus"></i></button>
+                                    <button id="livePreviewZoomReset" class="lp-zoom-value" title="화면에 맞춤" aria-label="화면에 맞춤">100%</button>
+                                    <button id="livePreviewZoomIn" class="live-preview-icon-btn" title="확대" aria-label="확대"><i class="fas fa-plus"></i></button>
+                                </div>
+                                <button id="livePreviewRotateButton" class="live-preview-icon-btn" title="가로/세로 회전" aria-label="가로/세로 회전" disabled><i class="fas fa-rotate"></i></button>
+                                <span id="livePreviewDeviceInfo" class="lp-device-info">반응형</span>
+                            </div>
+                            <div id="livePreviewStage">
+                                <div id="livePreviewViewport">
+                                    <iframe id="livePreviewFrame" title="실시간 미리보기" sandbox="allow-scripts allow-popups allow-modals allow-forms"></iframe>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1924,7 +1994,9 @@
                 vibeChatHistory: [], // Stores chat history for Vibe AI
                 defaultNewTabType: 'txt', // New setting
                 livePreview: false, // Live preview pane enabled
-                livePreviewType: 'auto' // auto | html | markdown | json | xml | css | js | csv | project
+                livePreviewType: 'auto', // auto | html | markdown | json | xml | css | js | csv | project
+                livePreviewDevice: 'responsive', // responsive | laptop | tablet | mobileL | mobileS
+                livePreviewOrientation: 'portrait' // portrait | landscape (fixed-size devices only)
             };
             
             const textInput = document.getElementById('textInput');
@@ -1936,6 +2008,23 @@
             const livePreviewFrame = document.getElementById('livePreviewFrame');
             const livePreviewTypeSelect = document.getElementById('livePreviewType');
             const livePreviewToggleButton = document.getElementById('livePreviewToggleButton');
+            const livePreviewDeviceSelect = document.getElementById('livePreviewDevice');
+            const livePreviewStage = document.getElementById('livePreviewStage');
+            const livePreviewViewport = document.getElementById('livePreviewViewport');
+            const livePreviewDeviceInfo = document.getElementById('livePreviewDeviceInfo');
+            const livePreviewRotateButton = document.getElementById('livePreviewRotateButton');
+            const livePreviewZoomResetBtn = document.getElementById('livePreviewZoomReset');
+            // Preview viewport presets (portrait dimensions; 0 width = responsive/fill).
+            const PREVIEW_DEVICES = {
+                responsive: { label: '반응형', w: 0,    h: 0 },
+                laptop:     { label: '노트북',  w: 1366, h: 768 },
+                tablet:     { label: '태블릿',  w: 768,  h: 1024 },
+                mobileL:    { label: '모바일',  w: 414,  h: 896 },
+                mobileS:    { label: '모바일',  w: 375,  h: 667 }
+            };
+            const PREVIEW_ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 0.9, 1, 1.1, 1.25, 1.5, 2];
+            let previewZoom = 1;       // current preview scale
+            let previewZoomAuto = true; // true = keep auto-fitting to the stage width
             const EDITOR_PAIRS = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
             const EDITOR_OPENERS = { '(': ')', '[': ']', '{': '}' };
             const EDITOR_CLOSERS = new Set([')', ']', '}', '"', "'", '`']);
@@ -1954,6 +2043,10 @@
                 cs: 'csharp', go: 'go', rs: 'rust', rb: 'ruby', php: 'php', sh: 'bash', bash: 'bash',
                 yml: 'yaml', yaml: 'yaml', sql: 'sql'
             };
+            // Languages highlight.js may auto-detect among for unknown buffers (e.g. the default .txt tab),
+            // so typed code still gets colored even when the file has no recognizable extension.
+            const EDITOR_AUTO_SUBSET = ['xml', 'javascript', 'css', 'json', 'markdown', 'typescript', 'python', 'bash', 'sql'];
+            let editorAutoLang = null; // cached auto-detected language for the current buffer
             const fileInput = document.getElementById('fileInput');
             const messageBox = document.getElementById('messageBox');
             const lineNumberContainer = document.getElementById('lineNumberContainer');
@@ -2033,7 +2126,9 @@
                     vibeChatHistory: source.vibeChatHistory,
                     defaultNewTabType: source.defaultNewTabType,
                     livePreview: source.livePreview,
-                    livePreviewType: source.livePreviewType
+                    livePreviewType: source.livePreviewType,
+                    livePreviewDevice: source.livePreviewDevice,
+                    livePreviewOrientation: source.livePreviewOrientation
                 };
             }
 
@@ -2540,10 +2635,11 @@
                     textInput.value = "";
                 }
                 
-                renderTabs(); 
+                editorAutoLang = null; // re-detect language for the newly active buffer
+                renderTabs();
                 updateLineNumbers();
                 updateStats();
-                updateCursorPosition(); 
+                updateCursorPosition();
                 textInput.focus();
                 setTabModified(activeTabId, textInput.value !== (editorState.lastSavedStates[activeTabId] || ''));
             }
@@ -2695,7 +2791,7 @@
                 const ext = (getFileExtension(activeTab ? activeTab.title : '') || '').toLowerCase();
                 const lang = EDITOR_HIGHLIGHT_LANGS[ext];
                 if (lang && typeof hljs !== 'undefined' && hljs.getLanguage(lang)) return lang;
-                return 'plaintext';
+                return 'auto'; // unknown/.txt buffer → detect language from content
             }
 
             function syncOverlayScroll() {
@@ -2707,6 +2803,22 @@
             function escapeOverlayHtml(str) {
                 return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             }
+
+            // Re-detect the language of an unknown buffer on a debounce, so coloring adapts as the user
+            // keeps typing without paying for full auto-detection on every keystroke.
+            const scheduleAutoLangDetect = debounce(function () {
+                if (typeof hljs === 'undefined') return;
+                if (getEditorHighlightLanguage() !== 'auto') return;
+                const value = textInput.value;
+                if (value.length > MAX_HIGHLIGHT_LENGTH) return;
+                let detected = 'plaintext';
+                try { detected = hljs.highlightAuto(value, EDITOR_AUTO_SUBSET).language || 'plaintext'; } catch (e) {}
+                if (detected !== editorAutoLang) {
+                    editorAutoLang = detected;
+                    updateHighlight();
+                    updateStatusExtras();
+                }
+            }, 400);
 
             function updateHighlight() {
                 if (!highlightCode) return;
@@ -2720,10 +2832,24 @@
                     highlightCode.className = '';
                     highlightCode.textContent = value + '\n';
                 } else {
-                    const lang = getEditorHighlightLanguage();
+                    let lang = getEditorHighlightLanguage();
                     let highlighted;
                     try {
-                        highlighted = hljs.highlight(value, { language: lang, ignoreIllegals: true }).value;
+                        if (lang === 'auto') {
+                            // Reuse the cached detection for cheap, stable per-keystroke rendering;
+                            // scheduleAutoLangDetect() refreshes it on a debounce as content changes.
+                            if (editorAutoLang) {
+                                highlighted = hljs.highlight(value, { language: editorAutoLang, ignoreIllegals: true }).value;
+                                lang = editorAutoLang;
+                            } else {
+                                const res = hljs.highlightAuto(value, EDITOR_AUTO_SUBSET);
+                                highlighted = res.value;
+                                lang = editorAutoLang = res.language || 'plaintext';
+                            }
+                            scheduleAutoLangDetect();
+                        } else {
+                            highlighted = hljs.highlight(value, { language: lang, ignoreIllegals: true }).value;
+                        }
                     } catch (e) {
                         highlighted = escapeOverlayHtml(value);
                     }
@@ -2787,7 +2913,8 @@
                     }
                 }
                 if (langStat) {
-                    const lang = getEditorHighlightLanguage();
+                    let lang = getEditorHighlightLanguage();
+                    if (lang === 'auto') lang = editorAutoLang || 'plaintext';
                     langStat.textContent = EDITOR_LANG_LABELS[lang] || lang;
                 }
             }
@@ -3905,7 +4032,88 @@
                 editorState.livePreview = !!show;
                 livePreviewPane.classList.toggle('hidden', !show);
                 if (livePreviewToggleButton) livePreviewToggleButton.setAttribute('aria-pressed', show ? 'true' : 'false');
-                if (show) renderLivePreview();
+                if (show) { renderLivePreview(); applyPreviewDevice(); }
+                try { persistEditorSettings(); } catch (e) {}
+            }
+
+            // --- PREVIEW DEVICE / ZOOM ---
+            function previewDeviceDims() {
+                const dev = PREVIEW_DEVICES[editorState.livePreviewDevice] || PREVIEW_DEVICES.responsive;
+                if (!dev.w) return null;
+                const landscape = editorState.livePreviewOrientation === 'landscape';
+                return { w: landscape ? dev.h : dev.w, h: landscape ? dev.w : dev.h };
+            }
+
+            function computeAutoFitZoom(deviceW) {
+                if (!livePreviewStage || !deviceW) return 1;
+                const avail = livePreviewStage.clientWidth - 28; // account for stage padding
+                if (avail <= 0) return 1;
+                return Math.max(0.25, Math.min(1, avail / deviceW));
+            }
+
+            function updateZoomLabel(z) {
+                if (livePreviewZoomResetBtn) livePreviewZoomResetBtn.textContent = Math.round(z * 100) + '%';
+            }
+
+            function applyPreviewDevice() {
+                if (!livePreviewStage || !livePreviewViewport || !livePreviewFrame) return;
+                const dims = previewDeviceDims();
+                if (livePreviewRotateButton) livePreviewRotateButton.disabled = !dims;
+                if (!dims) {
+                    // Responsive: the iframe fills the stage.
+                    livePreviewStage.classList.remove('device-mode');
+                    livePreviewViewport.style.width = '';
+                    livePreviewViewport.style.height = '';
+                    livePreviewFrame.style.width = '';
+                    livePreviewFrame.style.height = '';
+                    livePreviewFrame.style.transform = '';
+                    if (livePreviewDeviceInfo) livePreviewDeviceInfo.textContent = '반응형';
+                    updateZoomLabel(1);
+                    return;
+                }
+                if (previewZoomAuto) previewZoom = computeAutoFitZoom(dims.w);
+                const z = previewZoom;
+                livePreviewStage.classList.add('device-mode');
+                livePreviewFrame.style.width = dims.w + 'px';
+                livePreviewFrame.style.height = dims.h + 'px';
+                livePreviewFrame.style.transform = 'scale(' + z + ')';
+                livePreviewViewport.style.width = Math.round(dims.w * z) + 'px';
+                livePreviewViewport.style.height = Math.round(dims.h * z) + 'px';
+                if (livePreviewDeviceInfo) livePreviewDeviceInfo.textContent = dims.w + '×' + dims.h;
+                updateZoomLabel(z);
+            }
+
+            function setPreviewZoom(z) {
+                previewZoom = Math.max(0.25, Math.min(2, z));
+                previewZoomAuto = false;
+                applyPreviewDevice();
+            }
+
+            function nudgePreviewZoom(dir) {
+                const steps = PREVIEW_ZOOM_STEPS;
+                let target;
+                if (dir > 0) {
+                    target = steps.find(s => s > previewZoom + 0.001);
+                    if (target === undefined) target = steps[steps.length - 1];
+                } else {
+                    const lower = steps.filter(s => s < previewZoom - 0.001);
+                    target = lower.length ? lower[lower.length - 1] : steps[0];
+                }
+                setPreviewZoom(target);
+            }
+
+            function setPreviewDevice(device) {
+                editorState.livePreviewDevice = PREVIEW_DEVICES[device] ? device : 'responsive';
+                previewZoomAuto = true; // re-fit for the new viewport
+                applyPreviewDevice();
+                try { persistEditorSettings(); } catch (e) {}
+            }
+
+            function togglePreviewOrientation() {
+                if (!previewDeviceDims()) return;
+                editorState.livePreviewOrientation = editorState.livePreviewOrientation === 'landscape' ? 'portrait' : 'landscape';
+                previewZoomAuto = true;
+                applyPreviewDevice();
                 try { persistEditorSettings(); } catch (e) {}
             }
 
@@ -4586,6 +4794,21 @@
                         renderLivePreview();
                     });
                 }
+                if (livePreviewDeviceSelect) {
+                    livePreviewDeviceSelect.addEventListener('change', () => setPreviewDevice(livePreviewDeviceSelect.value));
+                }
+                const lpZoomIn = document.getElementById('livePreviewZoomIn');
+                const lpZoomOut = document.getElementById('livePreviewZoomOut');
+                if (lpZoomIn) lpZoomIn.addEventListener('click', () => nudgePreviewZoom(1));
+                if (lpZoomOut) lpZoomOut.addEventListener('click', () => nudgePreviewZoom(-1));
+                if (livePreviewZoomResetBtn) {
+                    // Reset the zoom back to auto-fit (or 100% in responsive mode).
+                    livePreviewZoomResetBtn.addEventListener('click', () => { previewZoomAuto = true; applyPreviewDevice(); });
+                }
+                if (livePreviewRotateButton) livePreviewRotateButton.addEventListener('click', togglePreviewOrientation);
+                window.addEventListener('resize', debounce(() => {
+                    if (editorState.livePreview && previewZoomAuto) applyPreviewDevice();
+                }, 150));
                 const livePreviewCloseBtn = document.getElementById('livePreviewCloseButton');
                 if (livePreviewCloseBtn) livePreviewCloseBtn.addEventListener('click', () => setLivePreview(false));
                 const livePreviewPopoutBtn = document.getElementById('livePreviewPopoutButton');
@@ -4847,9 +5070,11 @@
                     highlightCode.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
                 }
                 if (livePreviewTypeSelect) livePreviewTypeSelect.value = editorState.livePreviewType || 'auto';
+                if (livePreviewDeviceSelect) livePreviewDeviceSelect.value = editorState.livePreviewDevice || 'responsive';
                 if (livePreviewPane) {
                     livePreviewPane.classList.toggle('hidden', !editorState.livePreview);
                     if (livePreviewToggleButton) livePreviewToggleButton.setAttribute('aria-pressed', editorState.livePreview ? 'true' : 'false');
+                    if (editorState.livePreview) applyPreviewDevice();
                 }
                 updateLineNumbers();
             }
