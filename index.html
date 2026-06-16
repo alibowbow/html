@@ -496,6 +496,12 @@
         }
         .app-search input::placeholder { color: var(--text-muted); }
         .app-search input.no-match { color: var(--error-color); }
+        .app-search-go {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: none; border: none; padding: 0; margin: 0;
+            color: var(--text-muted); cursor: pointer; line-height: 1; font-size: inherit; flex-shrink: 0;
+        }
+        .app-search-go:hover { color: var(--accent); }
         #currentLineHighlight {
             position: absolute;
             left: 0;
@@ -1246,7 +1252,7 @@
                         <span class="editor-subtitle">깔끔하고 강력한 텍스트 편집기</span>
                     </div>
                     <div class="app-search" id="appSearch" title="본문에서 찾기 (Ctrl/Cmd+K)">
-                        <i class="fas fa-magnifying-glass"></i>
+                        <button type="button" id="appSearchGoButton" class="app-search-go" aria-label="찾아 이동" title="찾아 이동"><i class="fas fa-magnifying-glass"></i></button>
                         <input type="text" id="appSearchInput" placeholder="검색" autocomplete="off" spellcheck="false" aria-label="본문에서 찾기">
                         <span class="kbd">⌘K</span>
                     </div>
@@ -3835,11 +3841,50 @@ MIT`
             function appSearchScrollToCurrent() {
                 const match = editorState.findMatches[editorState.currentMatchIndex];
                 if (!match) return;
-                // Place the editor selection on the match and scroll it into view without
-                // stealing focus from the search box — the overlay shows the highlight.
+                // Keep the editor selection in sync so focusing the editor lands on the match.
                 try { textInput.setSelectionRange(match.start, match.end); } catch (e) {}
-                ensureSelectionVisible();
+                // Compute the scroll target from the match offset directly: reading
+                // textInput.selectionStart is unreliable while the textarea isn't focused,
+                // which is why the view didn't move before.
+                const cs = getComputedStyle(textInput);
+                let lineHeight = parseFloat(cs.lineHeight);
+                if (!lineHeight || isNaN(lineHeight)) lineHeight = (parseFloat(cs.fontSize) || 16) * 1.6;
+                const padTop = parseFloat(cs.paddingTop) || 0;
+                const before = textInput.value.slice(0, match.start);
+                const lineIdx = before.split('\n').length - 1;
+                const targetTop = padTop + lineIdx * lineHeight;
+                const viewTop = textInput.scrollTop;
+                const viewBottom = viewTop + textInput.clientHeight;
+                if (targetTop < viewTop + lineHeight || targetTop + lineHeight > viewBottom - lineHeight) {
+                    textInput.scrollTop = Math.max(0, targetTop - textInput.clientHeight / 2 + lineHeight / 2);
+                }
+                // Horizontal: when word wrap is off, bring the column into view too.
+                if (!editorState.wordWrap) {
+                    const col = match.start - (before.lastIndexOf('\n') + 1);
+                    const charW = measureEditorCharWidth(cs);
+                    if (charW > 0) {
+                        const targetLeft = col * charW;
+                        const padLeft = parseFloat(cs.paddingLeft) || 0;
+                        if (targetLeft < textInput.scrollLeft || targetLeft > textInput.scrollLeft + textInput.clientWidth - padLeft - charW * 4) {
+                            textInput.scrollLeft = Math.max(0, targetLeft - textInput.clientWidth / 2);
+                        }
+                    }
+                }
                 syncOverlayScroll();
+            }
+
+            let editorCharWidthCache = { font: '', width: 0 };
+            function measureEditorCharWidth(cs) {
+                const font = cs.font || (cs.fontSize + ' ' + cs.fontFamily);
+                if (editorCharWidthCache.font === font && editorCharWidthCache.width) return editorCharWidthCache.width;
+                try {
+                    const canvas = measureEditorCharWidth._c || (measureEditorCharWidth._c = document.createElement('canvas'));
+                    const ctx = canvas.getContext('2d');
+                    ctx.font = font;
+                    const w = ctx.measureText('0').width;
+                    editorCharWidthCache = { font: font, width: w };
+                    return w;
+                } catch (e) { return 0; }
             }
 
             function appSearchStep(dir) {
@@ -5296,11 +5341,22 @@ MIT`
                 fileInput.addEventListener('change', handleFileLoad);
                 document.getElementById('newFileButton').addEventListener('click', () => createNewTab());
                 const appSearchEl = document.getElementById('appSearch');
+                const appSearchGoButton = document.getElementById('appSearchGoButton');
                 if (appSearchEl && appSearchInput) {
-                    // Clicking anywhere in the search pill focuses the input.
+                    // Clicking empty pill area focuses the input (but let the search button handle itself).
                     appSearchEl.addEventListener('mousedown', (e) => {
-                        if (e.target !== appSearchInput) { e.preventDefault(); appSearchInput.focus(); }
+                        if (e.target !== appSearchInput && !e.target.closest('#appSearchGoButton')) {
+                            e.preventDefault(); appSearchInput.focus();
+                        }
                     });
+                    if (appSearchGoButton) {
+                        appSearchGoButton.addEventListener('click', () => {
+                            appSearchInput.focus();
+                            if (!appSearchInput.value.trim()) return;
+                            if (!appSearchActive || !editorState.findMatches.length) runAppSearch(true);
+                            else appSearchStep(1); // jump to the next occurrence
+                        });
+                    }
                     let appSearchTimer = null;
                     appSearchInput.addEventListener('input', () => {
                         clearTimeout(appSearchTimer);
