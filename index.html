@@ -480,6 +480,22 @@
             color: transparent;
             border-radius: 2px;
         }
+        #findHighlightLayer mark.current {
+            background-color: rgba(249, 115, 22, 0.55);
+            box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.9);
+        }
+        .app-search input {
+            flex: 1 1 auto;
+            min-width: 0;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font: inherit;
+            padding: 0;
+        }
+        .app-search input::placeholder { color: var(--text-muted); }
+        .app-search input.no-match { color: var(--error-color); }
         #currentLineHighlight {
             position: absolute;
             left: 0;
@@ -1229,8 +1245,10 @@
                         <span class="editor-title">텍스트 에디터</span>
                         <span class="editor-subtitle">깔끔하고 강력한 텍스트 편집기</span>
                     </div>
-                    <div class="app-search" id="appSearch" role="button" tabindex="0" title="검색 (Ctrl/Cmd+K)">
-                        <i class="fas fa-magnifying-glass"></i><span>검색</span><span class="kbd">⌘K</span>
+                    <div class="app-search" id="appSearch" title="본문에서 찾기 (Ctrl/Cmd+K)">
+                        <i class="fas fa-magnifying-glass"></i>
+                        <input type="text" id="appSearchInput" placeholder="검색" autocomplete="off" spellcheck="false" aria-label="본문에서 찾기">
+                        <span class="kbd">⌘K</span>
                     </div>
                     <div class="top-bar-actions">
                         <button id="livePreviewToggleButton" class="custom-button toolbar-button" title="실시간 미리보기 토글 (Ctrl+Shift+P)" aria-pressed="false">
@@ -1291,7 +1309,7 @@
                         <button id="copyButton" aria-label="복사"><i class="fas fa-copy"></i> 복사 <span class="kbd ml-auto">Ctrl+C</span></button>
                         <button id="pasteButton" aria-label="붙여넣기"><i class="fas fa-paste"></i> 붙여넣기 <span class="kbd ml-auto">Ctrl+V</span></button>
                         <div class="dropdown-separator"></div>
-                        <button id="findReplaceButton" aria-label="찾기/바꾸기"><i class="fas fa-search"></i> 찾기/바꾸기 <span class="kbd ml-auto">Ctrl+F</span></button>
+                        <button id="findReplaceButton" aria-label="바꾸기"><i class="fas fa-right-left"></i> 바꾸기 <span class="kbd ml-auto">Ctrl+H</span></button>
                         <button id="goToLineButton" aria-label="줄로 이동"><i class="fas fa-location-arrow"></i> 줄로 이동 <span class="kbd ml-auto">Ctrl+G</span></button>
                         <div class="dropdown-separator"></div>
                         <button id="selectAllButton" aria-label="모두 선택"><i class="fas fa-object-group"></i> 모두 선택 <span class="kbd ml-auto">Ctrl+A</span></button>
@@ -1919,17 +1937,17 @@
     <div id="findReplaceModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="findReplaceModalTitle">
         <div class="modal-content" style="max-width: 450px;">
             <div class="modal-header">
-                <h2 id="findReplaceModalTitle" class="modal-title">찾기 및 바꾸기</h2>
-                <button id="closeFindReplaceModalButton" class="modal-close-button" aria-label="찾기 및 바꾸기 닫기">&times;</button>
+                <h2 id="findReplaceModalTitle" class="modal-title">바꾸기</h2>
+                <button id="closeFindReplaceModalButton" class="modal-close-button" aria-label="바꾸기 닫기">&times;</button>
             </div>
             <div class="modal-body mt-4 find-replace-form">
                 <div>
-                    <label for="findInput">찾을 내용:</label>
-                    <input type="text" id="findInput">
+                    <label for="findInput">바꿀 대상 (찾을 내용):</label>
+                    <input type="text" id="findInput" placeholder="바꿀 단어/패턴">
                 </div>
                 <div>
                     <label for="replaceInput">바꿀 내용:</label>
-                    <input type="text" id="replaceInput">
+                    <input type="text" id="replaceInput" placeholder="새 내용">
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="matchCaseCheckbox">
@@ -1944,9 +1962,9 @@
                     <label for="regexCheckbox" class="text-sm">정규 표현식 사용</label>
                 </div>
                 <div class="button-group mt-2">
-                    <button id="findNextButton" class="custom-button toolbar-button" aria-label="다음 찾기"><i class="fas fa-search"></i> 다음 찾기</button>
                     <button id="replaceButton" class="custom-button toolbar-button bg-blue-600 hover:bg-blue-700 text-white" aria-label="바꾸기"><i class="fas fa-exchange-alt"></i> 바꾸기</button>
                     <button id="replaceAllButton" class="custom-button toolbar-button bg-green-600 hover:bg-green-700 text-white" aria-label="모두 바꾸기"><i class="fas fa-fast-forward"></i> 모두 바꾸기</button>
+                    <button id="findNextButton" class="custom-button toolbar-button" aria-label="다음 위치"><i class="fas fa-arrow-down"></i> 다음 위치</button>
                 </div>
                 <p id="findReplaceMessage" class="text-xs mt-3 text-text-secondary"></p>
             </div>
@@ -2162,6 +2180,8 @@
             const findReplaceModal = document.getElementById('findReplaceModal');
             const findInput = document.getElementById('findInput');
             const replaceInput = document.getElementById('replaceInput');
+            const appSearchInput = document.getElementById('appSearchInput');
+            let appSearchActive = false; // header search bar: highlight + jump in the body (no modal)
             const matchCaseCheckbox = document.getElementById('matchCaseCheckbox');
             const wholeWordCheckbox = document.getElementById('wholeWordCheckbox');
             const regexCheckbox = document.getElementById('regexCheckbox');
@@ -3388,16 +3408,18 @@ MIT`
                 if (!findHighlightLayer) return;
                 const matches = editorState.findMatches || [];
                 const value = textInput.value;
-                if (!findReplaceModal.classList.contains('show') || matches.length === 0 || value.length > MAX_HIGHLIGHT_LENGTH) {
+                const active = appSearchActive || findReplaceModal.classList.contains('show');
+                if (!active || matches.length === 0 || value.length > MAX_HIGHLIGHT_LENGTH) {
                     if (findHighlightLayer.childNodes.length) findHighlightLayer.textContent = '';
                     return;
                 }
                 let html = '';
                 let last = 0;
-                matches.forEach((m) => {
+                matches.forEach((m, i) => {
                     if (m.start < last) return; // ignore overlaps
+                    const cls = (i === editorState.currentMatchIndex) ? ' class="current"' : '';
                     html += escapeOverlayHtml(value.slice(last, m.start));
-                    html += '<mark>' + escapeOverlayHtml(value.slice(m.start, m.end)) + '</mark>';
+                    html += '<mark' + cls + '>' + escapeOverlayHtml(value.slice(m.start, m.end)) + '</mark>';
                     last = m.end;
                 });
                 html += escapeOverlayHtml(value.slice(last)) + '\n';
@@ -3776,7 +3798,82 @@ MIT`
             }
             
             function escapeRegExp(string) {
-                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); 
+                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+
+            // --- HEADER SEARCH BAR: highlight + jump to matches in the body (no modal) ---
+            function runAppSearch(resetIndex) {
+                if (!appSearchInput) return;
+                const term = appSearchInput.value;
+                if (!term) { clearAppSearch(); return; }
+                appSearchActive = true;
+                const content = textInput.value;
+                const matches = [];
+                try {
+                    const re = new RegExp(escapeRegExp(term), 'gi'); // plain, case-insensitive
+                    let m;
+                    while ((m = re.exec(content)) !== null) {
+                        matches.push({ start: m.index, end: m.index + m[0].length, text: m[0] });
+                        if (m.index === re.lastIndex) re.lastIndex++; // guard against zero-length matches
+                    }
+                } catch (e) {}
+                editorState.findMatches = matches;
+                if (matches.length === 0) {
+                    editorState.currentMatchIndex = -1;
+                    appSearchInput.classList.add('no-match');
+                    renderFindHighlights();
+                    return;
+                }
+                appSearchInput.classList.remove('no-match');
+                if (resetIndex || editorState.currentMatchIndex < 0 || editorState.currentMatchIndex >= matches.length) {
+                    editorState.currentMatchIndex = 0;
+                }
+                appSearchScrollToCurrent();
+                renderFindHighlights();
+            }
+
+            function appSearchScrollToCurrent() {
+                const match = editorState.findMatches[editorState.currentMatchIndex];
+                if (!match) return;
+                // Place the editor selection on the match and scroll it into view without
+                // stealing focus from the search box — the overlay shows the highlight.
+                try { textInput.setSelectionRange(match.start, match.end); } catch (e) {}
+                ensureSelectionVisible();
+                syncOverlayScroll();
+            }
+
+            function appSearchStep(dir) {
+                if (!editorState.findMatches.length) { runAppSearch(true); return; }
+                const n = editorState.findMatches.length;
+                editorState.currentMatchIndex = ((editorState.currentMatchIndex + dir) % n + n) % n;
+                appSearchScrollToCurrent();
+                renderFindHighlights();
+            }
+
+            function clearAppSearch() {
+                appSearchActive = false;
+                editorState.findMatches = [];
+                editorState.currentMatchIndex = -1;
+                if (appSearchInput) appSearchInput.classList.remove('no-match');
+                renderFindHighlights();
+            }
+
+            function focusAppSearch() {
+                if (!appSearchInput) return;
+                appSearchInput.focus();
+                appSearchInput.select();
+                if (appSearchInput.value) runAppSearch(true);
+            }
+
+            function openReplaceModal() {
+                findReplaceModal.classList.add('show');
+                // Seed the search field from the header search term or the current selection.
+                const seed = (appSearchInput && appSearchInput.value.trim())
+                    || textInput.value.substring(textInput.selectionStart, textInput.selectionEnd);
+                if (seed && !findInput.value) findInput.value = seed;
+                findText(false, false); // compute matches + highlight without moving the selection
+                if (findInput.value) { replaceInput.focus(); replaceInput.select(); }
+                else { findInput.focus(); }
             }
             
             function ensureSelectionVisible() {
@@ -5058,17 +5155,13 @@ MIT`
                         } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
                              if (activeElement !== textInput && activeElement !== vibeCodingInput) return; 
                             e.preventDefault(); redo(); 
-                        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+                        } else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key.toLowerCase() === 'f' || e.key.toLowerCase() === 'k')) {
+                            // Ctrl/Cmd+F or +K → focus the header search bar (jump to matches in the body)
                             e.preventDefault();
-                            findReplaceModal.classList.add('show');
-                            findInput.focus();
-                            findInput.select();
-                            findText(false); // Initial search when opening modal
-                        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { // Cmd/Ctrl+K → search
+                            focusAppSearch();
+                        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'h') { // Ctrl/Cmd+H → 바꾸기 (replace)
                             e.preventDefault();
-                            findReplaceModal.classList.add('show');
-                            findInput.focus();
-                            findInput.select();
+                            openReplaceModal();
                         } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') { // Ctrl+G for Go to Line
                             e.preventDefault();
                             goToLineModal.classList.add('show');
@@ -5203,10 +5296,27 @@ MIT`
                 fileInput.addEventListener('change', handleFileLoad);
                 document.getElementById('newFileButton').addEventListener('click', () => createNewTab());
                 const appSearchEl = document.getElementById('appSearch');
-                if (appSearchEl) {
-                    const openFind = () => { findReplaceModal.classList.add('show'); findInput.focus(); findInput.select(); };
-                    appSearchEl.addEventListener('click', openFind);
-                    appSearchEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFind(); } });
+                if (appSearchEl && appSearchInput) {
+                    // Clicking anywhere in the search pill focuses the input.
+                    appSearchEl.addEventListener('mousedown', (e) => {
+                        if (e.target !== appSearchInput) { e.preventDefault(); appSearchInput.focus(); }
+                    });
+                    let appSearchTimer = null;
+                    appSearchInput.addEventListener('input', () => {
+                        clearTimeout(appSearchTimer);
+                        appSearchTimer = setTimeout(() => runAppSearch(true), 120);
+                    });
+                    appSearchInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            appSearchStep(e.shiftKey ? -1 : 1); // next / previous occurrence
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            clearAppSearch();
+                            appSearchInput.value = '';
+                            textInput.focus();
+                        }
+                    });
                 }
                 document.getElementById('loadFileButton').addEventListener('click', loadFile);
                 
@@ -5238,12 +5348,7 @@ MIT`
                 document.getElementById('copyButton').addEventListener('click', copySelectedText);
                 document.getElementById('pasteButton').addEventListener('click', pasteFromClipboard);
                 
-                document.getElementById('findReplaceButton').addEventListener('click', () => { 
-                    findReplaceModal.classList.add('show'); 
-                    findInput.focus(); 
-                    findInput.select();
-                    findText(false); // Perform an initial search when modal is opened
-                });
+                document.getElementById('findReplaceButton').addEventListener('click', openReplaceModal);
                 document.getElementById('goToLineButton').addEventListener('click', () => { // Go to Line button
                     goToLineModal.classList.add('show');
                     goToLineInput.value = editorState.cursorPosition.line;
