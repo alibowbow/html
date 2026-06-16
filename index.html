@@ -15,13 +15,13 @@
       }
     </script>
     <meta name="description" content="브라우저에서 실행되는 멀티파일 텍스트 편집기. 미리보기, 세션 저장, AI 작업, 마크다운/JSON/XML/CSV 도구를 한 화면에서 제공합니다.">
-    <meta name="theme-color" content="#f4f1e9">
+    <meta name="theme-color" content="#edebf9">
     <meta name="color-scheme" content="dark light">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="한지 에디터 — 텍스트·코드 에디터">
+    <meta property="og:title" content="텍스트 에디터">
     <meta property="og:description" content="브라우저에서 실행되는 멀티파일 텍스트 편집기와 AI 보조 도구">
     <meta property="og:url" content="https://alibowbow.github.io/html/">
-    <title>한지 에디터 — 텍스트·코드 에디터</title>
+    <title>텍스트 에디터</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,75 +36,77 @@
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script> <!-- JSZip for project export -->
     <style>
-        /* Default = "sophisticated dark" (warm near-black + clay accent). Toggle target. */
+        /* Default = minimal dark (cool charcoal + single indigo accent). */
         :root {
-            --bg-primary: #15120f;
-            --bg-secondary: #1c1814;
-            --bg-tertiary: #231e19;
-            --surface-1: rgba(255,255,255,0.045);
-            --surface-2: rgba(255,255,255,0.09);
-            --text-primary: #ece6dc;
-            --text-secondary: #a89e90;
-            --text-muted: #7b7264;
-            --text-accent: #e8a890;
-            --border-color: rgba(255,255,255,0.10);
-            --border-strong: rgba(255,255,255,0.17);
-            --border-focus: #d4795f;
-            --button-bg: rgba(255,255,255,0.05);
-            --button-hover: rgba(255,255,255,0.10);
-            --button-active: rgba(255,255,255,0.15);
+            --bg-primary: #0c0c0f;
+            --bg-secondary: #131316;
+            --bg-tertiary: #17171c;
+            --surface-1: rgba(255,255,255,0.04);
+            --surface-2: rgba(255,255,255,0.08);
+            --text-primary: #e7e7ea;
+            --text-secondary: #9a9aa4;
+            --text-muted: #6a6a74;
+            --text-accent: #a5a6f6;
+            --border-color: rgba(255,255,255,0.08);
+            --border-strong: rgba(255,255,255,0.14);
+            --border-focus: #6366f1;
+            --button-bg: rgba(255,255,255,0.04);
+            --button-hover: rgba(255,255,255,0.08);
+            --button-active: rgba(255,255,255,0.12);
             --button-disabled: rgba(255,255,255,0.03);
-            --success-color: #4ade80;
+            --success-color: #34d399;
             --error-color: #f87171;
             --info-color: #60a5fa;
-            --purple-accent: #c4b5fd;
+            --purple-accent: #8b8bf5;
             --scrollbar-track: transparent;
-            --scrollbar-thumb: rgba(255,255,255,0.16);
-            --current-line-bg: rgba(255,255,255,0.05);
-            --accent: #d4795f;
-            --accent-strong: #e3917a;
-            --accent-contrast: #1c1814;
-            --accent-rgb: 212,121,95;
+            --scrollbar-thumb: rgba(255,255,255,0.14);
+            --current-line-bg: rgba(255,255,255,0.04);
+            --accent: #8b5cf6;
+            --accent-strong: #a78bfa;
+            --accent-contrast: #ffffff;
+            --accent-rgb: 139,92,246;
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
-            --shadow-md: 0 14px 34px -16px rgba(0,0,0,0.65);
-            --shadow-lg: 0 30px 70px -28px rgba(0,0,0,0.8);
+            --shadow-md: 0 16px 40px -20px rgba(0,0,0,0.7);
+            --shadow-lg: 0 28px 64px -28px rgba(0,0,0,0.85);
             --radius: 0.5rem;
-            --radius-lg: 0.875rem;
-            --font-serif: 'Noto Serif KR', 'Fraunces', Georgia, 'Times New Roman', serif;
+            --radius-lg: 1.25rem;
+            --font-serif: 'Pretendard', 'Inter', sans-serif;
+            --app-gradient: radial-gradient(1100px 600px at 50% -12%, rgba(139,92,246,0.16), transparent 60%);
         }
 
-        /* Primary = "paper light" editorial (default on first load via loadTheme). */
+        /* Default = soft lavender light (reference). */
         .light-theme {
-            --bg-primary: #f3f0e8;
-            --bg-secondary: #fbf9f3;
-            --bg-tertiary: #fffdf7;
-            --surface-1: rgba(43,38,32,0.04);
-            --surface-2: rgba(43,38,32,0.08);
-            --text-primary: #2b2620;
-            --text-secondary: #6d645a;
-            --text-muted: #9b9286;
-            --text-accent: #a1432c;
-            --border-color: #e7e0d2;
-            --border-strong: #d8cfbd;
-            --border-focus: #b1543b;
-            --button-bg: #fbf9f3;
-            --button-hover: #f1ece1;
-            --button-active: #e7e0d2;
-            --button-disabled: #f1ece1;
-            --success-color: #2f7d54;
-            --error-color: #b3402f;
-            --info-color: #2f6db3;
-            --purple-accent: #7c5ca8;
+            --bg-primary: #edebf9;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #ffffff;
+            --surface-1: rgba(99,72,160,0.05);
+            --surface-2: rgba(99,72,160,0.10);
+            --text-primary: #211f33;
+            --text-secondary: #5d5a72;
+            --text-muted: #9893ad;
+            --text-accent: #7c3aed;
+            --border-color: #e7e4f4;
+            --border-strong: #d6d1ec;
+            --border-focus: #8b5cf6;
+            --button-bg: #ffffff;
+            --button-hover: #f3f1fc;
+            --button-active: #e9e5f8;
+            --button-disabled: #f3f1fc;
+            --success-color: #16a34a;
+            --error-color: #e11d48;
+            --info-color: #2563eb;
+            --purple-accent: #8b5cf6;
             --scrollbar-track: transparent;
-            --scrollbar-thumb: #d8cfbd;
-            --current-line-bg: rgba(177,84,59,0.06);
-            --accent: #b1543b;
-            --accent-strong: #97432e;
+            --scrollbar-thumb: #d6d1ec;
+            --current-line-bg: rgba(139,92,246,0.06);
+            --accent: #8b5cf6;
+            --accent-strong: #7c3aed;
             --accent-contrast: #ffffff;
-            --accent-rgb: 177,84,59;
-            --shadow-sm: 0 1px 2px rgba(43,38,32,0.06);
-            --shadow-md: 0 14px 32px -18px rgba(43,38,32,0.22);
-            --shadow-lg: 0 28px 60px -28px rgba(43,38,32,0.28);
+            --accent-rgb: 139,92,246;
+            --shadow-sm: 0 1px 2px rgba(60,40,110,0.06);
+            --shadow-md: 0 16px 40px -20px rgba(76,52,140,0.28);
+            --shadow-lg: 0 30px 70px -28px rgba(76,52,140,0.32);
+            --app-gradient: linear-gradient(135deg, #f3f2fd 0%, #ece8fb 48%, #e6e0fa 100%);
         }
         
         body {
@@ -112,6 +114,8 @@
             overflow-x: hidden;
             min-height: 100vh;
             background-color: var(--bg-primary);
+            background-image: var(--app-gradient);
+            background-attachment: fixed;
             color: var(--text-primary);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -344,7 +348,57 @@
             transition: color 0.2s ease, background-color 0.2s ease;
         }
         .live-preview-icon-btn:hover { color: var(--text-primary); background-color: var(--button-hover); }
-        #livePreviewFrame { flex-grow: 1; width: 100%; border: 0; background-color: #ffffff; }
+        .live-preview-devicebar {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+            padding: 0.3rem 0.6rem;
+            background-color: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .live-preview-devicebar select {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.18rem 0.4rem;
+            font-size: 0.76rem;
+        }
+        .lp-zoom { display: inline-flex; align-items: center; gap: 0.05rem; }
+        .lp-zoom-value {
+            min-width: 3.4em;
+            text-align: center;
+            background: none;
+            border: 1px solid transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.76rem;
+            line-height: 1;
+            padding: 0.2rem 0.3rem;
+            border-radius: 0.3rem;
+            font-variant-numeric: tabular-nums;
+        }
+        .lp-zoom-value:hover { border-color: var(--border-color); background-color: var(--button-hover); }
+        .live-preview-icon-btn:disabled { opacity: 0.4; cursor: default; }
+        .lp-device-info { margin-left: auto; font-variant-numeric: tabular-nums; opacity: 0.75; padding-right: 0.1rem; }
+        #livePreviewStage {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow: auto;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            background-color: var(--bg-tertiary);
+        }
+        #livePreviewStage.device-mode { padding: 14px; }
+        #livePreviewViewport { width: 100%; height: 100%; }
+        #livePreviewStage.device-mode #livePreviewViewport { flex: none; }
+        #livePreviewFrame { width: 100%; height: 100%; border: 0; background-color: #ffffff; transform-origin: top left; }
+        #livePreviewStage.device-mode #livePreviewFrame { border-radius: 10px; box-shadow: var(--shadow-md); }
         .custom-button[aria-pressed="true"] { background-color: var(--accent); color: #fff; border-color: transparent; }
         @media (max-width: 768px) {
             .editor-split { flex-direction: column; }
@@ -1004,106 +1058,123 @@
             filter: brightness(110%);
         }
 
-        /* ===================== Sidebar app shell — layout rebuild ===================== */
+        /* ===================== Reference layout: soft lavender, top-stacked ===================== */
+        .main-container-wrapper { padding: 1.75rem 1.5rem; }
         #mainContainer {
-            display: grid;
-            grid-template-columns: 264px minmax(0, 1fr);
-            grid-template-rows: auto minmax(0, 1fr) auto;
-            grid-template-areas:
-                "brand tabs"
-                "nav   main"
-                "stat  stat";
-            max-width: 1540px;
-        }
-        header {
-            grid-area: brand;
-            background-color: var(--bg-secondary);
-            border-right: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1.1rem 0.9rem 0.9rem;
-        }
-        .top-bar { flex-direction: column; align-items: stretch; gap: 0.8rem; }
-        .editor-title { font-size: 1.2rem; line-height: 1.25; display: flex; align-items: center; gap: 0.55rem; }
-        .editor-title::before {
-            content: "";
-            width: 0.62rem;
-            height: 1.35rem;
-            border-radius: 3px;
-            background: var(--accent);
-            flex-shrink: 0;
-        }
-        .top-bar-actions { flex-wrap: wrap; gap: 0.3rem; }
-        .top-bar-actions .custom-button { padding: 0.42rem 0.5rem; }
-        .top-bar-actions .custom-button .sm\:inline { display: none !important; }
-
-        .tab-container {
-            grid-area: tabs;
-            align-items: flex-end;
-            border-bottom: 1px solid var(--border-color);
-            padding: 0 0.85rem;
-        }
-
-        .toolbar {
-            grid-area: nav;
+            display: flex;
             flex-direction: column;
-            flex-wrap: nowrap;
-            align-items: stretch;
-            gap: 0.12rem;
-            margin: 0;
-            padding: 0.7rem 0.6rem 1rem;
+            background: transparent;
             border: none;
-            border-right: 1px solid var(--border-color);
-            border-radius: 0;
             box-shadow: none;
-            background-color: var(--bg-secondary);
+            border-radius: 0;
+            width: 100%;
+            max-width: 1180px;
+            min-width: 0;
             overflow: visible;
         }
-        .toolbar .dropdown { width: 100%; margin: 0; display: block; }
-        .toolbar .dropdown > .dropdown-toggle,
-        .toolbar > .custom-button {
-            width: 100%;
-            justify-content: flex-start;
-            padding: 0.55rem 0.65rem;
-            border-color: transparent;
-            background-color: transparent;
-        }
-        .toolbar .dropdown > .dropdown-toggle:hover:not(:disabled),
-        .toolbar > .custom-button:hover:not(:disabled) {
-            background-color: var(--surface-2);
-            border-color: transparent;
-            transform: none;
+        header {
+            background: transparent;
+            border: none;
             box-shadow: none;
+            padding: 0 0.25rem 1.2rem;
         }
-        .toolbar .dropdown-content { left: calc(100% + 8px); top: 0; right: auto; margin: 0; }
-        .toolbar .autosave-indicator { margin-top: auto; padding: 0.6rem 0.65rem 0; }
+        .top-bar { flex-direction: row; align-items: center; gap: 0.85rem; }
+        .app-logo {
+            width: 46px; height: 46px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 13px;
+            background: linear-gradient(135deg, #a78bfa, #ec4899);
+            color: #fff; font-size: 1.2rem;
+            box-shadow: 0 10px 22px -8px rgba(139,92,246,0.65);
+        }
+        .brand-text { display: flex; flex-direction: column; line-height: 1.15; margin-right: auto; }
+        .editor-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.01em; color: var(--text-primary); }
+        .editor-title::before { content: none; }
+        .editor-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+        .app-search {
+            display: flex; align-items: center; gap: 0.55rem;
+            min-width: 230px;
+            padding: 0.55rem 0.95rem;
+            border-radius: 999px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            color: var(--text-muted);
+            cursor: text;
+            font-size: 0.85rem;
+        }
+        .app-search i { color: var(--text-muted); }
+        .app-search .kbd { margin-left: auto; }
+        .top-bar-actions { flex-wrap: nowrap; gap: 0.5rem; }
+        .top-bar-actions .custom-button {
+            width: 44px; height: 44px; padding: 0;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            color: var(--text-secondary);
+        }
+        .top-bar-actions .custom-button i { margin: 0; }
+        .top-bar-actions .custom-button .sm\:inline { display: none !important; }
+        .top-bar-actions .custom-button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+        .top-bar-actions .custom-button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: transparent; }
 
-        main { grid-area: main; padding: 0.85rem 1rem 0; }
-        #statsBar { grid-area: stat; border-top: 1px solid var(--border-color); }
+        .tab-container { background: transparent; border-bottom: none; padding: 0 0.75rem; margin-bottom: -1px; }
+        .tab { background: transparent; border-color: transparent; }
+        .tab.active { background: var(--bg-secondary); border-color: var(--border-color); border-bottom-color: var(--bg-secondary); }
 
-        @media (max-width: 880px) {
-            #mainContainer {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-                grid-template-areas: "brand" "tabs" "nav" "main" "stat";
-            }
-            header { border-right: none; }
-            .top-bar { flex-direction: row; align-items: center; justify-content: space-between; }
-            .editor-title { font-size: 1.15rem; }
-            .toolbar {
-                flex-direction: row;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                overflow-y: visible;
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
-                gap: 0.3rem;
-                padding: 0.5rem 0.7rem;
-            }
-            .toolbar .dropdown { width: auto; }
-            .toolbar .dropdown > .dropdown-toggle, .toolbar > .custom-button { width: auto; }
-            .toolbar .dropdown-content { left: 0; top: 100%; }
-            .toolbar .autosave-indicator { margin-top: 0; }
-            .tab-container { align-items: stretch; }
+        .toolbar {
+            margin: 0;
+            gap: 0.1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            box-shadow: none;
+            padding: 0.5rem 0.85rem;
+        }
+        .toolbar .dropdown > .dropdown-toggle, .toolbar > .custom-button {
+            background: transparent; border-color: transparent; padding: 0.45rem 0.7rem;
+        }
+        .toolbar .dropdown > .dropdown-toggle:hover:not(:disabled), .toolbar > .custom-button:hover:not(:disabled) {
+            background: var(--surface-1); border-color: transparent; transform: none; box-shadow: none;
+        }
+        .toolbar .dropdown-content { left: 0; top: 100%; }
+        .toolbar .autosave-indicator { margin-left: auto; color: var(--success-color); }
+
+        main { padding: 0; }
+        .textarea-wrapper { margin-top: 0; }
+        .editor-area {
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            background-color: var(--bg-secondary);
+            box-shadow: var(--shadow-md);
+        }
+        .code-input-wrap {
+            background-image: radial-gradient(135% 95% at 100% 100%, rgba(139,92,246,0.13), transparent 50%);
+        }
+        #statsBar {
+            background: transparent;
+            border: none;
+            padding: 0.9rem 0.5rem 0;
+            color: var(--text-muted);
+        }
+        .stats-item span { color: var(--text-secondary); }
+        .mode-indicator { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text-secondary); }
+        .mode-indicator::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+        @media (max-width: 760px) {
+            .main-container-wrapper { padding: 0.7rem; }
+            .top-bar { flex-wrap: wrap; gap: 0.6rem; }
+            .brand-text { margin-right: 0; flex: 1 1 auto; min-width: 0; }
+            .editor-title { font-size: 1.2rem; }
+            .editor-subtitle { font-size: 0.72rem; }
+            .top-bar-actions { order: 4; flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; }
+            .app-search { order: 5; flex: 1 1 100%; min-width: 0; }
+            .stats-bar { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem; padding: 0.8rem 0.25rem 0; }
+            #modeIndicator { margin-left: auto; }
         }
     </style>
 </head>
@@ -1112,7 +1183,14 @@
         <div id="mainContainer">
             <header>
                 <div class="top-bar">
-                    <span class="editor-title">한지 에디터</span>
+                    <div class="app-logo" aria-hidden="true"><i class="fas fa-feather-pointed"></i></div>
+                    <div class="brand-text">
+                        <span class="editor-title">텍스트 에디터</span>
+                        <span class="editor-subtitle">깔끔하고 강력한 텍스트 편집기</span>
+                    </div>
+                    <div class="app-search" id="appSearch" role="button" tabindex="0" title="검색 (Ctrl/Cmd+K)">
+                        <i class="fas fa-magnifying-glass"></i><span>검색</span><span class="kbd">⌘K</span>
+                    </div>
                     <div class="top-bar-actions">
                         <button id="livePreviewToggleButton" class="custom-button toolbar-button" title="실시간 미리보기 토글 (Ctrl+Shift+P)" aria-pressed="false">
                             <i class="fas fa-eye"></i> <span class="sm:inline hidden">실시간 미리보기</span>
@@ -1263,7 +1341,27 @@
                                 <button id="livePreviewPopoutButton" class="live-preview-icon-btn" title="새 창으로 열기" aria-label="새 창으로 열기"><i class="fas fa-external-link-alt"></i></button>
                                 <button id="livePreviewCloseButton" class="live-preview-icon-btn" title="미리보기 닫기" aria-label="실시간 미리보기 닫기">&times;</button>
                             </div>
-                            <iframe id="livePreviewFrame" title="실시간 미리보기" sandbox="allow-scripts allow-popups allow-modals allow-forms"></iframe>
+                            <div class="live-preview-devicebar">
+                                <select id="livePreviewDevice" title="미리보기 화면 크기" aria-label="미리보기 화면 크기">
+                                    <option value="responsive">반응형</option>
+                                    <option value="laptop">노트북 1366</option>
+                                    <option value="tablet">태블릿 768</option>
+                                    <option value="mobileL">모바일 414</option>
+                                    <option value="mobileS">모바일 375</option>
+                                </select>
+                                <div class="lp-zoom" role="group" aria-label="미리보기 확대/축소">
+                                    <button id="livePreviewZoomOut" class="live-preview-icon-btn" title="축소" aria-label="축소"><i class="fas fa-minus"></i></button>
+                                    <button id="livePreviewZoomReset" class="lp-zoom-value" title="화면에 맞춤" aria-label="화면에 맞춤">100%</button>
+                                    <button id="livePreviewZoomIn" class="live-preview-icon-btn" title="확대" aria-label="확대"><i class="fas fa-plus"></i></button>
+                                </div>
+                                <button id="livePreviewRotateButton" class="live-preview-icon-btn" title="가로/세로 회전" aria-label="가로/세로 회전" disabled><i class="fas fa-rotate"></i></button>
+                                <span id="livePreviewDeviceInfo" class="lp-device-info">반응형</span>
+                            </div>
+                            <div id="livePreviewStage">
+                                <div id="livePreviewViewport">
+                                    <iframe id="livePreviewFrame" title="실시간 미리보기" sandbox="allow-scripts allow-popups allow-modals allow-forms"></iframe>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1276,6 +1374,7 @@
                 <span class="stats-item"><span id="cursorPosition">위치: 1:1</span></span>
                 <span class="stats-item" id="selectionStatItem" style="display:none;">선택: <span id="selectionStat">0</span></span>
                 <span class="stats-item">언어: <span id="languageStat">Text</span></span>
+                <span class="stats-item mode-indicator" id="modeIndicator" style="margin-left:auto;">라이트 모드</span>
             </div>
         </div>
     </div>
@@ -1895,7 +1994,9 @@
                 vibeChatHistory: [], // Stores chat history for Vibe AI
                 defaultNewTabType: 'txt', // New setting
                 livePreview: false, // Live preview pane enabled
-                livePreviewType: 'auto' // auto | html | markdown | json | xml | css | js | csv | project
+                livePreviewType: 'auto', // auto | html | markdown | json | xml | css | js | csv | project
+                livePreviewDevice: 'responsive', // responsive | laptop | tablet | mobileL | mobileS
+                livePreviewOrientation: 'portrait' // portrait | landscape (fixed-size devices only)
             };
             
             const textInput = document.getElementById('textInput');
@@ -1907,6 +2008,23 @@
             const livePreviewFrame = document.getElementById('livePreviewFrame');
             const livePreviewTypeSelect = document.getElementById('livePreviewType');
             const livePreviewToggleButton = document.getElementById('livePreviewToggleButton');
+            const livePreviewDeviceSelect = document.getElementById('livePreviewDevice');
+            const livePreviewStage = document.getElementById('livePreviewStage');
+            const livePreviewViewport = document.getElementById('livePreviewViewport');
+            const livePreviewDeviceInfo = document.getElementById('livePreviewDeviceInfo');
+            const livePreviewRotateButton = document.getElementById('livePreviewRotateButton');
+            const livePreviewZoomResetBtn = document.getElementById('livePreviewZoomReset');
+            // Preview viewport presets (portrait dimensions; 0 width = responsive/fill).
+            const PREVIEW_DEVICES = {
+                responsive: { label: '반응형', w: 0,    h: 0 },
+                laptop:     { label: '노트북',  w: 1366, h: 768 },
+                tablet:     { label: '태블릿',  w: 768,  h: 1024 },
+                mobileL:    { label: '모바일',  w: 414,  h: 896 },
+                mobileS:    { label: '모바일',  w: 375,  h: 667 }
+            };
+            const PREVIEW_ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 0.9, 1, 1.1, 1.25, 1.5, 2];
+            let previewZoom = 1;       // current preview scale
+            let previewZoomAuto = true; // true = keep auto-fitting to the stage width
             const EDITOR_PAIRS = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
             const EDITOR_OPENERS = { '(': ')', '[': ']', '{': '}' };
             const EDITOR_CLOSERS = new Set([')', ']', '}', '"', "'", '`']);
@@ -1925,6 +2043,10 @@
                 cs: 'csharp', go: 'go', rs: 'rust', rb: 'ruby', php: 'php', sh: 'bash', bash: 'bash',
                 yml: 'yaml', yaml: 'yaml', sql: 'sql'
             };
+            // Languages highlight.js may auto-detect among for unknown buffers (e.g. the default .txt tab),
+            // so typed code still gets colored even when the file has no recognizable extension.
+            const EDITOR_AUTO_SUBSET = ['xml', 'javascript', 'css', 'json', 'markdown', 'typescript', 'python', 'bash', 'sql'];
+            let editorAutoLang = null; // cached auto-detected language for the current buffer
             const fileInput = document.getElementById('fileInput');
             const messageBox = document.getElementById('messageBox');
             const lineNumberContainer = document.getElementById('lineNumberContainer');
@@ -2004,7 +2126,9 @@
                     vibeChatHistory: source.vibeChatHistory,
                     defaultNewTabType: source.defaultNewTabType,
                     livePreview: source.livePreview,
-                    livePreviewType: source.livePreviewType
+                    livePreviewType: source.livePreviewType,
+                    livePreviewDevice: source.livePreviewDevice,
+                    livePreviewOrientation: source.livePreviewOrientation
                 };
             }
 
@@ -2271,9 +2395,11 @@
                     '<i class="fas fa-moon"></i>' : 
                     '<i class="fas fa-sun"></i>';
                 themeToggleButton.title = `테마 변경 (현재 ${isDarkTheme ? '어두운' : '밝은'} 테마)`;
-                localStorage.setItem('editorTheme', isDarkTheme ? 'dark' : 'light');
-                
-                const newHighlightStyle = isDarkTheme ? 
+                localStorage.setItem('uiTheme', isDarkTheme ? 'dark' : 'light');
+                const modeEl = document.getElementById('modeIndicator');
+                if (modeEl) modeEl.textContent = isDarkTheme ? '다크 모드' : '라이트 모드';
+
+                const newHighlightStyle = isDarkTheme ?
                     'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css' :
                     'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css';
                 if (highlightThemeLink) {
@@ -2283,8 +2409,8 @@
             });
             
             function loadTheme() {
-                const savedTheme = localStorage.getItem('editorTheme');
-                const isLightTheme = savedTheme !== 'dark'; // default = light (paper) editorial
+                const savedTheme = localStorage.getItem('uiTheme');
+                const isLightTheme = savedTheme !== 'dark'; // default = light (lavender)
                 if (isLightTheme) {
                     document.body.classList.add('light-theme');
                     themeToggleButton.innerHTML = '<i class="fas fa-sun"></i>';
@@ -2296,8 +2422,10 @@
                     themeToggleButton.title = '테마 변경 (현재 어두운 테마)';
                     if (highlightThemeLink) highlightThemeLink.setAttribute('href', 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css');
                 }
+                const modeEl = document.getElementById('modeIndicator');
+                if (modeEl) modeEl.textContent = isLightTheme ? '라이트 모드' : '다크 모드';
             }
-            
+
             function getFileIconClass(filename) {
                 if (!filename) return 'fa-file-alt'; 
                 const extension = filename.split('.').pop().toLowerCase();
@@ -2507,10 +2635,11 @@
                     textInput.value = "";
                 }
                 
-                renderTabs(); 
+                editorAutoLang = null; // re-detect language for the newly active buffer
+                renderTabs();
                 updateLineNumbers();
                 updateStats();
-                updateCursorPosition(); 
+                updateCursorPosition();
                 textInput.focus();
                 setTabModified(activeTabId, textInput.value !== (editorState.lastSavedStates[activeTabId] || ''));
             }
@@ -2662,7 +2791,7 @@
                 const ext = (getFileExtension(activeTab ? activeTab.title : '') || '').toLowerCase();
                 const lang = EDITOR_HIGHLIGHT_LANGS[ext];
                 if (lang && typeof hljs !== 'undefined' && hljs.getLanguage(lang)) return lang;
-                return 'plaintext';
+                return 'auto'; // unknown/.txt buffer → detect language from content
             }
 
             function syncOverlayScroll() {
@@ -2674,6 +2803,22 @@
             function escapeOverlayHtml(str) {
                 return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             }
+
+            // Re-detect the language of an unknown buffer on a debounce, so coloring adapts as the user
+            // keeps typing without paying for full auto-detection on every keystroke.
+            const scheduleAutoLangDetect = debounce(function () {
+                if (typeof hljs === 'undefined') return;
+                if (getEditorHighlightLanguage() !== 'auto') return;
+                const value = textInput.value;
+                if (value.length > MAX_HIGHLIGHT_LENGTH) return;
+                let detected = 'plaintext';
+                try { detected = hljs.highlightAuto(value, EDITOR_AUTO_SUBSET).language || 'plaintext'; } catch (e) {}
+                if (detected !== editorAutoLang) {
+                    editorAutoLang = detected;
+                    updateHighlight();
+                    updateStatusExtras();
+                }
+            }, 400);
 
             function updateHighlight() {
                 if (!highlightCode) return;
@@ -2687,10 +2832,24 @@
                     highlightCode.className = '';
                     highlightCode.textContent = value + '\n';
                 } else {
-                    const lang = getEditorHighlightLanguage();
+                    let lang = getEditorHighlightLanguage();
                     let highlighted;
                     try {
-                        highlighted = hljs.highlight(value, { language: lang, ignoreIllegals: true }).value;
+                        if (lang === 'auto') {
+                            // Reuse the cached detection for cheap, stable per-keystroke rendering;
+                            // scheduleAutoLangDetect() refreshes it on a debounce as content changes.
+                            if (editorAutoLang) {
+                                highlighted = hljs.highlight(value, { language: editorAutoLang, ignoreIllegals: true }).value;
+                                lang = editorAutoLang;
+                            } else {
+                                const res = hljs.highlightAuto(value, EDITOR_AUTO_SUBSET);
+                                highlighted = res.value;
+                                lang = editorAutoLang = res.language || 'plaintext';
+                            }
+                            scheduleAutoLangDetect();
+                        } else {
+                            highlighted = hljs.highlight(value, { language: lang, ignoreIllegals: true }).value;
+                        }
                     } catch (e) {
                         highlighted = escapeOverlayHtml(value);
                     }
@@ -2754,7 +2913,8 @@
                     }
                 }
                 if (langStat) {
-                    const lang = getEditorHighlightLanguage();
+                    let lang = getEditorHighlightLanguage();
+                    if (lang === 'auto') lang = editorAutoLang || 'plaintext';
                     langStat.textContent = EDITOR_LANG_LABELS[lang] || lang;
                 }
             }
@@ -3872,7 +4032,88 @@
                 editorState.livePreview = !!show;
                 livePreviewPane.classList.toggle('hidden', !show);
                 if (livePreviewToggleButton) livePreviewToggleButton.setAttribute('aria-pressed', show ? 'true' : 'false');
-                if (show) renderLivePreview();
+                if (show) { renderLivePreview(); applyPreviewDevice(); }
+                try { persistEditorSettings(); } catch (e) {}
+            }
+
+            // --- PREVIEW DEVICE / ZOOM ---
+            function previewDeviceDims() {
+                const dev = PREVIEW_DEVICES[editorState.livePreviewDevice] || PREVIEW_DEVICES.responsive;
+                if (!dev.w) return null;
+                const landscape = editorState.livePreviewOrientation === 'landscape';
+                return { w: landscape ? dev.h : dev.w, h: landscape ? dev.w : dev.h };
+            }
+
+            function computeAutoFitZoom(deviceW) {
+                if (!livePreviewStage || !deviceW) return 1;
+                const avail = livePreviewStage.clientWidth - 28; // account for stage padding
+                if (avail <= 0) return 1;
+                return Math.max(0.25, Math.min(1, avail / deviceW));
+            }
+
+            function updateZoomLabel(z) {
+                if (livePreviewZoomResetBtn) livePreviewZoomResetBtn.textContent = Math.round(z * 100) + '%';
+            }
+
+            function applyPreviewDevice() {
+                if (!livePreviewStage || !livePreviewViewport || !livePreviewFrame) return;
+                const dims = previewDeviceDims();
+                if (livePreviewRotateButton) livePreviewRotateButton.disabled = !dims;
+                if (!dims) {
+                    // Responsive: the iframe fills the stage.
+                    livePreviewStage.classList.remove('device-mode');
+                    livePreviewViewport.style.width = '';
+                    livePreviewViewport.style.height = '';
+                    livePreviewFrame.style.width = '';
+                    livePreviewFrame.style.height = '';
+                    livePreviewFrame.style.transform = '';
+                    if (livePreviewDeviceInfo) livePreviewDeviceInfo.textContent = '반응형';
+                    updateZoomLabel(1);
+                    return;
+                }
+                if (previewZoomAuto) previewZoom = computeAutoFitZoom(dims.w);
+                const z = previewZoom;
+                livePreviewStage.classList.add('device-mode');
+                livePreviewFrame.style.width = dims.w + 'px';
+                livePreviewFrame.style.height = dims.h + 'px';
+                livePreviewFrame.style.transform = 'scale(' + z + ')';
+                livePreviewViewport.style.width = Math.round(dims.w * z) + 'px';
+                livePreviewViewport.style.height = Math.round(dims.h * z) + 'px';
+                if (livePreviewDeviceInfo) livePreviewDeviceInfo.textContent = dims.w + '×' + dims.h;
+                updateZoomLabel(z);
+            }
+
+            function setPreviewZoom(z) {
+                previewZoom = Math.max(0.25, Math.min(2, z));
+                previewZoomAuto = false;
+                applyPreviewDevice();
+            }
+
+            function nudgePreviewZoom(dir) {
+                const steps = PREVIEW_ZOOM_STEPS;
+                let target;
+                if (dir > 0) {
+                    target = steps.find(s => s > previewZoom + 0.001);
+                    if (target === undefined) target = steps[steps.length - 1];
+                } else {
+                    const lower = steps.filter(s => s < previewZoom - 0.001);
+                    target = lower.length ? lower[lower.length - 1] : steps[0];
+                }
+                setPreviewZoom(target);
+            }
+
+            function setPreviewDevice(device) {
+                editorState.livePreviewDevice = PREVIEW_DEVICES[device] ? device : 'responsive';
+                previewZoomAuto = true; // re-fit for the new viewport
+                applyPreviewDevice();
+                try { persistEditorSettings(); } catch (e) {}
+            }
+
+            function togglePreviewOrientation() {
+                if (!previewDeviceDims()) return;
+                editorState.livePreviewOrientation = editorState.livePreviewOrientation === 'landscape' ? 'portrait' : 'landscape';
+                previewZoomAuto = true;
+                applyPreviewDevice();
                 try { persistEditorSettings(); } catch (e) {}
             }
 
@@ -4301,6 +4542,11 @@
                             findInput.focus();
                             findInput.select();
                             findText(false); // Initial search when opening modal
+                        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { // Cmd/Ctrl+K → search
+                            e.preventDefault();
+                            findReplaceModal.classList.add('show');
+                            findInput.focus();
+                            findInput.select();
                         } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') { // Ctrl+G for Go to Line
                             e.preventDefault();
                             goToLineModal.classList.add('show');
@@ -4434,6 +4680,12 @@
                 
                 fileInput.addEventListener('change', handleFileLoad);
                 document.getElementById('newFileButton').addEventListener('click', () => createNewTab());
+                const appSearchEl = document.getElementById('appSearch');
+                if (appSearchEl) {
+                    const openFind = () => { findReplaceModal.classList.add('show'); findInput.focus(); findInput.select(); };
+                    appSearchEl.addEventListener('click', openFind);
+                    appSearchEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFind(); } });
+                }
                 document.getElementById('loadFileButton').addEventListener('click', loadFile);
                 
                 document.getElementById('overwriteFileButton').addEventListener('click', overwriteFile);
@@ -4542,6 +4794,21 @@
                         renderLivePreview();
                     });
                 }
+                if (livePreviewDeviceSelect) {
+                    livePreviewDeviceSelect.addEventListener('change', () => setPreviewDevice(livePreviewDeviceSelect.value));
+                }
+                const lpZoomIn = document.getElementById('livePreviewZoomIn');
+                const lpZoomOut = document.getElementById('livePreviewZoomOut');
+                if (lpZoomIn) lpZoomIn.addEventListener('click', () => nudgePreviewZoom(1));
+                if (lpZoomOut) lpZoomOut.addEventListener('click', () => nudgePreviewZoom(-1));
+                if (livePreviewZoomResetBtn) {
+                    // Reset the zoom back to auto-fit (or 100% in responsive mode).
+                    livePreviewZoomResetBtn.addEventListener('click', () => { previewZoomAuto = true; applyPreviewDevice(); });
+                }
+                if (livePreviewRotateButton) livePreviewRotateButton.addEventListener('click', togglePreviewOrientation);
+                window.addEventListener('resize', debounce(() => {
+                    if (editorState.livePreview && previewZoomAuto) applyPreviewDevice();
+                }, 150));
                 const livePreviewCloseBtn = document.getElementById('livePreviewCloseButton');
                 if (livePreviewCloseBtn) livePreviewCloseBtn.addEventListener('click', () => setLivePreview(false));
                 const livePreviewPopoutBtn = document.getElementById('livePreviewPopoutButton');
@@ -4803,9 +5070,11 @@
                     highlightCode.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
                 }
                 if (livePreviewTypeSelect) livePreviewTypeSelect.value = editorState.livePreviewType || 'auto';
+                if (livePreviewDeviceSelect) livePreviewDeviceSelect.value = editorState.livePreviewDevice || 'responsive';
                 if (livePreviewPane) {
                     livePreviewPane.classList.toggle('hidden', !editorState.livePreview);
                     if (livePreviewToggleButton) livePreviewToggleButton.setAttribute('aria-pressed', editorState.livePreview ? 'true' : 'false');
+                    if (editorState.livePreview) applyPreviewDevice();
                 }
                 updateLineNumbers();
             }
