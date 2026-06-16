@@ -598,9 +598,11 @@
         .helper-grid button { justify-content: flex-start; }
 
         .templates-hint { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.9rem; }
+        .templates-toolbar { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; flex-wrap: wrap; }
         .templates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 0.6rem; }
-        .template-card {
-            display: flex; flex-direction: column; gap: 0.35rem; text-align: left;
+        .template-card { position: relative; }
+        .tc-open {
+            display: flex; flex-direction: column; gap: 0.35rem; text-align: left; width: 100%;
             padding: 0.7rem 0.75rem;
             background: var(--bg-tertiary);
             border: 1px solid var(--border-color);
@@ -608,9 +610,18 @@
             cursor: pointer;
             transition: border-color 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease;
         }
-        .template-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
-        .template-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-        .template-card .tc-top { display: flex; align-items: center; gap: 0.5rem; }
+        .tc-open:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+        .tc-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .tc-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 3px; opacity: 0; transition: opacity 0.15s ease; }
+        .template-card:hover .tc-actions, .template-card:focus-within .tc-actions { opacity: 1; }
+        .tc-act {
+            width: 26px; height: 26px; border-radius: 6px; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem;
+            border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary);
+        }
+        .tc-act:hover { color: var(--text-primary); border-color: var(--accent); }
+        .tc-act.danger:hover { color: #fff; background: var(--error-color); border-color: transparent; }
+        .template-card .tc-top { display: flex; align-items: center; gap: 0.5rem; padding-right: 1.5rem; }
         .template-card .tc-icon {
             width: 30px; height: 30px; flex-shrink: 0;
             display: inline-flex; align-items: center; justify-content: center;
@@ -623,6 +634,7 @@
             color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 5px; padding: 0.05rem 0.3rem;
         }
         .template-card .tc-desc { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.35; }
+        .templates-empty { font-size: 0.85rem; color: var(--text-muted); padding: 1.5rem 0; text-align: center; grid-column: 1 / -1; }
         .syntax-guide h4 { font-size: 1rem; font-weight: 600; color: var(--text-accent); margin-top: 1rem; margin-bottom: 0.5rem; }
         .syntax-guide p { font-size: 0.875rem; margin-bottom: 0.25rem; }
         .syntax-guide code { 
@@ -680,10 +692,11 @@
         .find-replace-form .button-group { display: flex; gap: 0.5rem; justify-content: flex-end; }
         
         .settings-form label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: var(--text-primary); }
-        .settings-form select, 
+        .settings-form select,
         .settings-form input[type="number"],
         .settings-form input[type="text"],
-        .settings-form input[type="password"] { 
+        .settings-form input[type="password"],
+        .settings-form textarea {
             width: 100%; 
             padding: 0.5rem; 
             background-color: var(--bg-tertiary); 
@@ -1944,8 +1957,36 @@
                 <button id="closeTemplatesModalButton" class="modal-close-button" aria-label="템플릿 닫기">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="templates-hint">템플릿을 고르면 새 탭으로 열립니다. 실시간 미리보기에서 바로 확인하세요.</p>
+                <div class="templates-toolbar">
+                    <button id="addTemplateButton" class="custom-button toolbar-button bg-sky-600 text-white" aria-label="새 템플릿 추가"><i class="fas fa-plus"></i> 새 템플릿</button>
+                    <button id="restoreTemplatesButton" class="custom-button toolbar-button" aria-label="기본 템플릿 복원"><i class="fas fa-rotate-left"></i> 기본값 복원</button>
+                </div>
+                <p class="templates-hint">카드를 누르면 새 탭으로 열립니다. 카드 위에 마우스를 올리면 편집·삭제할 수 있어요.</p>
                 <div id="templatesGrid" class="templates-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="templateEditorModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="templateEditorTitle">
+        <div class="modal-content" style="max-width: 640px;">
+            <div class="modal-header">
+                <h2 id="templateEditorTitle" class="modal-title">새 템플릿</h2>
+                <button id="closeTemplateEditorButton" class="modal-close-button" aria-label="템플릿 편집기 닫기">&times;</button>
+            </div>
+            <div class="modal-body settings-form">
+                <label for="tplName">이름</label>
+                <input type="text" id="tplName" placeholder="예: 랜딩 페이지" autocomplete="off">
+                <label for="tplFilename">파일명 <span style="font-weight:400;color:var(--text-muted);">(확장자가 종류·색상을 결정)</span></label>
+                <input type="text" id="tplFilename" placeholder="예: index.html" autocomplete="off">
+                <label for="tplDesc">설명</label>
+                <input type="text" id="tplDesc" placeholder="간단한 설명 (선택)" autocomplete="off">
+                <label for="tplContent">내용</label>
+                <textarea id="tplContent" rows="12" spellcheck="false" placeholder="여기에 템플릿 내용을 작성하세요" style="font-family:'JetBrains Mono', monospace; font-size:0.85rem; line-height:1.5; resize:vertical;"></textarea>
+                <div id="templateEditorMessage" style="color:var(--error-color);font-size:0.82rem;min-height:1.1em;margin-bottom:0.5rem;"></div>
+                <div class="flex justify-end gap-3">
+                    <button id="cancelTemplateEditButton" class="custom-button toolbar-button" aria-label="취소">취소</button>
+                    <button id="saveTemplateEditButton" class="custom-button toolbar-button bg-sky-600 text-white" aria-label="저장">저장</button>
+                </div>
             </div>
         </div>
     </div>
@@ -2713,8 +2754,9 @@
                 return tabId;
             }
 
-            // --- TEMPLATES (starter documents that open into a new tab) ---
-            const TEMPLATES = [
+            // --- TEMPLATES (starter documents that open into a new tab; user-editable) ---
+            const TEMPLATES_STORAGE_KEY = 'userTemplates_v1';
+            const BUILTIN_TEMPLATES = [
                 {
                     id: 'html5', name: '빈 HTML5', filename: 'index.html', type: 'HTML', icon: 'fab fa-html5',
                     desc: '깔끔한 HTML5 기본 골격',
@@ -2946,11 +2988,51 @@ MIT`
                 }
             ];
 
+            function loadUserTemplates() {
+                try {
+                    const raw = localStorage.getItem(TEMPLATES_STORAGE_KEY);
+                    if (raw) {
+                        const arr = JSON.parse(raw);
+                        if (Array.isArray(arr)) return arr;
+                    }
+                } catch (e) { console.error('Failed to load templates:', e); }
+                return BUILTIN_TEMPLATES.map(t => ({ ...t })); // seed with built-ins on first run
+            }
+            let userTemplates = loadUserTemplates();
+            let editingTemplateId = null; // id being edited, or null when adding
+
+            function saveUserTemplates() {
+                try { localStorage.setItem(TEMPLATES_STORAGE_KEY, JSON.stringify(userTemplates)); }
+                catch (e) { console.error('Failed to save templates:', e); }
+            }
+
+            // Derive a friendly type badge + icon from the filename extension.
+            function templateMetaFromFilename(filename) {
+                const ext = (getFileExtension(filename || '') || '').toLowerCase();
+                const map = {
+                    html: { type: 'HTML', icon: 'fab fa-html5' }, htm: { type: 'HTML', icon: 'fab fa-html5' },
+                    css: { type: 'CSS', icon: 'fab fa-css3-alt' }, scss: { type: 'SCSS', icon: 'fab fa-sass' },
+                    js: { type: 'JS', icon: 'fab fa-js-square' }, mjs: { type: 'JS', icon: 'fab fa-js-square' },
+                    ts: { type: 'TS', icon: 'fas fa-code' }, json: { type: 'JSON', icon: 'fas fa-code' },
+                    md: { type: 'MD', icon: 'fab fa-markdown' }, markdown: { type: 'MD', icon: 'fab fa-markdown' },
+                    xml: { type: 'XML', icon: 'fas fa-file-code' }, svg: { type: 'SVG', icon: 'fas fa-bezier-curve' },
+                    csv: { type: 'CSV', icon: 'fas fa-table' }, py: { type: 'PY', icon: 'fas fa-code' },
+                    txt: { type: 'TXT', icon: 'fas fa-file-lines' }
+                };
+                return map[ext] || { type: (ext ? ext.toUpperCase() : 'FILE'), icon: 'fas fa-file' };
+            }
+
+            function escapeHtmlAttr(str) {
+                return String(str == null ? '' : str)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            }
+
             function openTemplateInNewTab(tpl) {
                 const tabId = `tab-${Date.now()}-${Math.random().toString(36).substring(2,7)}`;
                 tabs.push({
-                    id: tabId, title: tpl.filename, content: tpl.content, path: null,
-                    modified: true, undoStack: [tpl.content], redoStack: [],
+                    id: tabId, title: tpl.filename || '제목 없음.txt', content: tpl.content || '', path: null,
+                    modified: true, undoStack: [tpl.content || ''], redoStack: [],
                     lastSavedContent: '', cursorPos: { start: 0, end: 0 }, fileHandle: null
                 });
                 editorState.lastSavedStates[tabId] = '';
@@ -2961,20 +3043,97 @@ MIT`
 
             function renderTemplatesGrid() {
                 const grid = document.getElementById('templatesGrid');
-                if (!grid || grid.dataset.rendered === '1') return;
-                grid.innerHTML = TEMPLATES.map((t, i) =>
-                    `<button type="button" class="template-card" data-index="${i}" aria-label="${t.name} 템플릿 열기">`
-                    + `<span class="tc-top"><span class="tc-icon"><i class="${t.icon}"></i></span>`
-                    + `<span class="tc-name">${t.name}</span><span class="tc-badge">${t.type}</span></span>`
-                    + `<span class="tc-desc">${t.desc}</span></button>`
-                ).join('');
-                grid.querySelectorAll('.template-card').forEach(card => {
-                    card.addEventListener('click', () => {
-                        const idx = parseInt(card.dataset.index, 10);
-                        if (TEMPLATES[idx]) { openTemplateInNewTab(TEMPLATES[idx]); closeTemplatesModal(); }
+                if (!grid) return;
+                if (!userTemplates.length) {
+                    grid.innerHTML = '<p class="templates-empty">템플릿이 없습니다. “새 템플릿”으로 추가하거나 “기본값 복원”을 눌러보세요.</p>';
+                    return;
+                }
+                grid.innerHTML = userTemplates.map((t, i) => {
+                    const meta = (t.icon && t.type) ? { icon: t.icon, type: t.type } : templateMetaFromFilename(t.filename);
+                    return `<div class="template-card">`
+                        + `<button type="button" class="tc-open" data-index="${i}" aria-label="${escapeHtmlAttr(t.name)} 템플릿 열기">`
+                        + `<span class="tc-top"><span class="tc-icon"><i class="${escapeHtmlAttr(meta.icon)}"></i></span>`
+                        + `<span class="tc-name">${escapeHtmlAttr(t.name)}</span><span class="tc-badge">${escapeHtmlAttr(meta.type)}</span></span>`
+                        + `<span class="tc-desc">${escapeHtmlAttr(t.desc || t.filename || '')}</span></button>`
+                        + `<span class="tc-actions">`
+                        + `<button type="button" class="tc-act" data-edit="${i}" title="편집" aria-label="${escapeHtmlAttr(t.name)} 편집"><i class="fas fa-pen"></i></button>`
+                        + `<button type="button" class="tc-act danger" data-delete="${i}" title="삭제" aria-label="${escapeHtmlAttr(t.name)} 삭제"><i class="fas fa-trash"></i></button>`
+                        + `</span></div>`;
+                }).join('');
+                grid.querySelectorAll('.tc-open').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const idx = parseInt(btn.dataset.index, 10);
+                        if (userTemplates[idx]) { openTemplateInNewTab(userTemplates[idx]); closeTemplatesModal(); }
                     });
                 });
-                grid.dataset.rendered = '1';
+                grid.querySelectorAll('[data-edit]').forEach(btn => {
+                    btn.addEventListener('click', (e) => { e.stopPropagation(); openTemplateEditor(parseInt(btn.dataset.edit, 10)); });
+                });
+                grid.querySelectorAll('[data-delete]').forEach(btn => {
+                    btn.addEventListener('click', (e) => { e.stopPropagation(); deleteTemplate(parseInt(btn.dataset.delete, 10)); });
+                });
+            }
+
+            async function deleteTemplate(index) {
+                const tpl = userTemplates[index];
+                if (!tpl) return;
+                const ok = await showConfirmDialog('템플릿 삭제', `'${tpl.name}' 템플릿을 삭제하시겠습니까?`);
+                if (!ok) return;
+                userTemplates.splice(index, 1);
+                saveUserTemplates();
+                renderTemplatesGrid();
+                showMessage('템플릿을 삭제했습니다.', 'info', 1500);
+            }
+
+            async function restoreDefaultTemplates() {
+                const ok = await showConfirmDialog('기본값 복원', '현재 템플릿 목록을 기본 템플릿으로 되돌립니다. 추가·편집한 내용은 사라집니다. 계속할까요?');
+                if (!ok) return;
+                userTemplates = BUILTIN_TEMPLATES.map(t => ({ ...t }));
+                saveUserTemplates();
+                renderTemplatesGrid();
+                showMessage('기본 템플릿으로 복원했습니다.', 'success', 1800);
+            }
+
+            function openTemplateEditor(index) {
+                const isEdit = typeof index === 'number' && userTemplates[index];
+                editingTemplateId = isEdit ? userTemplates[index].id : null;
+                document.getElementById('templateEditorTitle').textContent = isEdit ? '템플릿 편집' : '새 템플릿';
+                document.getElementById('tplName').value = isEdit ? (userTemplates[index].name || '') : '';
+                document.getElementById('tplFilename').value = isEdit ? (userTemplates[index].filename || '') : '';
+                document.getElementById('tplDesc').value = isEdit ? (userTemplates[index].desc || '') : '';
+                document.getElementById('tplContent').value = isEdit ? (userTemplates[index].content || '') : '';
+                document.getElementById('templateEditorMessage').textContent = '';
+                document.getElementById('templateEditorModal').classList.add('show');
+                setTimeout(() => document.getElementById('tplName').focus(), 50);
+            }
+
+            function closeTemplateEditor() {
+                document.getElementById('templateEditorModal').classList.remove('show');
+                editingTemplateId = null;
+            }
+
+            function saveTemplateFromEditor() {
+                const name = document.getElementById('tplName').value.trim();
+                const filename = document.getElementById('tplFilename').value.trim();
+                const desc = document.getElementById('tplDesc').value.trim();
+                const content = document.getElementById('tplContent').value;
+                const msgEl = document.getElementById('templateEditorMessage');
+                if (!name) { msgEl.textContent = '이름을 입력하세요.'; document.getElementById('tplName').focus(); return; }
+                if (!filename) { msgEl.textContent = '파일명을 입력하세요 (예: index.html).'; document.getElementById('tplFilename').focus(); return; }
+                const meta = templateMetaFromFilename(filename);
+                const existing = editingTemplateId ? userTemplates.find(t => t.id === editingTemplateId) : null;
+                if (existing) {
+                    Object.assign(existing, { name, filename, desc, content, type: meta.type, icon: meta.icon });
+                } else {
+                    userTemplates.push({
+                        id: `tpl-${Date.now()}-${Math.random().toString(36).substring(2,6)}`,
+                        name, filename, desc, content, type: meta.type, icon: meta.icon
+                    });
+                }
+                saveUserTemplates();
+                renderTemplatesGrid();
+                closeTemplateEditor();
+                showMessage(existing ? '템플릿을 수정했습니다.' : '템플릿을 추가했습니다.', 'success', 1800);
             }
 
             function openTemplatesModal() {
@@ -5236,6 +5395,15 @@ MIT`
                 document.getElementById('closeSettingsModalButton').addEventListener('click', () => document.getElementById('settingsModal').classList.remove('show'));
                 document.getElementById('templatesButton').addEventListener('click', openTemplatesModal);
                 document.getElementById('closeTemplatesModalButton').addEventListener('click', closeTemplatesModal);
+                document.getElementById('addTemplateButton').addEventListener('click', () => openTemplateEditor(null));
+                document.getElementById('restoreTemplatesButton').addEventListener('click', restoreDefaultTemplates);
+                document.getElementById('closeTemplateEditorButton').addEventListener('click', closeTemplateEditor);
+                document.getElementById('cancelTemplateEditButton').addEventListener('click', closeTemplateEditor);
+                document.getElementById('saveTemplateEditButton').addEventListener('click', saveTemplateFromEditor);
+                document.getElementById('templateEditorModal').addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); saveTemplateFromEditor(); }
+                    else if (e.key === 'Escape') { e.stopPropagation(); closeTemplateEditor(); }
+                });
                 document.getElementById('saveSettingsButton').addEventListener('click', saveSettings);
                 aiModelProviderSelect.addEventListener('change', setupAiProviderVisibility);
 
