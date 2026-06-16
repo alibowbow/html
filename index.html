@@ -1517,23 +1517,42 @@
                         <label for="geminiApiKeyInput">Gemini API 키:</label>
                         <input type="password" id="geminiApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 Gemini API 키를 입력하세요">
                         <label for="geminiModelSelect">Gemini 모델:</label>
-                        <select id="geminiModelSelect">
-                            <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
-                        </select>
+                        <input type="text" id="geminiModelSelect" list="geminiModelOptions" autocomplete="off" spellcheck="false" placeholder="예: gemini-3-flash-preview">
+                        <datalist id="geminiModelOptions">
+                            <option value="gemini-3-flash-preview"></option>
+                            <option value="gemini-3-pro-preview"></option>
+                            <option value="gemini-2.5-flash"></option>
+                            <option value="gemini-2.5-pro"></option>
+                        </datalist>
+                        <p class="text-xs text-text-secondary mt-1">목록에서 고르거나 사용 가능한 모델 ID를 직접 입력할 수 있습니다.</p>
                     </div>
 
                     <div id="openaiSettings" class="ai-settings-group hidden">
                         <label for="openAiApiKeyInput">OpenAI API 키:</label>
                         <input type="password" id="openAiApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 OpenAI API 키를 입력하세요">
                         <label for="openAiModelDisplay">OpenAI 모델:</label>
-                        <input type="text" id="openAiModelDisplay" value="gpt-4o" readonly class="!mb-1rem">
+                        <input type="text" id="openAiModelDisplay" list="openAiModelOptions" value="gpt-4o" autocomplete="off" spellcheck="false" placeholder="예: gpt-4.1" class="!mb-1rem">
+                        <datalist id="openAiModelOptions">
+                            <option value="gpt-4.1"></option>
+                            <option value="gpt-4.1-mini"></option>
+                            <option value="gpt-4o"></option>
+                            <option value="gpt-4o-mini"></option>
+                            <option value="o4-mini"></option>
+                        </datalist>
+                        <p class="text-xs text-text-secondary mt-1">목록에서 고르거나 사용 가능한 모델 ID를 직접 입력할 수 있습니다.</p>
                     </div>
 
                     <div id="anthropicSettings" class="ai-settings-group hidden">
                         <label for="anthropicApiKeyInput">Anthropic API 키:</label>
                         <input type="password" id="anthropicApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 Anthropic API 키를 입력하세요">
                         <label for="anthropicModelDisplay">Anthropic 모델:</label>
-                        <input type="text" id="anthropicModelDisplay" value="claude-opus-4-8" readonly class="!mb-1rem">
+                        <input type="text" id="anthropicModelDisplay" list="anthropicModelOptions" value="claude-opus-4-8" autocomplete="off" spellcheck="false" placeholder="예: claude-opus-4-8" class="!mb-1rem">
+                        <datalist id="anthropicModelOptions">
+                            <option value="claude-opus-4-8"></option>
+                            <option value="claude-sonnet-4-6"></option>
+                            <option value="claude-haiku-4-5"></option>
+                        </datalist>
+                        <p class="text-xs text-text-secondary mt-1">목록에서 고르거나 사용 가능한 모델 ID를 직접 입력할 수 있습니다.</p>
                     </div>
 
                     <div class="mt-4">
@@ -2179,19 +2198,42 @@
             const geminiModelSelect = document.getElementById('geminiModelSelect'); 
             const openaiSettings = document.getElementById('openaiSettings');
             const openAiApiKeyInput = document.getElementById('openAiApiKeyInput');
+            const openAiModelInput = document.getElementById('openAiModelDisplay');
             const anthropicSettings = document.getElementById('anthropicSettings');
             const anthropicApiKeyInput = document.getElementById('anthropicApiKeyInput');
+            const anthropicModelInput = document.getElementById('anthropicModelDisplay');
             const aiSystemPromptInput = document.getElementById('aiSystemPromptInput'); 
             const PERSISTED_SECRET_KEYS = ['geminiApiKey', 'openAiApiKey', 'anthropicApiKey'];
             const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
+            const DEFAULT_OPENAI_MODEL = 'gpt-4o';
+            const DEFAULT_ANTHROPIC_MODEL = 'claude-opus-4-8';
+            // Retired model IDs that should be remapped to a current default if found in saved settings.
+            const RETIRED_GEMINI_MODELS = new Set(['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro', 'gemini-1.0-pro']);
+            const RETIRED_ANTHROPIC_MODELS = new Set([
+                'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307',
+                'claude-3-5-sonnet-20240620', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022',
+                'claude-3-7-sonnet-20250219', 'claude-2.1', 'claude-2.0', 'claude-instant-1.2'
+            ]);
             let legacySecretStorageCleared = false;
 
             function normalizeGeminiModel(model) {
-                if (!model || model === 'gemini-2.0-flash') {
+                if (!model || RETIRED_GEMINI_MODELS.has(model)) {
                     return DEFAULT_GEMINI_MODEL;
                 }
 
                 return model;
+            }
+
+            function normalizeAnthropicModel(model) {
+                if (!model || RETIRED_ANTHROPIC_MODELS.has(model)) {
+                    return DEFAULT_ANTHROPIC_MODEL;
+                }
+
+                return model;
+            }
+
+            function normalizeOpenAiModel(model) {
+                return model || DEFAULT_OPENAI_MODEL;
             }
 
             function getSerializableEditorSettings(source = editorState) {
@@ -2249,6 +2291,8 @@
                         if (parsedSession && parsedSession.editorSettings) {
                             const sanitizedSessionSettings = sanitizePersistedEditorSettings(parsedSession.editorSettings);
                             sanitizedSessionSettings.geminiModel = normalizeGeminiModel(sanitizedSessionSettings.geminiModel);
+                            sanitizedSessionSettings.anthropicModel = normalizeAnthropicModel(sanitizedSessionSettings.anthropicModel);
+                            sanitizedSessionSettings.openAiModel = normalizeOpenAiModel(sanitizedSessionSettings.openAiModel);
                             if (JSON.stringify(parsedSession.editorSettings) !== JSON.stringify(sanitizedSessionSettings)) {
                                 localStorage.setItem('editorSession', JSON.stringify({
                                     ...parsedSession,
@@ -5471,7 +5515,11 @@ MIT`
                 editorState.geminiModel = normalizeGeminiModel(editorState.geminiModel);
                 geminiModelSelect.value = editorState.geminiModel;
                 openAiApiKeyInput.value = editorState.openAiApiKey || '';
+                editorState.openAiModel = normalizeOpenAiModel(editorState.openAiModel);
+                if (openAiModelInput) openAiModelInput.value = editorState.openAiModel;
                 anthropicApiKeyInput.value = editorState.anthropicApiKey || '';
+                editorState.anthropicModel = normalizeAnthropicModel(editorState.anthropicModel);
+                if (anthropicModelInput) anthropicModelInput.value = editorState.anthropicModel;
                 aiSystemPromptInput.value = editorState.aiSystemPrompt || '';
 
                 setupAiProviderVisibility(); // Update visibility based on loaded provider
@@ -5491,9 +5539,11 @@ MIT`
                 // Save AI settings
                 editorState.aiModelProvider = aiModelProviderSelect.value;
                 editorState.geminiApiKey = geminiApiKeyInput.value.trim();
-                editorState.geminiModel = normalizeGeminiModel(geminiModelSelect.value);
+                editorState.geminiModel = normalizeGeminiModel(geminiModelSelect.value.trim());
                 editorState.openAiApiKey = openAiApiKeyInput.value.trim();
+                editorState.openAiModel = normalizeOpenAiModel(openAiModelInput.value.trim());
                 editorState.anthropicApiKey = anthropicApiKeyInput.value.trim();
+                editorState.anthropicModel = normalizeAnthropicModel(anthropicModelInput.value.trim());
                 editorState.aiSystemPrompt = aiSystemPromptInput.value.trim();
 
 
@@ -5528,9 +5578,9 @@ MIT`
                         // Load AI settings (ensure they are strings, not null if empty)
                         editorState.aiModelProvider = parsed.aiModelProvider || 'gemini';
                         editorState.geminiModel = normalizeGeminiModel(parsed.geminiModel);
-                        editorState.openAiModel = parsed.openAiModel || 'gpt-4o';
-                        // Map the retired claude-3-opus model (and any missing value) to the current default.
-                        editorState.anthropicModel = (parsed.anthropicModel && parsed.anthropicModel !== 'claude-3-opus-20240229') ? parsed.anthropicModel : 'claude-opus-4-8';
+                        editorState.openAiModel = normalizeOpenAiModel(parsed.openAiModel);
+                        // Map retired Claude model IDs (and any missing value) to the current default.
+                        editorState.anthropicModel = normalizeAnthropicModel(parsed.anthropicModel);
                         editorState.aiSystemPrompt = parsed.aiSystemPrompt || '';
                         editorState.vibeChatHistory = parsed.vibeChatHistory || []; // Load chat history
 
