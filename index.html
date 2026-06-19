@@ -417,6 +417,8 @@
             flex-grow: 1;
             overflow-y: auto;
             width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
             resize: none;
             white-space: pre;
             line-height: 1.6;
@@ -489,18 +491,18 @@
            identically so highlights stay aligned. A fixed line-number gutter can't
            track wrapped lines, so it is hidden at this width. */
         @media (max-width: 760px) {
-            /* Wrap mode (default): wrap all editor layers; hide the unalignable gutter. */
+            /* Wrap mode (default): wrap all editor layers at the same width; hide the unalignable gutter. */
             body.mobile-wrap #textInput,
             body.mobile-wrap #highlightOverlay,
             body.mobile-wrap #findHighlightLayer {
                 white-space: pre-wrap !important;
-                word-break: break-word !important;
+                word-break: normal !important;
                 overflow-wrap: anywhere !important;
                 overflow-x: hidden !important;
             }
             body.mobile-wrap #highlightOverlay code {
                 white-space: inherit !important;
-                word-break: break-word !important;
+                word-break: normal !important;
                 overflow-wrap: anywhere !important;
             }
             body.mobile-wrap #lineNumberContainer { display: none !important; }
@@ -5529,6 +5531,7 @@ MIT`
                 if (livePreviewRotateButton) livePreviewRotateButton.addEventListener('click', togglePreviewOrientation);
                 window.addEventListener('resize', debounce(() => {
                     if (editorState.livePreview && previewZoomAuto) applyPreviewDevice();
+                    applyMobileLineMode(); // refresh wrap attribute when crossing the mobile breakpoint
                 }, 150));
                 const livePreviewCloseBtn = document.getElementById('livePreviewCloseButton');
                 if (livePreviewCloseBtn) livePreviewCloseBtn.addEventListener('click', () => setLivePreview(false));
@@ -5794,6 +5797,11 @@ MIT`
                 const scroll = editorState.mobileLineMode === 'scroll';
                 document.body.classList.toggle('mobile-scroll', scroll);
                 document.body.classList.toggle('mobile-wrap', !scroll);
+                // On phones the mode decides wrapping; elsewhere the desktop word-wrap setting does.
+                // wrap="off" turns a non-wrapping textarea into a real horizontally-scrollable element.
+                const isMobile = window.matchMedia('(max-width: 760px)').matches;
+                const shouldWrap = isMobile ? !scroll : editorState.wordWrap;
+                if (textInput) textInput.setAttribute('wrap', shouldWrap ? 'soft' : 'off');
             }
 
             function applySettingsToUI() {
