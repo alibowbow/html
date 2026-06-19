@@ -109,6 +109,7 @@
             --app-gradient: linear-gradient(135deg, #f3f2fd 0%, #ece8fb 48%, #e6e0fa 100%);
         }
         
+        html, body { overscroll-behavior: none; }
         body {
             font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
             overflow-x: hidden;
@@ -419,6 +420,8 @@
             width: 100%;
             min-width: 0;
             box-sizing: border-box;
+            overscroll-behavior: contain;
+            touch-action: pan-x pan-y;
             resize: none;
             white-space: pre;
             line-height: 1.6;
@@ -2565,8 +2568,13 @@
             function initializeEditor() {
                 sanitizePersistedStorage();
                 setupModalAccessibility();
-                loadSettings(); 
-                createNewTab(true); // Create initial tab based on default settings
+                loadSettings();
+                if (!restoreSessionOnStartup()) {
+                    createNewTab(true); // Create initial tab based on default settings
+                }
+                // Capture the latest state right before the page is hidden/closed (covers reloads).
+                window.addEventListener('pagehide', persistSessionNow);
+                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persistSessionNow(); });
                 updateLineNumbers();
                 updateStats();
                 updateAutosaveStatus('idle');
@@ -3509,12 +3517,59 @@ MIT`
                 }
             }
 
+            // Persist the working session to localStorage so a reload or accidental refresh never
+            // loses text. Shares the 'editorSession' slot with manual 세션 저장/불러오기.
+            function persistSessionNow() {
+                try {
+                    if (!tabs.length) return;
+                    const cur = tabs.find(t => t.id === activeTabId);
+                    if (cur) { cur.content = textInput.value; cur.cursorPos = { start: textInput.selectionStart, end: textInput.selectionEnd }; }
+                    const sessionData = {
+                        tabs: tabs.map(tab => ({ id: tab.id, title: tab.title, content: tab.content, path: tab.path, modified: tab.modified, cursorPos: tab.cursorPos })),
+                        activeTabId: activeTabId,
+                        editorSettings: getSerializableEditorSettings()
+                    };
+                    localStorage.setItem('editorSession', JSON.stringify(sessionData));
+                } catch (e) { /* storage unavailable/full — ignore */ }
+            }
+            const persistSessionSoon = debounce(persistSessionNow, 800);
+
+            function restoreSessionOnStartup() {
+                try {
+                    const raw = localStorage.getItem('editorSession');
+                    if (!raw) return false;
+                    const sessionData = JSON.parse(raw);
+                    if (!sessionData || !Array.isArray(sessionData.tabs) || sessionData.tabs.length === 0) return false;
+                    tabs.length = 0;
+                    sessionData.tabs.forEach(sTab => {
+                        const id = sTab.id || `tab-${Date.now()}-${Math.random().toString(36).substring(2,7)}`;
+                        tabs.push({
+                            id: id,
+                            title: sTab.title || `제목 없음.${editorState.defaultNewTabType}`,
+                            content: sTab.content || '',
+                            path: sTab.path || null,
+                            modified: !!sTab.modified,
+                            undoStack: [sTab.content || ''],
+                            redoStack: [],
+                            lastSavedContent: sTab.content || '',
+                            cursorPos: sTab.cursorPos || { start: 0, end: 0 },
+                            fileHandle: null
+                        });
+                        editorState.lastSavedStates[id] = sTab.content || '';
+                    });
+                    const hasActive = sessionData.tabs.some(t => t.id === sessionData.activeTabId);
+                    switchToTab(hasActive ? sessionData.activeTabId : tabs[0].id);
+                    return true;
+                } catch (e) { return false; }
+            }
+
             function refreshAfterEdit() {
                 const currentTab = tabs.find(tab => tab.id === activeTabId);
                 if (currentTab) currentTab.content = textInput.value;
                 setTabModified(activeTabId, true);
                 updateLineNumbers();
                 updateStats();
+                persistSessionSoon();
                 if (editorState.autoSave) startAutoSaveTimer();
             }
 
