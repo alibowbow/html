@@ -186,9 +186,9 @@
             display: none; 
             position: absolute; 
             background-color: var(--bg-secondary); 
-            min-width: 240px; 
+            min-width: 240px;
             box-shadow: var(--shadow-md);
-            z-index: 100;
+            z-index: 200;
             border-radius: 0.6rem;
             padding: 0.5rem 0; 
             margin-top: 0.25rem; 
@@ -1222,6 +1222,9 @@
             border-radius: var(--radius-lg) var(--radius-lg) 0 0;
             box-shadow: none;
             padding: 0.35rem 0.6rem;
+            /* Own stacking context above the editor body so dropdown menus aren't covered by it. */
+            position: relative;
+            z-index: 40;
         }
         .toolbar .dropdown > .dropdown-toggle, .toolbar > .custom-button {
             background: transparent; border-color: transparent; padding: 0.35rem 0.55rem; font-size: 0.82rem;
