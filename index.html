@@ -489,20 +489,26 @@
            identically so highlights stay aligned. A fixed line-number gutter can't
            track wrapped lines, so it is hidden at this width. */
         @media (max-width: 760px) {
-            #textInput,
-            #highlightOverlay,
-            #findHighlightLayer {
+            /* Wrap mode (default): wrap all editor layers; hide the unalignable gutter. */
+            body.mobile-wrap #textInput,
+            body.mobile-wrap #highlightOverlay,
+            body.mobile-wrap #findHighlightLayer {
                 white-space: pre-wrap !important;
                 word-break: break-word !important;
                 overflow-wrap: anywhere !important;
                 overflow-x: hidden !important;
             }
-            #highlightOverlay code {
+            body.mobile-wrap #highlightOverlay code {
                 white-space: inherit !important;
                 word-break: break-word !important;
                 overflow-wrap: anywhere !important;
             }
-            #lineNumberContainer { display: none !important; }
+            body.mobile-wrap #lineNumberContainer { display: none !important; }
+            /* Scroll mode: keep no-wrap + line numbers; make horizontal panning smooth. */
+            body.mobile-scroll #textInput {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
         }
         .app-search input {
             flex: 1 1 auto;
@@ -1533,6 +1539,13 @@
                     <label for="wordWrapCheckbox">자동 줄 바꿈</label>
                 </div>
                 <div>
+                    <label for="mobileLineModeSelect">모바일에서 긴 줄 처리:</label>
+                    <select id="mobileLineModeSelect">
+                        <option value="wrap">줄바꿈 (전체 표시 · 줄번호 숨김)</option>
+                        <option value="scroll">가로 스크롤 (줄번호 유지)</option>
+                    </select>
+                </div>
+                <div>
                     <label for="defaultNewTabTypeSelect">기본 새 탭 파일 타입:</label>
                     <select id="defaultNewTabTypeSelect">
                         <option value="txt">텍스트 파일 (.txt)</option>
@@ -2122,6 +2135,7 @@
                 currentMatchIndex: -1,
                 lastSearchTerm: '',
                 wordWrap: false,
+                mobileLineMode: 'wrap', // mobile long-line handling: 'wrap' | 'scroll'
                 showLineNumbers: true,
                 fontSize: 16,
                 fontFamily: "'JetBrains Mono', monospace",
@@ -2291,6 +2305,7 @@
                     autoSaveInterval: source.autoSaveInterval,
                     showLineNumbers: source.showLineNumbers,
                     wordWrap: source.wordWrap,
+                    mobileLineMode: source.mobileLineMode,
                     aiModelProvider: source.aiModelProvider,
                     geminiModel: source.geminiModel,
                     openAiModel: source.openAiModel,
@@ -5688,6 +5703,7 @@ MIT`
                 document.getElementById('autoSaveIntervalInput').value = editorState.autoSaveInterval / 1000; 
                 document.getElementById('lineNumbersCheckbox').checked = editorState.showLineNumbers;
                 document.getElementById('wordWrapCheckbox').checked = editorState.wordWrap;
+                document.getElementById('mobileLineModeSelect').value = editorState.mobileLineMode || 'wrap';
                 document.getElementById('defaultNewTabTypeSelect').value = editorState.defaultNewTabType; // Set default new tab type
                 
                 // Load AI settings
@@ -5715,6 +5731,7 @@ MIT`
                 editorState.autoSaveInterval = (parseInt(document.getElementById('autoSaveIntervalInput').value) || 30) * 1000; 
                 editorState.showLineNumbers = document.getElementById('lineNumbersCheckbox').checked;
                 editorState.wordWrap = document.getElementById('wordWrapCheckbox').checked;
+                editorState.mobileLineMode = document.getElementById('mobileLineModeSelect').value === 'scroll' ? 'scroll' : 'wrap';
                 editorState.defaultNewTabType = document.getElementById('defaultNewTabTypeSelect').value; // Save new default tab type
                 
                 // Save AI settings
@@ -5754,6 +5771,7 @@ MIT`
                         editorState.autoSaveInterval = parsed.autoSaveInterval || 30000;
                         editorState.showLineNumbers = typeof parsed.showLineNumbers === 'boolean' ? parsed.showLineNumbers : true;
                         editorState.wordWrap = typeof parsed.wordWrap === 'boolean' ? parsed.wordWrap : false;
+                        editorState.mobileLineMode = parsed.mobileLineMode === 'scroll' ? 'scroll' : 'wrap';
                         editorState.defaultNewTabType = parsed.defaultNewTabType || 'txt'; // Load new default tab type
                         
                         // Load AI settings (ensure they are strings, not null if empty)
@@ -5769,9 +5787,16 @@ MIT`
                 }
             }
             
+            function applyMobileLineMode() {
+                const scroll = editorState.mobileLineMode === 'scroll';
+                document.body.classList.toggle('mobile-scroll', scroll);
+                document.body.classList.toggle('mobile-wrap', !scroll);
+            }
+
             function applySettingsToUI() {
+                applyMobileLineMode();
                 textInput.style.fontSize = `${editorState.fontSize}px`;
-                lineNumberContainer.style.fontSize = `${editorState.fontSize}px`; 
+                lineNumberContainer.style.fontSize = `${editorState.fontSize}px`;
                 textInput.style.fontFamily = editorState.fontFamily;
                 lineNumberContainer.style.fontFamily = editorState.fontFamily; 
                 
