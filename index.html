@@ -484,6 +484,26 @@
             background-color: rgba(249, 115, 22, 0.55);
             box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.9);
         }
+        /* Mobile: wrap long lines so the right edge is never cut off (horizontal
+           swipe inside a textarea is unreliable on touch). All editor layers wrap
+           identically so highlights stay aligned. A fixed line-number gutter can't
+           track wrapped lines, so it is hidden at this width. */
+        @media (max-width: 760px) {
+            #textInput,
+            #highlightOverlay,
+            #findHighlightLayer {
+                white-space: pre-wrap !important;
+                word-break: break-word !important;
+                overflow-wrap: anywhere !important;
+                overflow-x: hidden !important;
+            }
+            #highlightOverlay code {
+                white-space: inherit !important;
+                word-break: break-word !important;
+                overflow-wrap: anywhere !important;
+            }
+            #lineNumberContainer { display: none !important; }
+        }
         .app-search input {
             flex: 1 1 auto;
             min-width: 0;
