@@ -421,7 +421,6 @@
             min-width: 0;
             box-sizing: border-box;
             overscroll-behavior: contain;
-            touch-action: pan-y;
             resize: none;
             white-space: pre;
             line-height: 1.6;
@@ -5428,39 +5427,10 @@ MIT`
                     }
                 });
 
+                // Keep the highlight overlays aligned with the textarea on native scroll
+                // (one-way: textarea is the single scroll source). Native horizontal scroll
+                // works because touch-action is left at its default (auto) — see #textInput.
                 textInput.addEventListener('scroll', () => { if(editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop; syncOverlayScroll(); updateCurrentLineHighlight(); });
-                // Touch drag-to-scroll for long no-wrap lines: textareas don't horizontally
-                // scroll reliably on touch (esp. iOS), so drive scrollLeft directly on a
-                // horizontal swipe when there's overflow. Vertical swipes pass through.
-                let tDragX = 0, tDragY = 0, tDragScrollLeft = 0, tDragActive = false;
-                textInput.addEventListener('touchstart', (e) => {
-                    if (e.touches.length !== 1) return;
-                    tDragX = e.touches[0].clientX;
-                    tDragY = e.touches[0].clientY;
-                    tDragScrollLeft = highlightOverlay ? highlightOverlay.scrollLeft : textInput.scrollLeft;
-                    tDragActive = false;
-                }, { passive: true });
-                textInput.addEventListener('touchmove', (e) => {
-                    if (e.touches.length !== 1) return;
-                    const dx = e.touches[0].clientX - tDragX;
-                    const dy = e.touches[0].clientY - tDragY;
-                    const maxScroll = Math.max(
-                        textInput.scrollWidth - textInput.clientWidth,
-                        highlightOverlay ? highlightOverlay.scrollWidth - highlightOverlay.clientWidth : 0
-                    );
-                    if (!tDragActive && maxScroll > 2 && Math.abs(dx) > Math.abs(dy) + 4 && Math.abs(dx) > 8) {
-                        tDragActive = true;
-                    }
-                    if (tDragActive) {
-                        let target = tDragScrollLeft - dx;
-                        if (target < 0) target = 0;
-                        else if (target > maxScroll) target = maxScroll;
-                        textInput.scrollLeft = target;
-                        if (highlightOverlay) highlightOverlay.scrollLeft = target;
-                        if (findHighlightLayer) findHighlightLayer.scrollLeft = target;
-                        e.preventDefault(); // take over the gesture from caret/selection
-                    }
-                }, { passive: false });
                 textInput.addEventListener('click', updateCursorPosition);
                 textInput.addEventListener('keyup', updateCursorPosition);
                 textInput.addEventListener('select', () => { updateStatusExtras(); updateCurrentLineHighlight(); });
