@@ -114,6 +114,7 @@
             font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
             overflow-x: hidden;
             min-height: 100vh;
+            min-height: 100dvh;
             background-color: var(--bg-primary);
             background-image: var(--app-gradient);
             background-attachment: fixed;
@@ -233,13 +234,14 @@
         .message-box.error { background-color: var(--error-color); color: white; }
         .message-box.info { background-color: var(--info-color); color: white; }
         
-        .main-container-wrapper { 
-            width: 100%; 
-            display: flex; 
-            justify-content: center; 
-            padding: 1rem; 
-            min-height: 100vh; 
-            box-sizing: border-box; 
+        .main-container-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 1rem;
+            min-height: 100vh;
+            min-height: 100dvh;
+            box-sizing: border-box;
         }
         #mainContainer { 
             display: flex; 
@@ -258,9 +260,10 @@
             position: fixed; 
             top: 0; 
             left: 0; 
-            width: 100vw; 
-            height: 100vh; 
-            max-width: none; 
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            max-width: none;
             max-height: none; 
             margin: 0; 
             border-radius: 0; 
