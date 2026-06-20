@@ -69,7 +69,7 @@
             --shadow-md: 0 16px 40px -20px rgba(0,0,0,0.7);
             --shadow-lg: 0 28px 64px -28px rgba(0,0,0,0.85);
             --radius: 0.5rem;
-            --radius-lg: 1.25rem;
+            --radius-lg: 1rem;
             --font-serif: 'Pretendard', 'Inter', sans-serif;
             --app-gradient: radial-gradient(1100px 600px at 50% -12%, rgba(139,92,246,0.16), transparent 60%);
         }
@@ -109,6 +109,7 @@
             --app-gradient: linear-gradient(135deg, #f3f2fd 0%, #ece8fb 48%, #e6e0fa 100%);
         }
         
+        html, body { overscroll-behavior: none; }
         body {
             font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
             overflow-x: hidden;
@@ -161,9 +162,9 @@
         .toolbar-button {
             background-color: var(--button-bg);
             color: var(--text-primary);
-            padding: 0.45rem 0.7rem;
+            padding: 0.35rem 0.6rem;
             border-radius: var(--radius);
-            font-size: 0.875rem;
+            font-size: 0.82rem;
         }
         .toolbar-button:hover:not(:disabled) { background-color: var(--button-hover); }
 
@@ -186,9 +187,9 @@
             display: none; 
             position: absolute; 
             background-color: var(--bg-secondary); 
-            min-width: 240px; 
+            min-width: 240px;
             box-shadow: var(--shadow-md);
-            z-index: 100;
+            z-index: 200;
             border-radius: 0.6rem;
             padding: 0.5rem 0; 
             margin-top: 0.25rem; 
@@ -417,6 +418,10 @@
             flex-grow: 1;
             overflow-y: auto;
             width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
             resize: none;
             white-space: pre;
             line-height: 1.6;
@@ -480,6 +485,54 @@
             color: transparent;
             border-radius: 2px;
         }
+        #findHighlightLayer mark.current {
+            background-color: rgba(249, 115, 22, 0.55);
+            box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.9);
+        }
+        /* Mobile: wrap long lines so the right edge is never cut off (horizontal
+           swipe inside a textarea is unreliable on touch). All editor layers wrap
+           identically so highlights stay aligned. A fixed line-number gutter can't
+           track wrapped lines, so it is hidden at this width. */
+        @media (max-width: 760px) {
+            /* Wrap mode (default): wrap all editor layers at the same width; hide the unalignable gutter. */
+            body.mobile-wrap #textInput,
+            body.mobile-wrap #highlightOverlay,
+            body.mobile-wrap #findHighlightLayer {
+                white-space: pre-wrap !important;
+                word-break: normal !important;
+                overflow-wrap: anywhere !important;
+                overflow-x: hidden !important;
+            }
+            body.mobile-wrap #highlightOverlay code {
+                white-space: inherit !important;
+                word-break: normal !important;
+                overflow-wrap: anywhere !important;
+            }
+            body.mobile-wrap #lineNumberContainer { display: none !important; }
+            /* Scroll mode: keep no-wrap + line numbers; make horizontal panning smooth. */
+            body.mobile-scroll #textInput {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+        .app-search input {
+            flex: 1 1 auto;
+            min-width: 0;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font: inherit;
+            padding: 0;
+        }
+        .app-search input::placeholder { color: var(--text-muted); }
+        .app-search input.no-match { color: var(--error-color); }
+        .app-search-go {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: none; border: none; padding: 0; margin: 0;
+            color: var(--text-muted); cursor: pointer; line-height: 1; font-size: inherit; flex-shrink: 0;
+        }
+        .app-search-go:hover { color: var(--accent); }
         #currentLineHighlight {
             position: absolute;
             left: 0;
@@ -596,6 +649,45 @@
             margin-bottom: 1rem;
         }
         .helper-grid button { justify-content: flex-start; }
+
+        .templates-hint { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.9rem; }
+        .templates-toolbar { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; flex-wrap: wrap; }
+        .templates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 0.6rem; }
+        .template-card { position: relative; }
+        .tc-open {
+            display: flex; flex-direction: column; gap: 0.35rem; text-align: left; width: 100%;
+            padding: 0.7rem 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.7rem;
+            cursor: pointer;
+            transition: border-color 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease;
+        }
+        .tc-open:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+        .tc-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .tc-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 3px; opacity: 0; transition: opacity 0.15s ease; }
+        .template-card:hover .tc-actions, .template-card:focus-within .tc-actions { opacity: 1; }
+        .tc-act {
+            width: 26px; height: 26px; border-radius: 6px; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem;
+            border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary);
+        }
+        .tc-act:hover { color: var(--text-primary); border-color: var(--accent); }
+        .tc-act.danger:hover { color: #fff; background: var(--error-color); border-color: transparent; }
+        .template-card .tc-top { display: flex; align-items: center; gap: 0.5rem; padding-right: 1.5rem; }
+        .template-card .tc-icon {
+            width: 30px; height: 30px; flex-shrink: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 8px; font-size: 0.9rem;
+            background: rgba(var(--accent-rgb), 0.12); color: var(--accent-strong);
+        }
+        .template-card .tc-name { font-weight: 600; font-size: 0.88rem; color: var(--text-primary); }
+        .template-card .tc-badge {
+            margin-left: auto; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+            color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 5px; padding: 0.05rem 0.3rem;
+        }
+        .template-card .tc-desc { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.35; }
+        .templates-empty { font-size: 0.85rem; color: var(--text-muted); padding: 1.5rem 0; text-align: center; grid-column: 1 / -1; }
         .syntax-guide h4 { font-size: 1rem; font-weight: 600; color: var(--text-accent); margin-top: 1rem; margin-bottom: 0.5rem; }
         .syntax-guide p { font-size: 0.875rem; margin-bottom: 0.25rem; }
         .syntax-guide code { 
@@ -616,9 +708,9 @@
         .animate-spin { animation: spin 1s linear infinite; }
         
         .stats-bar {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-muted);
-            padding: 0.6rem 1.5rem;
+            padding: 0.5rem 1.25rem;
             background-color: var(--bg-primary); 
             border-top: 1px solid var(--border-color); 
             display: flex; 
@@ -653,10 +745,11 @@
         .find-replace-form .button-group { display: flex; gap: 0.5rem; justify-content: flex-end; }
         
         .settings-form label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: var(--text-primary); }
-        .settings-form select, 
+        .settings-form select,
         .settings-form input[type="number"],
         .settings-form input[type="text"],
-        .settings-form input[type="password"] { 
+        .settings-form input[type="password"],
+        .settings-form textarea {
             width: 100%; 
             padding: 0.5rem; 
             background-color: var(--bg-tertiary); 
@@ -696,10 +789,11 @@
             display: none;
         }
         .tab {
-            padding: 0.5rem 0.9rem;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
             border-top-left-radius: 0.5rem;
             border-top-right-radius: 0.5rem;
-            margin: 0.3rem 0.15rem 0 0;
+            margin: 0.25rem 0.15rem 0 0;
             background-color: transparent;
             color: var(--text-secondary);
             border: 1px solid transparent;
@@ -1059,7 +1153,7 @@
         }
 
         /* ===================== Reference layout: soft lavender, top-stacked ===================== */
-        .main-container-wrapper { padding: 1.75rem 1.5rem; }
+        .main-container-wrapper { padding: 1.1rem 1.25rem; }
         #mainContainer {
             display: flex;
             flex-direction: column;
@@ -1076,38 +1170,38 @@
             background: transparent;
             border: none;
             box-shadow: none;
-            padding: 0 0.25rem 1.2rem;
+            padding: 0 0.25rem 0.8rem;
         }
-        .top-bar { flex-direction: row; align-items: center; gap: 0.85rem; }
+        .top-bar { flex-direction: row; align-items: center; gap: 0.7rem; }
         .app-logo {
-            width: 46px; height: 46px; flex-shrink: 0;
+            width: 38px; height: 38px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            border-radius: 13px;
+            border-radius: 11px;
             background: linear-gradient(135deg, #a78bfa, #ec4899);
-            color: #fff; font-size: 1.2rem;
-            box-shadow: 0 10px 22px -8px rgba(139,92,246,0.65);
+            color: #fff; font-size: 1.05rem;
+            box-shadow: 0 8px 18px -8px rgba(139,92,246,0.6);
         }
         .brand-text { display: flex; flex-direction: column; line-height: 1.15; margin-right: auto; }
-        .editor-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.01em; color: var(--text-primary); }
+        .editor-title { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
         .editor-title::before { content: none; }
-        .editor-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+        .editor-subtitle { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
         .app-search {
-            display: flex; align-items: center; gap: 0.55rem;
-            min-width: 230px;
-            padding: 0.55rem 0.95rem;
+            display: flex; align-items: center; gap: 0.5rem;
+            min-width: 200px;
+            padding: 0.4rem 0.8rem;
             border-radius: 999px;
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             box-shadow: var(--shadow-sm);
             color: var(--text-muted);
             cursor: text;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
         .app-search i { color: var(--text-muted); }
         .app-search .kbd { margin-left: auto; }
-        .top-bar-actions { flex-wrap: nowrap; gap: 0.5rem; }
+        .top-bar-actions { flex-wrap: nowrap; gap: 0.4rem; }
         .top-bar-actions .custom-button {
-            width: 44px; height: 44px; padding: 0;
+            width: 37px; height: 37px; padding: 0; font-size: 0.95rem;
             border-radius: 50%;
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
@@ -1132,10 +1226,13 @@
             border: 1px solid var(--border-color);
             border-radius: var(--radius-lg) var(--radius-lg) 0 0;
             box-shadow: none;
-            padding: 0.5rem 0.85rem;
+            padding: 0.35rem 0.6rem;
+            /* Own stacking context above the editor body so dropdown menus aren't covered by it. */
+            position: relative;
+            z-index: 40;
         }
         .toolbar .dropdown > .dropdown-toggle, .toolbar > .custom-button {
-            background: transparent; border-color: transparent; padding: 0.45rem 0.7rem;
+            background: transparent; border-color: transparent; padding: 0.35rem 0.55rem; font-size: 0.82rem;
         }
         .toolbar .dropdown > .dropdown-toggle:hover:not(:disabled), .toolbar > .custom-button:hover:not(:disabled) {
             background: var(--surface-1); border-color: transparent; transform: none; box-shadow: none;
@@ -1158,7 +1255,7 @@
         #statsBar {
             background: transparent;
             border: none;
-            padding: 0.9rem 0.5rem 0;
+            padding: 0.55rem 0.4rem 0;
             color: var(--text-muted);
         }
         .stats-item span { color: var(--text-secondary); }
@@ -1188,8 +1285,10 @@
                         <span class="editor-title">텍스트 에디터</span>
                         <span class="editor-subtitle">깔끔하고 강력한 텍스트 편집기</span>
                     </div>
-                    <div class="app-search" id="appSearch" role="button" tabindex="0" title="검색 (Ctrl/Cmd+K)">
-                        <i class="fas fa-magnifying-glass"></i><span>검색</span><span class="kbd">⌘K</span>
+                    <div class="app-search" id="appSearch" title="본문에서 찾기 (Ctrl/Cmd+K)">
+                        <button type="button" id="appSearchGoButton" class="app-search-go" aria-label="찾아 이동" title="찾아 이동"><i class="fas fa-magnifying-glass"></i></button>
+                        <input type="text" id="appSearchInput" placeholder="검색" autocomplete="off" spellcheck="false" aria-label="본문에서 찾기">
+                        <span class="kbd">⌘K</span>
                     </div>
                     <div class="top-bar-actions">
                         <button id="livePreviewToggleButton" class="custom-button toolbar-button" title="실시간 미리보기 토글 (Ctrl+Shift+P)" aria-pressed="false">
@@ -1250,7 +1349,7 @@
                         <button id="copyButton" aria-label="복사"><i class="fas fa-copy"></i> 복사 <span class="kbd ml-auto">Ctrl+C</span></button>
                         <button id="pasteButton" aria-label="붙여넣기"><i class="fas fa-paste"></i> 붙여넣기 <span class="kbd ml-auto">Ctrl+V</span></button>
                         <div class="dropdown-separator"></div>
-                        <button id="findReplaceButton" aria-label="찾기/바꾸기"><i class="fas fa-search"></i> 찾기/바꾸기 <span class="kbd ml-auto">Ctrl+F</span></button>
+                        <button id="findReplaceButton" aria-label="바꾸기"><i class="fas fa-right-left"></i> 바꾸기 <span class="kbd ml-auto">Ctrl+H</span></button>
                         <button id="goToLineButton" aria-label="줄로 이동"><i class="fas fa-location-arrow"></i> 줄로 이동 <span class="kbd ml-auto">Ctrl+G</span></button>
                         <div class="dropdown-separator"></div>
                         <button id="selectAllButton" aria-label="모두 선택"><i class="fas fa-object-group"></i> 모두 선택 <span class="kbd ml-auto">Ctrl+A</span></button>
@@ -1301,6 +1400,9 @@
                         <button id="changeStyleButton" aria-label="스타일 변환"><i class="fas fa-paint-brush"></i> 스타일 변환</button>
                     </div>
                 </div>
+                <button id="templatesButton" class="custom-button toolbar-button" title="템플릿" aria-label="템플릿 열기">
+                    <i class="fas fa-shapes"></i> <span class="sm:inline hidden">템플릿</span>
+                </button>
                 <button id="settingsButton" class="custom-button toolbar-button" title="설정 (Ctrl+,)" aria-label="설정 열기">
                     <i class="fas fa-cog"></i> <span class="sm:inline hidden">설정</span>
                 </button>
@@ -1445,6 +1547,13 @@
                     <label for="wordWrapCheckbox">자동 줄 바꿈</label>
                 </div>
                 <div>
+                    <label for="mobileLineModeSelect">모바일에서 긴 줄 처리:</label>
+                    <select id="mobileLineModeSelect">
+                        <option value="wrap">줄바꿈 (전체 표시 · 줄번호 숨김)</option>
+                        <option value="scroll">가로 스크롤 (줄번호 유지)</option>
+                    </select>
+                </div>
+                <div>
                     <label for="defaultNewTabTypeSelect">기본 새 탭 파일 타입:</label>
                     <select id="defaultNewTabTypeSelect">
                         <option value="txt">텍스트 파일 (.txt)</option>
@@ -1473,23 +1582,42 @@
                         <label for="geminiApiKeyInput">Gemini API 키:</label>
                         <input type="password" id="geminiApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 Gemini API 키를 입력하세요">
                         <label for="geminiModelSelect">Gemini 모델:</label>
-                        <select id="geminiModelSelect">
-                            <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
-                        </select>
+                        <input type="text" id="geminiModelSelect" list="geminiModelOptions" autocomplete="off" spellcheck="false" placeholder="예: gemini-3-flash-preview">
+                        <datalist id="geminiModelOptions">
+                            <option value="gemini-3-flash-preview"></option>
+                            <option value="gemini-3-pro-preview"></option>
+                            <option value="gemini-2.5-flash"></option>
+                            <option value="gemini-2.5-pro"></option>
+                        </datalist>
+                        <p class="text-xs text-text-secondary mt-1">목록에서 고르거나 사용 가능한 모델 ID를 직접 입력할 수 있습니다.</p>
                     </div>
 
                     <div id="openaiSettings" class="ai-settings-group hidden">
                         <label for="openAiApiKeyInput">OpenAI API 키:</label>
                         <input type="password" id="openAiApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 OpenAI API 키를 입력하세요">
                         <label for="openAiModelDisplay">OpenAI 모델:</label>
-                        <input type="text" id="openAiModelDisplay" value="gpt-4o" readonly class="!mb-1rem">
+                        <input type="text" id="openAiModelDisplay" list="openAiModelOptions" value="gpt-4o" autocomplete="off" spellcheck="false" placeholder="예: gpt-4.1" class="!mb-1rem">
+                        <datalist id="openAiModelOptions">
+                            <option value="gpt-4.1"></option>
+                            <option value="gpt-4.1-mini"></option>
+                            <option value="gpt-4o"></option>
+                            <option value="gpt-4o-mini"></option>
+                            <option value="o4-mini"></option>
+                        </datalist>
+                        <p class="text-xs text-text-secondary mt-1">목록에서 고르거나 사용 가능한 모델 ID를 직접 입력할 수 있습니다.</p>
                     </div>
 
                     <div id="anthropicSettings" class="ai-settings-group hidden">
                         <label for="anthropicApiKeyInput">Anthropic API 키:</label>
                         <input type="password" id="anthropicApiKeyInput" autocomplete="new-password" spellcheck="false" aria-describedby="apiKeyStorageNotice" placeholder="여기에 Anthropic API 키를 입력하세요">
                         <label for="anthropicModelDisplay">Anthropic 모델:</label>
-                        <input type="text" id="anthropicModelDisplay" value="claude-opus-4-8" readonly class="!mb-1rem">
+                        <input type="text" id="anthropicModelDisplay" list="anthropicModelOptions" value="claude-opus-4-8" autocomplete="off" spellcheck="false" placeholder="예: claude-opus-4-8" class="!mb-1rem">
+                        <datalist id="anthropicModelOptions">
+                            <option value="claude-opus-4-8"></option>
+                            <option value="claude-sonnet-4-6"></option>
+                            <option value="claude-haiku-4-5"></option>
+                        </datalist>
+                        <p class="text-xs text-text-secondary mt-1">목록에서 고르거나 사용 가능한 모델 ID를 직접 입력할 수 있습니다.</p>
                     </div>
 
                     <div class="mt-4">
@@ -1856,17 +1984,17 @@
     <div id="findReplaceModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="findReplaceModalTitle">
         <div class="modal-content" style="max-width: 450px;">
             <div class="modal-header">
-                <h2 id="findReplaceModalTitle" class="modal-title">찾기 및 바꾸기</h2>
-                <button id="closeFindReplaceModalButton" class="modal-close-button" aria-label="찾기 및 바꾸기 닫기">&times;</button>
+                <h2 id="findReplaceModalTitle" class="modal-title">바꾸기</h2>
+                <button id="closeFindReplaceModalButton" class="modal-close-button" aria-label="바꾸기 닫기">&times;</button>
             </div>
             <div class="modal-body mt-4 find-replace-form">
                 <div>
-                    <label for="findInput">찾을 내용:</label>
-                    <input type="text" id="findInput">
+                    <label for="findInput">바꿀 대상 (찾을 내용):</label>
+                    <input type="text" id="findInput" placeholder="바꿀 단어/패턴">
                 </div>
                 <div>
                     <label for="replaceInput">바꿀 내용:</label>
-                    <input type="text" id="replaceInput">
+                    <input type="text" id="replaceInput" placeholder="새 내용">
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="matchCaseCheckbox">
@@ -1881,9 +2009,9 @@
                     <label for="regexCheckbox" class="text-sm">정규 표현식 사용</label>
                 </div>
                 <div class="button-group mt-2">
-                    <button id="findNextButton" class="custom-button toolbar-button" aria-label="다음 찾기"><i class="fas fa-search"></i> 다음 찾기</button>
                     <button id="replaceButton" class="custom-button toolbar-button bg-blue-600 hover:bg-blue-700 text-white" aria-label="바꾸기"><i class="fas fa-exchange-alt"></i> 바꾸기</button>
                     <button id="replaceAllButton" class="custom-button toolbar-button bg-green-600 hover:bg-green-700 text-white" aria-label="모두 바꾸기"><i class="fas fa-fast-forward"></i> 모두 바꾸기</button>
+                    <button id="findNextButton" class="custom-button toolbar-button" aria-label="다음 위치"><i class="fas fa-arrow-down"></i> 다음 위치</button>
                 </div>
                 <p id="findReplaceMessage" class="text-xs mt-3 text-text-secondary"></p>
             </div>
@@ -1901,6 +2029,47 @@
                 <input type="number" id="goToLineInput" class="w-full p-2 border border-border-color rounded-md bg-bg-tertiary text-text-primary focus:border-border-focus focus:ring-border-focus" min="1" value="1">
                 <div class="mt-6 flex justify-end gap-3">
                     <button id="goToLineButtonAction" class="custom-button toolbar-button bg-sky-600 hover:bg-sky-700 text-white" aria-label="이동">이동</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="templatesModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="templatesModalTitle">
+        <div class="modal-content" style="max-width: 680px;">
+            <div class="modal-header">
+                <h2 id="templatesModalTitle" class="modal-title">템플릿</h2>
+                <button id="closeTemplatesModalButton" class="modal-close-button" aria-label="템플릿 닫기">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="templates-toolbar">
+                    <button id="addTemplateButton" class="custom-button toolbar-button bg-sky-600 text-white" aria-label="새 템플릿 추가"><i class="fas fa-plus"></i> 새 템플릿</button>
+                    <button id="restoreTemplatesButton" class="custom-button toolbar-button" aria-label="기본 템플릿 복원"><i class="fas fa-rotate-left"></i> 기본값 복원</button>
+                </div>
+                <p class="templates-hint">카드를 누르면 새 탭으로 열립니다. 카드 위에 마우스를 올리면 편집·삭제할 수 있어요.</p>
+                <div id="templatesGrid" class="templates-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="templateEditorModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="templateEditorTitle">
+        <div class="modal-content" style="max-width: 640px;">
+            <div class="modal-header">
+                <h2 id="templateEditorTitle" class="modal-title">새 템플릿</h2>
+                <button id="closeTemplateEditorButton" class="modal-close-button" aria-label="템플릿 편집기 닫기">&times;</button>
+            </div>
+            <div class="modal-body settings-form">
+                <label for="tplName">이름</label>
+                <input type="text" id="tplName" placeholder="예: 랜딩 페이지" autocomplete="off">
+                <label for="tplFilename">파일명 <span style="font-weight:400;color:var(--text-muted);">(확장자가 종류·색상을 결정)</span></label>
+                <input type="text" id="tplFilename" placeholder="예: index.html" autocomplete="off">
+                <label for="tplDesc">설명</label>
+                <input type="text" id="tplDesc" placeholder="간단한 설명 (선택)" autocomplete="off">
+                <label for="tplContent">내용</label>
+                <textarea id="tplContent" rows="12" spellcheck="false" placeholder="여기에 템플릿 내용을 작성하세요" style="font-family:'JetBrains Mono', monospace; font-size:0.85rem; line-height:1.5; resize:vertical;"></textarea>
+                <div id="templateEditorMessage" style="color:var(--error-color);font-size:0.82rem;min-height:1.1em;margin-bottom:0.5rem;"></div>
+                <div class="flex justify-end gap-3">
+                    <button id="cancelTemplateEditButton" class="custom-button toolbar-button" aria-label="취소">취소</button>
+                    <button id="saveTemplateEditButton" class="custom-button toolbar-button bg-sky-600 text-white" aria-label="저장">저장</button>
                 </div>
             </div>
         </div>
@@ -1974,6 +2143,7 @@
                 currentMatchIndex: -1,
                 lastSearchTerm: '',
                 wordWrap: false,
+                mobileLineMode: 'wrap', // mobile long-line handling: 'wrap' | 'scroll'
                 showLineNumbers: true,
                 fontSize: 16,
                 fontFamily: "'JetBrains Mono', monospace",
@@ -2058,6 +2228,8 @@
             const findReplaceModal = document.getElementById('findReplaceModal');
             const findInput = document.getElementById('findInput');
             const replaceInput = document.getElementById('replaceInput');
+            const appSearchInput = document.getElementById('appSearchInput');
+            let appSearchActive = false; // header search bar: highlight + jump in the body (no modal)
             const matchCaseCheckbox = document.getElementById('matchCaseCheckbox');
             const wholeWordCheckbox = document.getElementById('wholeWordCheckbox');
             const regexCheckbox = document.getElementById('regexCheckbox');
@@ -2094,19 +2266,42 @@
             const geminiModelSelect = document.getElementById('geminiModelSelect'); 
             const openaiSettings = document.getElementById('openaiSettings');
             const openAiApiKeyInput = document.getElementById('openAiApiKeyInput');
+            const openAiModelInput = document.getElementById('openAiModelDisplay');
             const anthropicSettings = document.getElementById('anthropicSettings');
             const anthropicApiKeyInput = document.getElementById('anthropicApiKeyInput');
+            const anthropicModelInput = document.getElementById('anthropicModelDisplay');
             const aiSystemPromptInput = document.getElementById('aiSystemPromptInput'); 
             const PERSISTED_SECRET_KEYS = ['geminiApiKey', 'openAiApiKey', 'anthropicApiKey'];
             const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
+            const DEFAULT_OPENAI_MODEL = 'gpt-4o';
+            const DEFAULT_ANTHROPIC_MODEL = 'claude-opus-4-8';
+            // Retired model IDs that should be remapped to a current default if found in saved settings.
+            const RETIRED_GEMINI_MODELS = new Set(['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro', 'gemini-1.0-pro']);
+            const RETIRED_ANTHROPIC_MODELS = new Set([
+                'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307',
+                'claude-3-5-sonnet-20240620', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022',
+                'claude-3-7-sonnet-20250219', 'claude-2.1', 'claude-2.0', 'claude-instant-1.2'
+            ]);
             let legacySecretStorageCleared = false;
 
             function normalizeGeminiModel(model) {
-                if (!model || model === 'gemini-2.0-flash') {
+                if (!model || RETIRED_GEMINI_MODELS.has(model)) {
                     return DEFAULT_GEMINI_MODEL;
                 }
 
                 return model;
+            }
+
+            function normalizeAnthropicModel(model) {
+                if (!model || RETIRED_ANTHROPIC_MODELS.has(model)) {
+                    return DEFAULT_ANTHROPIC_MODEL;
+                }
+
+                return model;
+            }
+
+            function normalizeOpenAiModel(model) {
+                return model || DEFAULT_OPENAI_MODEL;
             }
 
             function getSerializableEditorSettings(source = editorState) {
@@ -2118,6 +2313,7 @@
                     autoSaveInterval: source.autoSaveInterval,
                     showLineNumbers: source.showLineNumbers,
                     wordWrap: source.wordWrap,
+                    mobileLineMode: source.mobileLineMode,
                     aiModelProvider: source.aiModelProvider,
                     geminiModel: source.geminiModel,
                     openAiModel: source.openAiModel,
@@ -2164,6 +2360,8 @@
                         if (parsedSession && parsedSession.editorSettings) {
                             const sanitizedSessionSettings = sanitizePersistedEditorSettings(parsedSession.editorSettings);
                             sanitizedSessionSettings.geminiModel = normalizeGeminiModel(sanitizedSessionSettings.geminiModel);
+                            sanitizedSessionSettings.anthropicModel = normalizeAnthropicModel(sanitizedSessionSettings.anthropicModel);
+                            sanitizedSessionSettings.openAiModel = normalizeOpenAiModel(sanitizedSessionSettings.openAiModel);
                             if (JSON.stringify(parsedSession.editorSettings) !== JSON.stringify(sanitizedSessionSettings)) {
                                 localStorage.setItem('editorSession', JSON.stringify({
                                     ...parsedSession,
@@ -2370,8 +2568,13 @@
             function initializeEditor() {
                 sanitizePersistedStorage();
                 setupModalAccessibility();
-                loadSettings(); 
-                createNewTab(true); // Create initial tab based on default settings
+                loadSettings();
+                if (!restoreSessionOnStartup()) {
+                    createNewTab(true); // Create initial tab based on default settings
+                }
+                // Capture the latest state right before the page is hidden/closed (covers reloads).
+                window.addEventListener('pagehide', persistSessionNow);
+                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persistSessionNow(); });
                 updateLineNumbers();
                 updateStats();
                 updateAutosaveStatus('idle');
@@ -2661,14 +2864,407 @@
                 tabs.push(newTab);
                 editorState.lastSavedStates[tabId] = ''; 
                 
-                if (!isInitial || tabs.length === 1) { 
+                if (!isInitial || tabs.length === 1) {
                     switchToTab(tabId);
                 } else {
-                    renderTabs(); 
+                    renderTabs();
                 }
                 return tabId;
             }
-            
+
+            // --- TEMPLATES (starter documents that open into a new tab; user-editable) ---
+            const TEMPLATES_STORAGE_KEY = 'userTemplates_v1';
+            const BUILTIN_TEMPLATES = [
+                {
+                    id: 'html5', name: '빈 HTML5', filename: 'index.html', type: 'HTML', icon: 'fab fa-html5',
+                    desc: '깔끔한 HTML5 기본 골격',
+                    content: `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>새 문서</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 2rem; line-height: 1.6; color: #1f2937; }
+  </style>
+</head>
+<body>
+  <h1>안녕하세요 👋</h1>
+  <p>여기에 내용을 작성하세요.</p>
+</body>
+</html>`
+                },
+                {
+                    id: 'landing', name: '랜딩 페이지', filename: 'landing.html', type: 'HTML', icon: 'fas fa-rocket',
+                    desc: '히어로 · 기능 · CTA 구성',
+                    content: `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>제품 랜딩</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; color: #1e293b; }
+    .nav { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 2rem; }
+    .nav a { margin-left: 1.5rem; text-decoration: none; color: #475569; }
+    .hero { text-align: center; padding: 5rem 1.5rem; background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; }
+    .hero h1 { font-size: 2.6rem; line-height: 1.1; margin-bottom: 1rem; }
+    .hero p { font-size: 1.1rem; opacity: .92; max-width: 540px; margin: 0 auto 2rem; }
+    .btn { display: inline-block; background: #fff; color: #6d28d9; padding: .85rem 1.8rem; border-radius: 999px; font-weight: 700; text-decoration: none; }
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; max-width: 960px; margin: 4rem auto; padding: 0 1.5rem; }
+    .card { padding: 1.75rem; border: 1px solid #e2e8f0; border-radius: 16px; }
+    .card .ic { font-size: 2rem; }
+    .card h3 { margin: .75rem 0 .5rem; }
+    .card p { color: #64748b; }
+    footer { text-align: center; padding: 2rem; color: #94a3b8; border-top: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <strong>Brand</strong>
+    <div><a href="#">기능</a><a href="#">요금</a><a href="#">문의</a></div>
+  </nav>
+  <header class="hero">
+    <h1>더 빠르게 만들고<br>더 멀리 나아가세요</h1>
+    <p>한 줄 설명으로 제품의 핵심 가치를 전달하세요. 방문자가 3초 안에 이해하도록.</p>
+    <a class="btn" href="#">무료로 시작하기</a>
+  </header>
+  <section class="features">
+    <div class="card"><div class="ic">⚡</div><h3>빠른 속도</h3><p>최적화된 경험으로 즉시 반응합니다.</p></div>
+    <div class="card"><div class="ic">🔒</div><h3>안전한 보안</h3><p>데이터는 암호화되어 안전합니다.</p></div>
+    <div class="card"><div class="ic">🎯</div><h3>간편한 사용</h3><p>누구나 5분 안에 시작할 수 있습니다.</p></div>
+  </section>
+  <footer>© 2026 Brand. All rights reserved.</footer>
+</body>
+</html>`
+                },
+                {
+                    id: 'card', name: '프로필 카드', filename: 'card.html', type: 'HTML', icon: 'fas fa-id-card',
+                    desc: '중앙 정렬 프로필 카드',
+                    content: `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>프로필 카드</title>
+  <style>
+    body { font-family: system-ui, sans-serif; display: grid; place-items: center; min-height: 100vh; margin: 0; background: #f1f5f9; }
+    .card { width: 300px; background: #fff; border-radius: 20px; padding: 2rem; text-align: center; box-shadow: 0 20px 45px -20px rgba(0,0,0,.25); }
+    .avatar { width: 88px; height: 88px; border-radius: 50%; margin: 0 auto 1rem; background: linear-gradient(135deg, #f472b6, #818cf8); display: grid; place-items: center; color: #fff; font-size: 2rem; font-weight: 700; }
+    .card h2 { margin: 0 0 .25rem; }
+    .role { color: #64748b; font-size: .9rem; }
+    .bio { color: #475569; font-size: .9rem; margin: 1rem 0 1.5rem; line-height: 1.5; }
+    .actions a { display: inline-block; margin: 0 .3rem; width: 38px; height: 38px; line-height: 38px; border-radius: 50%; background: #eef2ff; color: #4f46e5; text-decoration: none; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="avatar">A</div>
+    <h2>김아무개</h2>
+    <div class="role">프로덕트 디자이너</div>
+    <p class="bio">사용자 중심의 인터페이스를 디자인합니다. 커피와 키보드를 좋아합니다.</p>
+    <div class="actions"><a href="#">in</a><a href="#">tw</a><a href="#">@</a></div>
+  </div>
+</body>
+</html>`
+                },
+                {
+                    id: 'gallery', name: '반응형 갤러리', filename: 'gallery.html', type: 'HTML', icon: 'fas fa-images',
+                    desc: 'CSS 그리드 타일 갤러리',
+                    content: `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>갤러리</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 2rem; background: #0f172a; color: #e2e8f0; }
+    h1 { margin: 0 0 1.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+    .tile { aspect-ratio: 1; border-radius: 14px; display: grid; place-items: end; padding: .75rem; color: #fff; font-weight: 700; }
+    .tile:nth-child(3n+1) { background: linear-gradient(135deg,#f59e0b,#ef4444); }
+    .tile:nth-child(3n+2) { background: linear-gradient(135deg,#10b981,#3b82f6); }
+    .tile:nth-child(3n)   { background: linear-gradient(135deg,#8b5cf6,#ec4899); }
+  </style>
+</head>
+<body>
+  <h1>갤러리</h1>
+  <div class="grid">
+    <div class="tile">01</div><div class="tile">02</div><div class="tile">03</div>
+    <div class="tile">04</div><div class="tile">05</div><div class="tile">06</div>
+    <div class="tile">07</div><div class="tile">08</div>
+  </div>
+</body>
+</html>`
+                },
+                {
+                    id: 'form', name: '연락처 폼', filename: 'form.html', type: 'HTML', icon: 'fas fa-envelope',
+                    desc: '스타일링된 문의 폼',
+                    content: `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>문의하기</title>
+  <style>
+    body { font-family: system-ui, sans-serif; display: grid; place-items: center; min-height: 100vh; margin: 0; background: #f8fafc; }
+    form { width: 360px; background: #fff; padding: 2rem; border-radius: 16px; box-shadow: 0 15px 40px -20px rgba(0,0,0,.2); }
+    h2 { margin: 0 0 1.25rem; }
+    label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .35rem; color: #334155; }
+    input, textarea { width: 100%; box-sizing: border-box; padding: .65rem .8rem; margin-bottom: 1rem; border: 1px solid #cbd5e1; border-radius: 10px; font: inherit; }
+    input:focus, textarea:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.2); }
+    button { width: 100%; padding: .75rem; border: 0; border-radius: 10px; background: #6366f1; color: #fff; font-weight: 700; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <form>
+    <h2>문의하기</h2>
+    <label>이름</label>
+    <input type="text" placeholder="홍길동">
+    <label>이메일</label>
+    <input type="email" placeholder="you@example.com">
+    <label>메시지</label>
+    <textarea rows="4" placeholder="내용을 입력하세요"></textarea>
+    <button type="button">보내기</button>
+  </form>
+</body>
+</html>`
+                },
+                {
+                    id: 'anim', name: 'CSS 애니메이션', filename: 'animation.html', type: 'HTML', icon: 'fab fa-css3-alt',
+                    desc: '순수 CSS 로딩 애니메이션',
+                    content: `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSS 애니메이션</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #111827; }
+    .loader { display: flex; gap: 14px; }
+    .dot { width: 22px; height: 22px; border-radius: 50%; background: #818cf8; animation: bounce 1s infinite ease-in-out; }
+    .dot:nth-child(2) { animation-delay: .15s; background: #f472b6; }
+    .dot:nth-child(3) { animation-delay: .3s; background: #34d399; }
+    @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); opacity: .6; } 40% { transform: translateY(-26px); opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div class="loader"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+</body>
+</html>`
+                },
+                {
+                    id: 'readme', name: 'README 문서', filename: 'README.md', type: 'MD', icon: 'fab fa-markdown',
+                    desc: '깔끔한 README 마크다운',
+                    content: `# 프로젝트 이름
+
+한 줄 소개를 적어주세요.
+
+## ✨ 기능
+
+- 기능 하나
+- 기능 둘
+- 기능 셋
+
+## 🚀 시작하기
+
+\`\`\`bash
+npm install
+npm run dev
+\`\`\`
+
+## 📦 옵션
+
+| 옵션 | 설명 | 기본값 |
+| --- | --- | --- |
+| port | 포트 번호 | 3000 |
+| debug | 디버그 모드 | false |
+
+## 📄 라이선스
+
+MIT`
+                },
+                {
+                    id: 'json', name: 'JSON 데이터', filename: 'data.json', type: 'JSON', icon: 'fas fa-code',
+                    desc: '샘플 설정/데이터 구조',
+                    content: `{
+  "name": "내 프로젝트",
+  "version": "1.0.0",
+  "private": true,
+  "settings": {
+    "theme": "dark",
+    "fontSize": 16,
+    "autoSave": true
+  },
+  "tags": ["web", "editor", "korean"],
+  "author": {
+    "name": "홍길동",
+    "email": "hong@example.com"
+  }
+}`
+                }
+            ];
+
+            function loadUserTemplates() {
+                try {
+                    const raw = localStorage.getItem(TEMPLATES_STORAGE_KEY);
+                    if (raw) {
+                        const arr = JSON.parse(raw);
+                        if (Array.isArray(arr)) return arr;
+                    }
+                } catch (e) { console.error('Failed to load templates:', e); }
+                return BUILTIN_TEMPLATES.map(t => ({ ...t })); // seed with built-ins on first run
+            }
+            let userTemplates = loadUserTemplates();
+            let editingTemplateId = null; // id being edited, or null when adding
+
+            function saveUserTemplates() {
+                try { localStorage.setItem(TEMPLATES_STORAGE_KEY, JSON.stringify(userTemplates)); }
+                catch (e) { console.error('Failed to save templates:', e); }
+            }
+
+            // Derive a friendly type badge + icon from the filename extension.
+            function templateMetaFromFilename(filename) {
+                const ext = (getFileExtension(filename || '') || '').toLowerCase();
+                const map = {
+                    html: { type: 'HTML', icon: 'fab fa-html5' }, htm: { type: 'HTML', icon: 'fab fa-html5' },
+                    css: { type: 'CSS', icon: 'fab fa-css3-alt' }, scss: { type: 'SCSS', icon: 'fab fa-sass' },
+                    js: { type: 'JS', icon: 'fab fa-js-square' }, mjs: { type: 'JS', icon: 'fab fa-js-square' },
+                    ts: { type: 'TS', icon: 'fas fa-code' }, json: { type: 'JSON', icon: 'fas fa-code' },
+                    md: { type: 'MD', icon: 'fab fa-markdown' }, markdown: { type: 'MD', icon: 'fab fa-markdown' },
+                    xml: { type: 'XML', icon: 'fas fa-file-code' }, svg: { type: 'SVG', icon: 'fas fa-bezier-curve' },
+                    csv: { type: 'CSV', icon: 'fas fa-table' }, py: { type: 'PY', icon: 'fas fa-code' },
+                    txt: { type: 'TXT', icon: 'fas fa-file-lines' }
+                };
+                return map[ext] || { type: (ext ? ext.toUpperCase() : 'FILE'), icon: 'fas fa-file' };
+            }
+
+            function escapeHtmlAttr(str) {
+                return String(str == null ? '' : str)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            }
+
+            function openTemplateInNewTab(tpl) {
+                const tabId = `tab-${Date.now()}-${Math.random().toString(36).substring(2,7)}`;
+                tabs.push({
+                    id: tabId, title: tpl.filename || '제목 없음.txt', content: tpl.content || '', path: null,
+                    modified: true, undoStack: [tpl.content || ''], redoStack: [],
+                    lastSavedContent: '', cursorPos: { start: 0, end: 0 }, fileHandle: null
+                });
+                editorState.lastSavedStates[tabId] = '';
+                switchToTab(tabId);
+                setTabModified(tabId, true);
+                showMessage(`'${tpl.name}' 템플릿을 새 탭으로 열었습니다.`, 'success', 1800);
+            }
+
+            function renderTemplatesGrid() {
+                const grid = document.getElementById('templatesGrid');
+                if (!grid) return;
+                if (!userTemplates.length) {
+                    grid.innerHTML = '<p class="templates-empty">템플릿이 없습니다. “새 템플릿”으로 추가하거나 “기본값 복원”을 눌러보세요.</p>';
+                    return;
+                }
+                grid.innerHTML = userTemplates.map((t, i) => {
+                    const meta = (t.icon && t.type) ? { icon: t.icon, type: t.type } : templateMetaFromFilename(t.filename);
+                    return `<div class="template-card">`
+                        + `<button type="button" class="tc-open" data-index="${i}" aria-label="${escapeHtmlAttr(t.name)} 템플릿 열기">`
+                        + `<span class="tc-top"><span class="tc-icon"><i class="${escapeHtmlAttr(meta.icon)}"></i></span>`
+                        + `<span class="tc-name">${escapeHtmlAttr(t.name)}</span><span class="tc-badge">${escapeHtmlAttr(meta.type)}</span></span>`
+                        + `<span class="tc-desc">${escapeHtmlAttr(t.desc || t.filename || '')}</span></button>`
+                        + `<span class="tc-actions">`
+                        + `<button type="button" class="tc-act" data-edit="${i}" title="편집" aria-label="${escapeHtmlAttr(t.name)} 편집"><i class="fas fa-pen"></i></button>`
+                        + `<button type="button" class="tc-act danger" data-delete="${i}" title="삭제" aria-label="${escapeHtmlAttr(t.name)} 삭제"><i class="fas fa-trash"></i></button>`
+                        + `</span></div>`;
+                }).join('');
+                grid.querySelectorAll('.tc-open').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const idx = parseInt(btn.dataset.index, 10);
+                        if (userTemplates[idx]) { openTemplateInNewTab(userTemplates[idx]); closeTemplatesModal(); }
+                    });
+                });
+                grid.querySelectorAll('[data-edit]').forEach(btn => {
+                    btn.addEventListener('click', (e) => { e.stopPropagation(); openTemplateEditor(parseInt(btn.dataset.edit, 10)); });
+                });
+                grid.querySelectorAll('[data-delete]').forEach(btn => {
+                    btn.addEventListener('click', (e) => { e.stopPropagation(); deleteTemplate(parseInt(btn.dataset.delete, 10)); });
+                });
+            }
+
+            async function deleteTemplate(index) {
+                const tpl = userTemplates[index];
+                if (!tpl) return;
+                const ok = await showConfirmDialog('템플릿 삭제', `'${tpl.name}' 템플릿을 삭제하시겠습니까?`);
+                if (!ok) return;
+                userTemplates.splice(index, 1);
+                saveUserTemplates();
+                renderTemplatesGrid();
+                showMessage('템플릿을 삭제했습니다.', 'info', 1500);
+            }
+
+            async function restoreDefaultTemplates() {
+                const ok = await showConfirmDialog('기본값 복원', '현재 템플릿 목록을 기본 템플릿으로 되돌립니다. 추가·편집한 내용은 사라집니다. 계속할까요?');
+                if (!ok) return;
+                userTemplates = BUILTIN_TEMPLATES.map(t => ({ ...t }));
+                saveUserTemplates();
+                renderTemplatesGrid();
+                showMessage('기본 템플릿으로 복원했습니다.', 'success', 1800);
+            }
+
+            function openTemplateEditor(index) {
+                const isEdit = typeof index === 'number' && userTemplates[index];
+                editingTemplateId = isEdit ? userTemplates[index].id : null;
+                document.getElementById('templateEditorTitle').textContent = isEdit ? '템플릿 편집' : '새 템플릿';
+                document.getElementById('tplName').value = isEdit ? (userTemplates[index].name || '') : '';
+                document.getElementById('tplFilename').value = isEdit ? (userTemplates[index].filename || '') : '';
+                document.getElementById('tplDesc').value = isEdit ? (userTemplates[index].desc || '') : '';
+                document.getElementById('tplContent').value = isEdit ? (userTemplates[index].content || '') : '';
+                document.getElementById('templateEditorMessage').textContent = '';
+                document.getElementById('templateEditorModal').classList.add('show');
+                setTimeout(() => document.getElementById('tplName').focus(), 50);
+            }
+
+            function closeTemplateEditor() {
+                document.getElementById('templateEditorModal').classList.remove('show');
+                editingTemplateId = null;
+            }
+
+            function saveTemplateFromEditor() {
+                const name = document.getElementById('tplName').value.trim();
+                const filename = document.getElementById('tplFilename').value.trim();
+                const desc = document.getElementById('tplDesc').value.trim();
+                const content = document.getElementById('tplContent').value;
+                const msgEl = document.getElementById('templateEditorMessage');
+                if (!name) { msgEl.textContent = '이름을 입력하세요.'; document.getElementById('tplName').focus(); return; }
+                if (!filename) { msgEl.textContent = '파일명을 입력하세요 (예: index.html).'; document.getElementById('tplFilename').focus(); return; }
+                const meta = templateMetaFromFilename(filename);
+                const existing = editingTemplateId ? userTemplates.find(t => t.id === editingTemplateId) : null;
+                if (existing) {
+                    Object.assign(existing, { name, filename, desc, content, type: meta.type, icon: meta.icon });
+                } else {
+                    userTemplates.push({
+                        id: `tpl-${Date.now()}-${Math.random().toString(36).substring(2,6)}`,
+                        name, filename, desc, content, type: meta.type, icon: meta.icon
+                    });
+                }
+                saveUserTemplates();
+                renderTemplatesGrid();
+                closeTemplateEditor();
+                showMessage(existing ? '템플릿을 수정했습니다.' : '템플릿을 추가했습니다.', 'success', 1800);
+            }
+
+            function openTemplatesModal() {
+                renderTemplatesGrid();
+                const m = document.getElementById('templatesModal');
+                if (m) m.classList.add('show');
+            }
+
+            function closeTemplatesModal() {
+                const m = document.getElementById('templatesModal');
+                if (m) m.classList.remove('show');
+            }
+
             async function closeTab(tabId) {
                 const tabIndex = tabs.findIndex(tab => tab.id === tabId);
                 if (tabIndex === -1) return;
@@ -2866,16 +3462,18 @@
                 if (!findHighlightLayer) return;
                 const matches = editorState.findMatches || [];
                 const value = textInput.value;
-                if (!findReplaceModal.classList.contains('show') || matches.length === 0 || value.length > MAX_HIGHLIGHT_LENGTH) {
+                const active = appSearchActive || findReplaceModal.classList.contains('show');
+                if (!active || matches.length === 0 || value.length > MAX_HIGHLIGHT_LENGTH) {
                     if (findHighlightLayer.childNodes.length) findHighlightLayer.textContent = '';
                     return;
                 }
                 let html = '';
                 let last = 0;
-                matches.forEach((m) => {
+                matches.forEach((m, i) => {
                     if (m.start < last) return; // ignore overlaps
+                    const cls = (i === editorState.currentMatchIndex) ? ' class="current"' : '';
                     html += escapeOverlayHtml(value.slice(last, m.start));
-                    html += '<mark>' + escapeOverlayHtml(value.slice(m.start, m.end)) + '</mark>';
+                    html += '<mark' + cls + '>' + escapeOverlayHtml(value.slice(m.start, m.end)) + '</mark>';
                     last = m.end;
                 });
                 html += escapeOverlayHtml(value.slice(last)) + '\n';
@@ -2919,12 +3517,59 @@
                 }
             }
 
+            // Persist the working session to localStorage so a reload or accidental refresh never
+            // loses text. Shares the 'editorSession' slot with manual 세션 저장/불러오기.
+            function persistSessionNow() {
+                try {
+                    if (!tabs.length) return;
+                    const cur = tabs.find(t => t.id === activeTabId);
+                    if (cur) { cur.content = textInput.value; cur.cursorPos = { start: textInput.selectionStart, end: textInput.selectionEnd }; }
+                    const sessionData = {
+                        tabs: tabs.map(tab => ({ id: tab.id, title: tab.title, content: tab.content, path: tab.path, modified: tab.modified, cursorPos: tab.cursorPos })),
+                        activeTabId: activeTabId,
+                        editorSettings: getSerializableEditorSettings()
+                    };
+                    localStorage.setItem('editorSession', JSON.stringify(sessionData));
+                } catch (e) { /* storage unavailable/full — ignore */ }
+            }
+            const persistSessionSoon = debounce(persistSessionNow, 800);
+
+            function restoreSessionOnStartup() {
+                try {
+                    const raw = localStorage.getItem('editorSession');
+                    if (!raw) return false;
+                    const sessionData = JSON.parse(raw);
+                    if (!sessionData || !Array.isArray(sessionData.tabs) || sessionData.tabs.length === 0) return false;
+                    tabs.length = 0;
+                    sessionData.tabs.forEach(sTab => {
+                        const id = sTab.id || `tab-${Date.now()}-${Math.random().toString(36).substring(2,7)}`;
+                        tabs.push({
+                            id: id,
+                            title: sTab.title || `제목 없음.${editorState.defaultNewTabType}`,
+                            content: sTab.content || '',
+                            path: sTab.path || null,
+                            modified: !!sTab.modified,
+                            undoStack: [sTab.content || ''],
+                            redoStack: [],
+                            lastSavedContent: sTab.content || '',
+                            cursorPos: sTab.cursorPos || { start: 0, end: 0 },
+                            fileHandle: null
+                        });
+                        editorState.lastSavedStates[id] = sTab.content || '';
+                    });
+                    const hasActive = sessionData.tabs.some(t => t.id === sessionData.activeTabId);
+                    switchToTab(hasActive ? sessionData.activeTabId : tabs[0].id);
+                    return true;
+                } catch (e) { return false; }
+            }
+
             function refreshAfterEdit() {
                 const currentTab = tabs.find(tab => tab.id === activeTabId);
                 if (currentTab) currentTab.content = textInput.value;
                 setTabModified(activeTabId, true);
                 updateLineNumbers();
                 updateStats();
+                persistSessionSoon();
                 if (editorState.autoSave) startAutoSaveTimer();
             }
 
@@ -3254,7 +3899,121 @@
             }
             
             function escapeRegExp(string) {
-                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); 
+                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+
+            // --- HEADER SEARCH BAR: highlight + jump to matches in the body (no modal) ---
+            function runAppSearch(resetIndex) {
+                if (!appSearchInput) return;
+                const term = appSearchInput.value;
+                if (!term) { clearAppSearch(); return; }
+                appSearchActive = true;
+                const content = textInput.value;
+                const matches = [];
+                try {
+                    const re = new RegExp(escapeRegExp(term), 'gi'); // plain, case-insensitive
+                    let m;
+                    while ((m = re.exec(content)) !== null) {
+                        matches.push({ start: m.index, end: m.index + m[0].length, text: m[0] });
+                        if (m.index === re.lastIndex) re.lastIndex++; // guard against zero-length matches
+                    }
+                } catch (e) {}
+                editorState.findMatches = matches;
+                if (matches.length === 0) {
+                    editorState.currentMatchIndex = -1;
+                    appSearchInput.classList.add('no-match');
+                    renderFindHighlights();
+                    return;
+                }
+                appSearchInput.classList.remove('no-match');
+                if (resetIndex || editorState.currentMatchIndex < 0 || editorState.currentMatchIndex >= matches.length) {
+                    editorState.currentMatchIndex = 0;
+                }
+                appSearchScrollToCurrent();
+                renderFindHighlights();
+            }
+
+            function appSearchScrollToCurrent() {
+                const match = editorState.findMatches[editorState.currentMatchIndex];
+                if (!match) return;
+                // Keep the editor selection in sync so focusing the editor lands on the match.
+                try { textInput.setSelectionRange(match.start, match.end); } catch (e) {}
+                // Compute the scroll target from the match offset directly: reading
+                // textInput.selectionStart is unreliable while the textarea isn't focused,
+                // which is why the view didn't move before.
+                const cs = getComputedStyle(textInput);
+                let lineHeight = parseFloat(cs.lineHeight);
+                if (!lineHeight || isNaN(lineHeight)) lineHeight = (parseFloat(cs.fontSize) || 16) * 1.6;
+                const padTop = parseFloat(cs.paddingTop) || 0;
+                const before = textInput.value.slice(0, match.start);
+                const lineIdx = before.split('\n').length - 1;
+                const targetTop = padTop + lineIdx * lineHeight;
+                const viewTop = textInput.scrollTop;
+                const viewBottom = viewTop + textInput.clientHeight;
+                if (targetTop < viewTop + lineHeight || targetTop + lineHeight > viewBottom - lineHeight) {
+                    textInput.scrollTop = Math.max(0, targetTop - textInput.clientHeight / 2 + lineHeight / 2);
+                }
+                // Horizontal: when word wrap is off, bring the column into view too.
+                if (!editorState.wordWrap) {
+                    const col = match.start - (before.lastIndexOf('\n') + 1);
+                    const charW = measureEditorCharWidth(cs);
+                    if (charW > 0) {
+                        const targetLeft = col * charW;
+                        const padLeft = parseFloat(cs.paddingLeft) || 0;
+                        if (targetLeft < textInput.scrollLeft || targetLeft > textInput.scrollLeft + textInput.clientWidth - padLeft - charW * 4) {
+                            textInput.scrollLeft = Math.max(0, targetLeft - textInput.clientWidth / 2);
+                        }
+                    }
+                }
+                syncOverlayScroll();
+            }
+
+            let editorCharWidthCache = { font: '', width: 0 };
+            function measureEditorCharWidth(cs) {
+                const font = cs.font || (cs.fontSize + ' ' + cs.fontFamily);
+                if (editorCharWidthCache.font === font && editorCharWidthCache.width) return editorCharWidthCache.width;
+                try {
+                    const canvas = measureEditorCharWidth._c || (measureEditorCharWidth._c = document.createElement('canvas'));
+                    const ctx = canvas.getContext('2d');
+                    ctx.font = font;
+                    const w = ctx.measureText('0').width;
+                    editorCharWidthCache = { font: font, width: w };
+                    return w;
+                } catch (e) { return 0; }
+            }
+
+            function appSearchStep(dir) {
+                if (!editorState.findMatches.length) { runAppSearch(true); return; }
+                const n = editorState.findMatches.length;
+                editorState.currentMatchIndex = ((editorState.currentMatchIndex + dir) % n + n) % n;
+                appSearchScrollToCurrent();
+                renderFindHighlights();
+            }
+
+            function clearAppSearch() {
+                appSearchActive = false;
+                editorState.findMatches = [];
+                editorState.currentMatchIndex = -1;
+                if (appSearchInput) appSearchInput.classList.remove('no-match');
+                renderFindHighlights();
+            }
+
+            function focusAppSearch() {
+                if (!appSearchInput) return;
+                appSearchInput.focus();
+                appSearchInput.select();
+                if (appSearchInput.value) runAppSearch(true);
+            }
+
+            function openReplaceModal() {
+                findReplaceModal.classList.add('show');
+                // Seed the search field from the header search term or the current selection.
+                const seed = (appSearchInput && appSearchInput.value.trim())
+                    || textInput.value.substring(textInput.selectionStart, textInput.selectionEnd);
+                if (seed && !findInput.value) findInput.value = seed;
+                findText(false, false); // compute matches + highlight without moving the selection
+                if (findInput.value) { replaceInput.focus(); replaceInput.select(); }
+                else { findInput.focus(); }
             }
             
             function ensureSelectionVisible() {
@@ -4536,17 +5295,13 @@
                         } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
                              if (activeElement !== textInput && activeElement !== vibeCodingInput) return; 
                             e.preventDefault(); redo(); 
-                        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+                        } else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key.toLowerCase() === 'f' || e.key.toLowerCase() === 'k')) {
+                            // Ctrl/Cmd+F or +K → focus the header search bar (jump to matches in the body)
                             e.preventDefault();
-                            findReplaceModal.classList.add('show');
-                            findInput.focus();
-                            findInput.select();
-                            findText(false); // Initial search when opening modal
-                        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { // Cmd/Ctrl+K → search
+                            focusAppSearch();
+                        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'h') { // Ctrl/Cmd+H → 바꾸기 (replace)
                             e.preventDefault();
-                            findReplaceModal.classList.add('show');
-                            findInput.focus();
-                            findInput.select();
+                            openReplaceModal();
                         } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') { // Ctrl+G for Go to Line
                             e.preventDefault();
                             goToLineModal.classList.add('show');
@@ -4674,6 +5429,38 @@
                 });
 
                 textInput.addEventListener('scroll', () => { if(editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop; syncOverlayScroll(); updateCurrentLineHighlight(); });
+                // Touch drag-to-scroll for long no-wrap lines: textareas don't horizontally
+                // scroll reliably on touch (esp. iOS), so drive scrollLeft directly on a
+                // horizontal swipe when there's overflow. Vertical swipes pass through.
+                let tDragX = 0, tDragY = 0, tDragScrollLeft = 0, tDragActive = false;
+                textInput.addEventListener('touchstart', (e) => {
+                    if (e.touches.length !== 1) return;
+                    tDragX = e.touches[0].clientX;
+                    tDragY = e.touches[0].clientY;
+                    tDragScrollLeft = highlightOverlay ? highlightOverlay.scrollLeft : textInput.scrollLeft;
+                    tDragActive = false;
+                }, { passive: true });
+                textInput.addEventListener('touchmove', (e) => {
+                    if (e.touches.length !== 1) return;
+                    const dx = e.touches[0].clientX - tDragX;
+                    const dy = e.touches[0].clientY - tDragY;
+                    const maxScroll = Math.max(
+                        textInput.scrollWidth - textInput.clientWidth,
+                        highlightOverlay ? highlightOverlay.scrollWidth - highlightOverlay.clientWidth : 0
+                    );
+                    if (!tDragActive && maxScroll > 2 && Math.abs(dx) > Math.abs(dy) + 4 && Math.abs(dx) > 8) {
+                        tDragActive = true;
+                    }
+                    if (tDragActive) {
+                        let target = tDragScrollLeft - dx;
+                        if (target < 0) target = 0;
+                        else if (target > maxScroll) target = maxScroll;
+                        textInput.scrollLeft = target;
+                        if (highlightOverlay) highlightOverlay.scrollLeft = target;
+                        if (findHighlightLayer) findHighlightLayer.scrollLeft = target;
+                        e.preventDefault(); // take over the gesture from caret/selection
+                    }
+                }, { passive: false });
                 textInput.addEventListener('click', updateCursorPosition);
                 textInput.addEventListener('keyup', updateCursorPosition);
                 textInput.addEventListener('select', () => { updateStatusExtras(); updateCurrentLineHighlight(); });
@@ -4681,10 +5468,38 @@
                 fileInput.addEventListener('change', handleFileLoad);
                 document.getElementById('newFileButton').addEventListener('click', () => createNewTab());
                 const appSearchEl = document.getElementById('appSearch');
-                if (appSearchEl) {
-                    const openFind = () => { findReplaceModal.classList.add('show'); findInput.focus(); findInput.select(); };
-                    appSearchEl.addEventListener('click', openFind);
-                    appSearchEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFind(); } });
+                const appSearchGoButton = document.getElementById('appSearchGoButton');
+                if (appSearchEl && appSearchInput) {
+                    // Clicking empty pill area focuses the input (but let the search button handle itself).
+                    appSearchEl.addEventListener('mousedown', (e) => {
+                        if (e.target !== appSearchInput && !e.target.closest('#appSearchGoButton')) {
+                            e.preventDefault(); appSearchInput.focus();
+                        }
+                    });
+                    if (appSearchGoButton) {
+                        appSearchGoButton.addEventListener('click', () => {
+                            appSearchInput.focus();
+                            if (!appSearchInput.value.trim()) return;
+                            if (!appSearchActive || !editorState.findMatches.length) runAppSearch(true);
+                            else appSearchStep(1); // jump to the next occurrence
+                        });
+                    }
+                    let appSearchTimer = null;
+                    appSearchInput.addEventListener('input', () => {
+                        clearTimeout(appSearchTimer);
+                        appSearchTimer = setTimeout(() => runAppSearch(true), 120);
+                    });
+                    appSearchInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            appSearchStep(e.shiftKey ? -1 : 1); // next / previous occurrence
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            clearAppSearch();
+                            appSearchInput.value = '';
+                            textInput.focus();
+                        }
+                    });
                 }
                 document.getElementById('loadFileButton').addEventListener('click', loadFile);
                 
@@ -4716,12 +5531,7 @@
                 document.getElementById('copyButton').addEventListener('click', copySelectedText);
                 document.getElementById('pasteButton').addEventListener('click', pasteFromClipboard);
                 
-                document.getElementById('findReplaceButton').addEventListener('click', () => { 
-                    findReplaceModal.classList.add('show'); 
-                    findInput.focus(); 
-                    findInput.select();
-                    findText(false); // Perform an initial search when modal is opened
-                });
+                document.getElementById('findReplaceButton').addEventListener('click', openReplaceModal);
                 document.getElementById('goToLineButton').addEventListener('click', () => { // Go to Line button
                     goToLineModal.classList.add('show');
                     goToLineInput.value = editorState.cursorPosition.line;
@@ -4808,6 +5618,7 @@
                 if (livePreviewRotateButton) livePreviewRotateButton.addEventListener('click', togglePreviewOrientation);
                 window.addEventListener('resize', debounce(() => {
                     if (editorState.livePreview && previewZoomAuto) applyPreviewDevice();
+                    applyMobileLineMode(); // refresh wrap attribute when crossing the mobile breakpoint
                 }, 150));
                 const livePreviewCloseBtn = document.getElementById('livePreviewCloseButton');
                 if (livePreviewCloseBtn) livePreviewCloseBtn.addEventListener('click', () => setLivePreview(false));
@@ -4915,6 +5726,17 @@
 
                 document.getElementById('settingsButton').addEventListener('click', openSettings);
                 document.getElementById('closeSettingsModalButton').addEventListener('click', () => document.getElementById('settingsModal').classList.remove('show'));
+                document.getElementById('templatesButton').addEventListener('click', openTemplatesModal);
+                document.getElementById('closeTemplatesModalButton').addEventListener('click', closeTemplatesModal);
+                document.getElementById('addTemplateButton').addEventListener('click', () => openTemplateEditor(null));
+                document.getElementById('restoreTemplatesButton').addEventListener('click', restoreDefaultTemplates);
+                document.getElementById('closeTemplateEditorButton').addEventListener('click', closeTemplateEditor);
+                document.getElementById('cancelTemplateEditButton').addEventListener('click', closeTemplateEditor);
+                document.getElementById('saveTemplateEditButton').addEventListener('click', saveTemplateFromEditor);
+                document.getElementById('templateEditorModal').addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); saveTemplateFromEditor(); }
+                    else if (e.key === 'Escape') { e.stopPropagation(); closeTemplateEditor(); }
+                });
                 document.getElementById('saveSettingsButton').addEventListener('click', saveSettings);
                 aiModelProviderSelect.addEventListener('change', setupAiProviderVisibility);
 
@@ -4974,6 +5796,7 @@
                 document.getElementById('autoSaveIntervalInput').value = editorState.autoSaveInterval / 1000; 
                 document.getElementById('lineNumbersCheckbox').checked = editorState.showLineNumbers;
                 document.getElementById('wordWrapCheckbox').checked = editorState.wordWrap;
+                document.getElementById('mobileLineModeSelect').value = editorState.mobileLineMode || 'wrap';
                 document.getElementById('defaultNewTabTypeSelect').value = editorState.defaultNewTabType; // Set default new tab type
                 
                 // Load AI settings
@@ -4982,7 +5805,11 @@
                 editorState.geminiModel = normalizeGeminiModel(editorState.geminiModel);
                 geminiModelSelect.value = editorState.geminiModel;
                 openAiApiKeyInput.value = editorState.openAiApiKey || '';
+                editorState.openAiModel = normalizeOpenAiModel(editorState.openAiModel);
+                if (openAiModelInput) openAiModelInput.value = editorState.openAiModel;
                 anthropicApiKeyInput.value = editorState.anthropicApiKey || '';
+                editorState.anthropicModel = normalizeAnthropicModel(editorState.anthropicModel);
+                if (anthropicModelInput) anthropicModelInput.value = editorState.anthropicModel;
                 aiSystemPromptInput.value = editorState.aiSystemPrompt || '';
 
                 setupAiProviderVisibility(); // Update visibility based on loaded provider
@@ -4997,14 +5824,17 @@
                 editorState.autoSaveInterval = (parseInt(document.getElementById('autoSaveIntervalInput').value) || 30) * 1000; 
                 editorState.showLineNumbers = document.getElementById('lineNumbersCheckbox').checked;
                 editorState.wordWrap = document.getElementById('wordWrapCheckbox').checked;
+                editorState.mobileLineMode = document.getElementById('mobileLineModeSelect').value === 'scroll' ? 'scroll' : 'wrap';
                 editorState.defaultNewTabType = document.getElementById('defaultNewTabTypeSelect').value; // Save new default tab type
                 
                 // Save AI settings
                 editorState.aiModelProvider = aiModelProviderSelect.value;
                 editorState.geminiApiKey = geminiApiKeyInput.value.trim();
-                editorState.geminiModel = normalizeGeminiModel(geminiModelSelect.value);
+                editorState.geminiModel = normalizeGeminiModel(geminiModelSelect.value.trim());
                 editorState.openAiApiKey = openAiApiKeyInput.value.trim();
+                editorState.openAiModel = normalizeOpenAiModel(openAiModelInput.value.trim());
                 editorState.anthropicApiKey = anthropicApiKeyInput.value.trim();
+                editorState.anthropicModel = normalizeAnthropicModel(anthropicModelInput.value.trim());
                 editorState.aiSystemPrompt = aiSystemPromptInput.value.trim();
 
 
@@ -5034,14 +5864,15 @@
                         editorState.autoSaveInterval = parsed.autoSaveInterval || 30000;
                         editorState.showLineNumbers = typeof parsed.showLineNumbers === 'boolean' ? parsed.showLineNumbers : true;
                         editorState.wordWrap = typeof parsed.wordWrap === 'boolean' ? parsed.wordWrap : false;
+                        editorState.mobileLineMode = parsed.mobileLineMode === 'scroll' ? 'scroll' : 'wrap';
                         editorState.defaultNewTabType = parsed.defaultNewTabType || 'txt'; // Load new default tab type
                         
                         // Load AI settings (ensure they are strings, not null if empty)
                         editorState.aiModelProvider = parsed.aiModelProvider || 'gemini';
                         editorState.geminiModel = normalizeGeminiModel(parsed.geminiModel);
-                        editorState.openAiModel = parsed.openAiModel || 'gpt-4o';
-                        // Map the retired claude-3-opus model (and any missing value) to the current default.
-                        editorState.anthropicModel = (parsed.anthropicModel && parsed.anthropicModel !== 'claude-3-opus-20240229') ? parsed.anthropicModel : 'claude-opus-4-8';
+                        editorState.openAiModel = normalizeOpenAiModel(parsed.openAiModel);
+                        // Map retired Claude model IDs (and any missing value) to the current default.
+                        editorState.anthropicModel = normalizeAnthropicModel(parsed.anthropicModel);
                         editorState.aiSystemPrompt = parsed.aiSystemPrompt || '';
                         editorState.vibeChatHistory = parsed.vibeChatHistory || []; // Load chat history
 
@@ -5049,9 +5880,21 @@
                 }
             }
             
+            function applyMobileLineMode() {
+                const scroll = editorState.mobileLineMode === 'scroll';
+                document.body.classList.toggle('mobile-scroll', scroll);
+                document.body.classList.toggle('mobile-wrap', !scroll);
+                // On phones the mode decides wrapping; elsewhere the desktop word-wrap setting does.
+                // wrap="off" turns a non-wrapping textarea into a real horizontally-scrollable element.
+                const isMobile = window.matchMedia('(max-width: 760px)').matches;
+                const shouldWrap = isMobile ? !scroll : editorState.wordWrap;
+                if (textInput) textInput.setAttribute('wrap', shouldWrap ? 'soft' : 'off');
+            }
+
             function applySettingsToUI() {
+                applyMobileLineMode();
                 textInput.style.fontSize = `${editorState.fontSize}px`;
-                lineNumberContainer.style.fontSize = `${editorState.fontSize}px`; 
+                lineNumberContainer.style.fontSize = `${editorState.fontSize}px`;
                 textInput.style.fontFamily = editorState.fontFamily;
                 lineNumberContainer.style.fontFamily = editorState.fontFamily; 
                 
