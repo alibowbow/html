@@ -3434,8 +3434,15 @@ MIT`
 
             function syncOverlayScroll() {
                 const st = textInput.scrollTop, sl = textInput.scrollLeft;
-                if (highlightOverlay) { highlightOverlay.scrollTop = st; highlightOverlay.scrollLeft = sl; }
-                if (findHighlightLayer) { findHighlightLayer.scrollTop = st; findHighlightLayer.scrollLeft = sl; }
+                // Position the highlight layers with a transform rather than scrollLeft/scrollTop:
+                // scrollLeft on an overflow:hidden element fails to move content on some engines
+                // (the bug where the colored text wouldn't follow horizontal scroll). transform always works.
+                const t = 'translate(' + (-sl) + 'px,' + (-st) + 'px)';
+                if (highlightCode) highlightCode.style.transform = t;
+                if (findHighlightLayer) {
+                    const inner = findHighlightLayer.firstElementChild;
+                    if (inner) inner.style.transform = t;
+                }
                 updateScrollAffordance(sl);
             }
 
@@ -3589,7 +3596,9 @@ MIT`
                     last = m.end;
                 });
                 html += escapeOverlayHtml(value.slice(last)) + '\n';
-                findHighlightLayer.innerHTML = html;
+                findHighlightLayer.innerHTML = '<div class="fhl-inner">' + html + '</div>';
+                const fhi = findHighlightLayer.firstElementChild;
+                if (fhi) fhi.style.transform = 'translate(' + (-textInput.scrollLeft) + 'px,' + (-textInput.scrollTop) + 'px)';
             }
 
             function updateCurrentLineHighlight() {
