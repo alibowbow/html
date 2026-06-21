@@ -457,6 +457,15 @@
             border-bottom-right-radius: 0.375rem;
             transition: background-color 0.3s ease;
         }
+        /* Edge fades signal that there's more text to scroll to horizontally. */
+        .code-input-wrap::before, .code-input-wrap::after {
+            content: ""; position: absolute; top: 0; bottom: 0; width: 22px;
+            pointer-events: none; z-index: 4; opacity: 0; transition: opacity 0.15s ease;
+        }
+        .code-input-wrap::after { right: 0; background: linear-gradient(to right, transparent, var(--bg-tertiary)); border-bottom-right-radius: 0.375rem; }
+        .code-input-wrap::before { left: 0; background: linear-gradient(to left, transparent, var(--bg-tertiary)); }
+        .code-input-wrap.can-scroll-right::after { opacity: 1; }
+        .code-input-wrap.can-scroll-left::before { opacity: 1; }
         #highlightOverlay, #findHighlightLayer {
             position: absolute;
             inset: 0;
@@ -526,6 +535,7 @@
             body.mobile-scroll #textInput {
                 overflow-x: auto !important;
                 -webkit-overflow-scrolling: touch;
+                touch-action: none; /* JS fully drives both axes in scroll mode (no native interference) */
             }
         }
         .app-search input {
@@ -2830,11 +2840,12 @@
             function switchToTab(tabId) {
                 const currentTabObj = tabs.find(t => t.id === activeTabId);
                 
-                if (activeTabId && currentTabObj) { 
+                if (activeTabId && currentTabObj) {
                     currentTabObj.content = textInput.value;
                     currentTabObj.cursorPos = { start: textInput.selectionStart, end: textInput.selectionEnd };
+                    currentTabObj.scrollPos = { top: textInput.scrollTop, left: textInput.scrollLeft };
                 }
-                
+
                 activeTabId = tabId;
                 const newActiveTab = tabs.find(tab => tab.id === tabId);
                 
@@ -2854,11 +2865,28 @@
                 
                 editorAutoLang = null; // re-detect language for the newly active buffer
                 renderTabs();
+                scrollActiveTabIntoView();
                 updateLineNumbers();
                 updateStats();
                 updateCursorPosition();
                 textInput.focus();
+                // Restore this tab's scroll position AFTER focus() (focus scrolls to the caret).
+                if (newActiveTab && newActiveTab.scrollPos) {
+                    textInput.scrollTop = newActiveTab.scrollPos.top;
+                    textInput.scrollLeft = newActiveTab.scrollPos.left;
+                    syncOverlayScroll();
+                    if (editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop;
+                    updateCurrentLineHighlight();
+                }
                 setTabModified(activeTabId, textInput.value !== (editorState.lastSavedStates[activeTabId] || ''));
+            }
+
+            function scrollActiveTabIntoView() {
+                const el = tabContainer ? tabContainer.querySelector('.tab.active') : null;
+                if (el && el.scrollIntoView) {
+                    try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+                    catch (e) { /* older browsers: ignore */ }
+                }
             }
             
             function createNewTab(isInitial = false) {
@@ -3408,6 +3436,17 @@ MIT`
                 const st = textInput.scrollTop, sl = textInput.scrollLeft;
                 if (highlightOverlay) { highlightOverlay.scrollTop = st; highlightOverlay.scrollLeft = sl; }
                 if (findHighlightLayer) { findHighlightLayer.scrollTop = st; findHighlightLayer.scrollLeft = sl; }
+                updateScrollAffordance(sl);
+            }
+
+            // Show edge fades when there's hidden text to the left/right (horizontal-scroll cue).
+            const _codeInputWrap = textInput ? textInput.closest('.code-input-wrap') : null;
+            function updateScrollAffordance(sl) {
+                if (!_codeInputWrap) return;
+                if (sl === undefined) sl = textInput.scrollLeft;
+                const maxX = textInput.scrollWidth - textInput.clientWidth;
+                _codeInputWrap.classList.toggle('can-scroll-right', maxX > 2 && sl < maxX - 2);
+                _codeInputWrap.classList.toggle('can-scroll-left', sl > 2);
             }
 
             // Is the editor currently wrapping long lines? (mobile = line-mode setting; desktop = wordWrap)
@@ -5461,34 +5500,56 @@ MIT`
                 // Keep the highlight overlays aligned with the textarea on native scroll
                 // (one-way: textarea is the single scroll source).
                 textInput.addEventListener('scroll', () => { if(editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop; syncOverlayScroll(); updateCurrentLineHighlight(); });
-                // iOS/Android textareas don't horizontally scroll on touch, so in scroll mode we
-                // drive textInput.scrollLeft from a horizontal drag. Vertical drags fall through to
-                // native vertical scrolling (touch-action: pan-y). textInput is the only scroll source.
-                let scStartX = 0, scStartY = 0, scStartLeft = 0, scDir = null;
+                // Mobile "가로 스크롤" mode: the textarea won't reliably pan on touch, so we fully
+                // drive scrolling here (both axes + momentum). touch-action:none (scroll-mode CSS)
+                // stops the browser from interfering, so this works on every device. The textarea
+                // stays the single scroll source; overlays follow via syncOverlayScroll.
+                let dragActive = false, dragSX = 0, dragSY = 0, dragSL = 0, dragST = 0;
+                let velX = 0, velY = 0, lastMX = 0, lastMY = 0, lastMT = 0, momentumId = 0;
+                const inScrollMode = () => document.body.classList.contains('mobile-scroll');
+                const stopMomentum = () => { if (momentumId) { cancelAnimationFrame(momentumId); momentumId = 0; } };
+                const syncGutter = () => { if (editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop; };
                 textInput.addEventListener('touchstart', (e) => {
-                    if (e.touches.length !== 1) return;
-                    scStartX = e.touches[0].clientX;
-                    scStartY = e.touches[0].clientY;
-                    scStartLeft = textInput.scrollLeft;
-                    scDir = null;
+                    if (e.touches.length !== 1 || !inScrollMode()) { dragActive = false; return; }
+                    stopMomentum();
+                    dragActive = true;
+                    dragSX = lastMX = e.touches[0].clientX;
+                    dragSY = lastMY = e.touches[0].clientY;
+                    dragSL = textInput.scrollLeft;
+                    dragST = textInput.scrollTop;
+                    lastMT = performance.now();
+                    velX = velY = 0;
                 }, { passive: true });
                 textInput.addEventListener('touchmove', (e) => {
-                    if (e.touches.length !== 1) return;
-                    const max = textInput.scrollWidth - textInput.clientWidth;
-                    if (max <= 0) return; // no horizontal overflow (e.g. wrap mode) → nothing to do
-                    const dx = e.touches[0].clientX - scStartX;
-                    const dy = e.touches[0].clientY - scStartY;
-                    if (scDir === null) {
-                        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return; // wait until direction is clear
-                        scDir = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
-                    }
-                    if (scDir !== 'h') return; // vertical → native scroll
-                    let target = scStartLeft - dx;
-                    if (target < 0) target = 0; else if (target > max) target = max;
-                    textInput.scrollLeft = target;
+                    if (!dragActive || e.touches.length !== 1) return;
+                    const cx = e.touches[0].clientX, cy = e.touches[0].clientY;
+                    textInput.scrollLeft = dragSL - (cx - dragSX);
+                    textInput.scrollTop = dragST - (cy - dragSY);
                     syncOverlayScroll();
-                    e.preventDefault(); // own the horizontal gesture (no caret-drag / selection)
+                    syncGutter();
+                    const now = performance.now(), dt = now - lastMT;
+                    if (dt > 0) { velX = (cx - lastMX) / dt; velY = (cy - lastMY) / dt; }
+                    lastMX = cx; lastMY = cy; lastMT = now;
+                    e.preventDefault(); // own the gesture (no caret-drag / native scroll / zoom)
                 }, { passive: false });
+                const endDrag = () => {
+                    if (!dragActive) return;
+                    dragActive = false;
+                    let fx = velX * 16, fy = velY * 16; // px per frame (~60fps)
+                    if (Math.abs(fx) < 0.4 && Math.abs(fy) < 0.4) return;
+                    const step = () => {
+                        fx *= 0.93; fy *= 0.93;
+                        if (Math.abs(fx) < 0.3 && Math.abs(fy) < 0.3) { momentumId = 0; return; }
+                        textInput.scrollLeft -= fx;
+                        textInput.scrollTop -= fy;
+                        syncOverlayScroll();
+                        syncGutter();
+                        momentumId = requestAnimationFrame(step);
+                    };
+                    momentumId = requestAnimationFrame(step);
+                };
+                textInput.addEventListener('touchend', endDrag, { passive: true });
+                textInput.addEventListener('touchcancel', endDrag, { passive: true });
                 textInput.addEventListener('click', updateCursorPosition);
                 textInput.addEventListener('keyup', updateCursorPosition);
                 textInput.addEventListener('select', () => { updateStatusExtras(); updateCurrentLineHighlight(); });
@@ -5987,17 +6048,23 @@ MIT`
             }
 
             function adjustLayoutForVisualViewport() {
-                if (mainContainer.classList.contains('fullscreen') && window.visualViewport) {
-                    const viewport = window.visualViewport;
-                    const bottomOffset = window.innerHeight - viewport.height - viewport.offsetTop;
-                    if (bottomOffset > 100) { 
-                         mainContainer.style.paddingBottom = `${bottomOffset}px`;
-                    } else {
-                        mainContainer.style.paddingBottom = '0px';
-                    }
+                const vv = window.visualViewport;
+                if (!vv) return;
+                const wrapper = document.querySelector('.main-container-wrapper');
+                const keyboardInset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+                const kbOpen = keyboardInset > 100; // on-screen keyboard (or similar) is covering the bottom
+                if (mainContainer.classList.contains('fullscreen')) {
+                    mainContainer.style.paddingBottom = kbOpen ? keyboardInset + 'px' : '0px';
+                    if (wrapper) { wrapper.style.height = ''; wrapper.style.minHeight = ''; }
                 } else {
-                     mainContainer.style.paddingBottom = '0px'; 
+                    mainContainer.style.paddingBottom = '0px';
+                    // Shrink the app to the area above the keyboard so the editor/caret isn't hidden.
+                    if (wrapper) {
+                        if (kbOpen) { wrapper.style.height = vv.height + 'px'; wrapper.style.minHeight = '0'; }
+                        else { wrapper.style.height = ''; wrapper.style.minHeight = ''; }
+                    }
                 }
+                if (kbOpen && document.activeElement === textInput) ensureSelectionVisible();
             }
 
             // --- HELPER MODALS ---
