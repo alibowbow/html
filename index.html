@@ -809,6 +809,11 @@
         
         .tab-container {
             display: flex;
+            /* flex-shrink:0 is essential: this is a horizontal scroll container, so its
+               flex auto-min-size is 0 and it would otherwise collapse to zero height
+               (tabs vanish) when the fixed-height shell is tight. Like header/toolbar,
+               the tab strip keeps its natural height; only <main> absorbs the slack. */
+            flex-shrink: 0;
             overflow-x: auto;
             background-color: var(--bg-primary);
             border-bottom: 1px solid var(--border-color);
