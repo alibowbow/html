@@ -1385,11 +1385,6 @@
                     <div class="dropdown-content">
                         <button id="previewHtmlButton" aria-label="HTML 미리보기"><i class="fas fa-code"></i> HTML 미리보기</button>
                         <button id="previewMarkdownButton" aria-label="마크다운 미리보기"><i class="fab fa-markdown"></i> 마크다운 미리보기</button>
-                        <button id="previewJsonButton" aria-label="JSON 미리보기"><i class="fas fa-sitemap"></i> JSON 미리보기</button>
-                        <button id="previewXmlButton" aria-label="XML 미리보기"><i class="fas fa-file-invoice"></i> XML 미리보기</button>
-                        <button id="previewCsvButton" aria-label="CSV 미리보기"><i class="fas fa-table"></i> CSV 미리보기</button>
-                        <button id="previewJsButton" aria-label="JS 미리보기"><i class="fab fa-js-square"></i> JS 미리보기</button>
-                        <button id="previewCssButton" aria-label="CSS 미리보기"><i class="fab fa-css3-alt"></i> CSS 미리보기</button>
                         <div class="dropdown-separator"></div>
                         <button id="previewProjectButton" aria-label="프로젝트 미리보기"><i class="fas fa-laptop-code"></i> 프로젝트 미리보기</button>
                         <div class="dropdown-separator"></div>
@@ -1453,15 +1448,10 @@
                                 <i class="fas fa-eye" aria-hidden="true"></i>
                                 <span class="live-preview-title">실시간 미리보기</span>
                                 <select id="livePreviewType" title="미리보기 형식" aria-label="미리보기 형식">
-                                    <option value="auto">자동</option>
-                                    <option value="html">HTML</option>
-                                    <option value="markdown">Markdown</option>
-                                    <option value="json">JSON</option>
-                                    <option value="xml">XML</option>
-                                    <option value="css">CSS</option>
-                                    <option value="js">JavaScript</option>
-                                    <option value="csv">CSV</option>
-                                    <option value="project">프로젝트</option>
+                                    <option value="auto">자동 감지</option>
+                                    <option value="html">HTML 렌더링</option>
+                                    <option value="markdown">Markdown 렌더링</option>
+                                    <option value="project">프로젝트 미리보기</option>
                                 </select>
                                 <button id="livePreviewPopoutButton" class="live-preview-icon-btn" title="새 창으로 열기" aria-label="새 창으로 열기"><i class="fas fa-external-link-alt"></i></button>
                                 <button id="livePreviewCloseButton" class="live-preview-icon-btn" title="미리보기 닫기" aria-label="실시간 미리보기 닫기">&times;</button>
@@ -2194,7 +2184,7 @@
                 vibeChatHistory: [], // Stores chat history for Vibe AI
                 defaultNewTabType: 'txt', // New setting
                 livePreview: false, // Live preview pane enabled
-                livePreviewType: 'auto', // auto | html | markdown | json | xml | css | js | csv | project
+                livePreviewType: 'auto', // auto | html | markdown | project
                 livePreviewDevice: 'responsive', // responsive | laptop | tablet | mobileL | mobileS
                 livePreviewOrientation: 'portrait' // portrait | landscape (fixed-size devices only)
             };
@@ -3309,13 +3299,19 @@
             function renderTemplateCategoryFilters() {
                 const host = document.getElementById('templateCategoryFilters');
                 if (!host) return;
-                const available = new Set(userTemplates.map(t => t.category || '내 템플릿'));
-                const categories = TEMPLATE_CATEGORY_ORDER.filter(c => c === '전체' || available.has(c));
-                Array.from(available).filter(c => !categories.includes(c)).sort().forEach(c => categories.push(c));
+                const categoryCounts = userTemplates.reduce((counts, template) => {
+                    const category = template.category || '내 템플릿';
+                    counts.set(category, (counts.get(category) || 0) + 1);
+                    return counts;
+                }, new Map());
+                const available = new Set(categoryCounts.keys());
+                const categories = TEMPLATE_CATEGORY_ORDER.filter(category => category === '전체' || available.has(category));
+                Array.from(available).filter(category => !categories.includes(category)).sort().forEach(category => categories.push(category));
                 if (!categories.includes(templateCategoryFilter)) templateCategoryFilter = '전체';
-                host.innerHTML = categories.map(category =>
-                    `<button type="button" class="template-filter${category === templateCategoryFilter ? ' active' : ''}" data-category="${escapeHtmlAttr(category)}">${escapeHtmlAttr(category)}</button>`
-                ).join('');
+                host.innerHTML = categories.map(category => {
+                    const count = category === '전체' ? userTemplates.length : (categoryCounts.get(category) || 0);
+                    return `<button type="button" class="template-filter${category === templateCategoryFilter ? ' active' : ''}" data-category="${escapeHtmlAttr(category)}" aria-pressed="${category === templateCategoryFilter ? 'true' : 'false'}">${escapeHtmlAttr(category)} <span aria-hidden="true">${count}</span></button>`;
+                }).join('');
                 host.querySelectorAll('.template-filter').forEach(button => {
                     button.addEventListener('click', () => {
                         templateCategoryFilter = button.dataset.category || '전체';
@@ -4948,12 +4944,17 @@
 
             // --- LIVE PREVIEW ---
             function resolveLivePreviewType() {
+                const allowedTypes = new Set(['auto', 'html', 'markdown', 'project']);
                 let t = livePreviewTypeSelect ? livePreviewTypeSelect.value : (editorState.livePreviewType || 'auto');
+                if (!allowedTypes.has(t)) t = 'auto';
                 if (t === 'auto') {
                     const activeTab = tabs.find(tab => tab.id === activeTabId);
                     const ext = (getFileExtension(activeTab ? activeTab.title : '') || '').toLowerCase();
-                    const map = { html: 'html', htm: 'html', md: 'markdown', markdown: 'markdown', json: 'json', xml: 'xml', svg: 'xml', js: 'js', mjs: 'js', cjs: 'js', css: 'css', csv: 'csv' };
-                    t = map[ext] || 'html';
+                    if (ext === 'md' || ext === 'markdown') return 'markdown';
+                    if (ext === 'html' || ext === 'htm') return 'html';
+                    const source = textInput ? textInput.value : '';
+                    const looksLikeMarkdown = /(^|\n)\s{0,3}(#{1,6}\s+|[-*+]\s+|\d+[.)]\s+|>\s+|\[?[^\n\]]+\]?\([^\n)]+\)|```)/m.test(source);
+                    return looksLikeMarkdown ? 'markdown' : 'html';
                 }
                 return t;
             }
@@ -5766,11 +5767,6 @@
 
                 document.getElementById('previewHtmlButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'html'));
                 document.getElementById('previewMarkdownButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'markdown'));
-                document.getElementById('previewJsonButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'json'));
-                document.getElementById('previewXmlButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'xml'));
-                document.getElementById('previewCsvButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'csv'));
-                document.getElementById('previewJsButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'js'));
-                document.getElementById('previewCssButton').addEventListener('click', () => openPreviewWindow(textInput.value, 'css'));
                 document.getElementById('previewProjectButton').addEventListener('click', () => {
                     try {
                         const bundledHtml = bundleProject(getFilesMap());
@@ -6105,6 +6101,7 @@
                 if (highlightCode) {
                     highlightCode.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
                 }
+                if (!['auto', 'html', 'markdown', 'project'].includes(editorState.livePreviewType)) editorState.livePreviewType = 'auto';
                 if (livePreviewTypeSelect) livePreviewTypeSelect.value = editorState.livePreviewType || 'auto';
                 if (livePreviewDeviceSelect) livePreviewDeviceSelect.value = editorState.livePreviewDevice || 'responsive';
                 if (livePreviewPane) {
