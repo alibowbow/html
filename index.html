@@ -1354,6 +1354,7 @@
                         <div class="dropdown-separator"></div>
                         <button id="selectAllButton" aria-label="모두 선택"><i class="fas fa-object-group"></i> 모두 선택 <span class="kbd ml-auto">Ctrl+A</span></button>
                         <button id="copyAllButton" aria-label="모든 내용 복사"><i class="fas fa-copy"></i> 모두 복사</button>
+                        <button id="copyPlainTextButton" aria-label="마크다운 문법 제거 후 순수 텍스트로 복사"><i class="fas fa-file-lines"></i> 마크다운 제거 후 복사</button>
                         <button id="clearAllButton" aria-label="모두 지우기"><i class="fas fa-trash-alt"></i> 모두 지우기</button>
                     </div>
                 </div>
@@ -2531,6 +2532,106 @@
                 } catch (error) {
                     showMessage('클립보드 복사 실패. 브라우저 권한을 확인하세요.', 'error');
                     console.error('Clipboard copy all error:', error);
+                }
+            }
+
+            function markdownToPlainText(markdown) {
+                const source = String(markdown ?? '').replace(/\r\n?/g, '\n');
+                if (!source.trim()) return '';
+            
+                if (typeof marked === 'undefined') {
+                    return source
+                        .replace(/^ {0,3}(```|~~~)[^\n]*\n?/gm, '')
+                        .replace(/^ {0,3}#{1,6}[ \t]+/gm, '')
+                        .replace(/^ {0,3}>[ \t]?/gm, '')
+                        .replace(/^ {0,3}([-+*]|\d+[.)])[ \t]+/gm, '')
+                        .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+                        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+                        .replace(/(\*\*|__)(.*?)\1/g, '$2')
+                        .replace(/(\*|_)(.*?)\1/g, '$2')
+                        .replace(/~~(.*?)~~/g, '$1')
+                        .replace(/` +([^`]+?) +`|`([^`]+?)`/g, '$1$2')
+                        .replace(/\n{3,}/g, '\n\n')
+                        .trim();
+                }
+            
+                const renderedHtml = marked.parse(source, { gfm: true, breaks: false });
+                const safeHtml = typeof DOMPurify !== 'undefined'
+                    ? DOMPurify.sanitize(renderedHtml)
+                    : renderedHtml;
+                const container = document.createElement('div');
+                container.innerHTML = safeHtml;
+            
+                container.querySelectorAll('script, style, template').forEach((node) => node.remove());
+                container.querySelectorAll('img').forEach((image) => {
+                    image.replaceWith(document.createTextNode(image.getAttribute('alt') || ''));
+                });
+                container.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+                    checkbox.replaceWith(document.createTextNode(checkbox.checked ? '☑ ' : '☐ '));
+                });
+                container.querySelectorAll('br').forEach((br) => br.replaceWith(document.createTextNode('\n')));
+                container.querySelectorAll('hr').forEach((hr) => hr.replaceWith(document.createTextNode('\n')));
+            
+                container.querySelectorAll('table').forEach((table) => {
+                    const rows = Array.from(table.querySelectorAll('tr')).map((row) =>
+                        Array.from(row.children)
+                            .filter((cell) => cell.tagName === 'TH' || cell.tagName === 'TD')
+                            .map((cell) => cell.textContent.replace(/\s+/g, ' ').trim())
+                            .join('\t')
+                    );
+                    table.replaceWith(document.createTextNode(rows.join('\n') + '\n'));
+                });
+            
+                container.querySelectorAll('li').forEach((item) => {
+                    const list = item.parentElement;
+                    let marker = '• ';
+                    if (list?.tagName === 'OL') {
+                        const start = Number.parseInt(list.getAttribute('start') || '1', 10);
+                        const index = Array.from(list.children).filter((child) => child.tagName === 'LI').indexOf(item);
+                        marker = `${start + Math.max(index, 0)}. `;
+                    }
+                    item.insertBefore(document.createTextNode(marker), item.firstChild);
+                    item.appendChild(document.createTextNode('\n'));
+                });
+            
+                container.querySelectorAll('h1, h2, h3, h4, h5, h6, p, blockquote, pre, div, section, article, ul, ol, dl, dt, dd').forEach((block) => {
+                    block.appendChild(document.createTextNode('\n'));
+                });
+            
+                return (container.textContent || '')
+                    .replace(/\u00a0/g, ' ')
+                    .replace(/[ \t]+\n/g, '\n')
+                    .replace(/\n[ \t]+/g, '\n')
+                    .replace(/\n{3,}/g, '\n\n')
+                    .trim();
+            }
+
+            async function copyMarkdownAsPlainText() {
+                const selectedText = textInput.value.substring(textInput.selectionStart, textInput.selectionEnd);
+                const sourceText = selectedText || textInput.value;
+            
+                if (!sourceText.trim()) {
+                    showMessage('변환해서 복사할 내용이 없습니다.', 'info');
+                    return;
+                }
+            
+                try {
+                    const plainText = markdownToPlainText(sourceText);
+                    if (!plainText) {
+                        showMessage('변환된 일반 텍스트가 없습니다.', 'info');
+                        return;
+                    }
+                    await writeTextToClipboard(plainText);
+                    textInput.focus();
+                    showMessage(
+                        selectedText
+                            ? '선택 영역의 마크다운을 제거해 복사했습니다.'
+                            : '마크다운을 제거한 순수 텍스트를 복사했습니다.',
+                        'success'
+                    );
+                } catch (error) {
+                    showMessage('순수 텍스트 변환 또는 복사에 실패했습니다.', 'error');
+                    console.error('Markdown plain text copy error:', error);
                 }
             }
 
@@ -5562,6 +5663,7 @@ MIT`
 
                 document.getElementById('selectAllButton').addEventListener('click', () => textInput.select());
                 document.getElementById('copyAllButton').addEventListener('click', copyAllText);
+                document.getElementById('copyPlainTextButton').addEventListener('click', copyMarkdownAsPlainText);
                 document.getElementById('clearAllButton').addEventListener('click', async () => {
                     const confirmed = await showConfirmDialog('모두 지우기 확인', '정말로 현재 탭의 모든 내용을 지우시겠습니까? 이 작업은 되돌릴 수 없습니다.');
                     if (confirmed) {
