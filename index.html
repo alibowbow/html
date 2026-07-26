@@ -510,40 +510,38 @@
             background-color: rgba(249, 115, 22, 0.55);
             box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.9);
         }
-        /* Mobile: wrap long lines so the right edge is never cut off (horizontal
-           swipe inside a textarea is unreliable on touch). All editor layers wrap
-           identically so highlights stay aligned. A fixed line-number gutter can't
-           track wrapped lines, so it is hidden at this width. */
+        /* One long-line policy across every viewport. Wrapping affects presentation only;
+           it never inserts newline characters into the document. */
+        body.editor-wrap #textInput,
+        body.editor-wrap #highlightOverlay,
+        body.editor-wrap #findHighlightLayer {
+            white-space: pre-wrap !important;
+            word-break: normal !important;
+            overflow-wrap: anywhere !important;
+        }
+        body.editor-wrap #highlightOverlay code {
+            white-space: inherit !important;
+            word-break: normal !important;
+            overflow-wrap: anywhere !important;
+        }
+        body.editor-wrap #textInput { overflow-x: hidden !important; }
+        body.editor-wrap #lineNumberContainer { display: none !important; }
+
+        body.editor-scroll #textInput,
+        body.editor-scroll #highlightOverlay,
+        body.editor-scroll #findHighlightLayer,
+        body.editor-scroll #highlightOverlay code {
+            white-space: pre !important;
+            word-break: normal !important;
+            overflow-wrap: normal !important;
+        }
+        body.editor-scroll #textInput {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
         @media (max-width: 760px) {
-            /* Wrap mode (default): wrap all editor layers at the same width; hide the unalignable gutter. */
-            body.mobile-wrap #textInput,
-            body.mobile-wrap #highlightOverlay,
-            body.mobile-wrap #findHighlightLayer {
-                white-space: pre-wrap !important;
-                word-break: normal !important;
-                overflow-wrap: anywhere !important;
-                overflow-x: hidden !important;
-            }
-            body.mobile-wrap #highlightOverlay code {
-                white-space: inherit !important;
-                word-break: normal !important;
-                overflow-wrap: anywhere !important;
-            }
-            body.mobile-wrap #lineNumberContainer { display: none !important; }
-            /* Scroll mode: force no-wrap so long lines actually overflow horizontally. JS handles
-               the horizontal drag (touch-action: pan-y keeps native vertical, hands horizontal to JS). */
-            body.mobile-scroll #textInput,
-            body.mobile-scroll #highlightOverlay,
-            body.mobile-scroll #findHighlightLayer,
-            body.mobile-scroll #highlightOverlay code {
-                white-space: pre !important;
-                word-break: normal !important;
-                overflow-wrap: normal !important;
-            }
-            body.mobile-scroll #textInput {
-                overflow-x: auto !important;
-                -webkit-overflow-scrolling: touch;
-                touch-action: none; /* JS fully drives both axes in scroll mode (no native interference) */
+            body.editor-scroll #textInput {
+                touch-action: none; /* JS drives two-axis touch panning in one-line mode. */
             }
         }
         .app-search input {
@@ -860,6 +858,98 @@
         }
         .settings-form .checkbox-container input[type="checkbox"] {
             margin-right: 0.5rem;
+        }
+        .line-display-settings {
+            margin: 0 0 1rem;
+            padding: 0.9rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.8rem;
+            background: var(--surface-1);
+        }
+        .line-display-settings legend {
+            padding: 0 0.35rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+        .line-mode-options {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+        .settings-form .line-mode-option {
+            position: relative;
+            display: block;
+            margin: 0;
+            cursor: pointer;
+        }
+        .line-mode-option input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .line-mode-card {
+            display: flex;
+            min-height: 100%;
+            flex-direction: column;
+            gap: 0.28rem;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.65rem;
+            background: var(--bg-tertiary);
+            transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+        }
+        .line-mode-option:hover .line-mode-card {
+            border-color: var(--border-strong);
+            transform: translateY(-1px);
+        }
+        .line-mode-option input:checked + .line-mode-card {
+            border-color: var(--accent);
+            background: rgba(var(--accent-rgb), 0.12);
+            box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.14);
+        }
+        .line-mode-option input:focus-visible + .line-mode-card {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+        .line-mode-title {
+            display: flex;
+            align-items: center;
+            gap: 0.42rem;
+            color: var(--text-primary);
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+        .line-mode-title i { width: 1rem; color: var(--accent-strong); text-align: center; }
+        .line-mode-description {
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+            line-height: 1.45;
+        }
+        .line-mode-note {
+            margin: 0.7rem 0 0;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            line-height: 1.45;
+        }
+        .line-number-row {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-color);
+        }
+        .settings-form .line-number-row .checkbox-container { margin-bottom: 0; }
+        .line-number-row .checkbox-container.is-disabled { opacity: 0.58; }
+        .line-number-note {
+            margin: 0.35rem 0 0 1.45rem;
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+            line-height: 1.4;
+        }
+        @media (max-width: 640px) {
+            .line-mode-options { grid-template-columns: 1fr; }
+            .line-mode-card { min-height: auto; }
         }
         
         .tab-container {
@@ -1588,7 +1678,7 @@
                 min-height: max(480px, calc(100dvh - 170px));
                 border-radius: 0 0 0.7rem 0.7rem;
             }
-            body.mobile-scroll #lineNumberContainer {
+            body.editor-scroll #lineNumberContainer {
                 width: 36px !important;
                 min-width: 36px !important;
                 padding: 0.65rem 0.25rem !important;
@@ -1721,7 +1811,7 @@
                         <div class="dropdown-separator"></div>
                         <button id="previewProjectButton" aria-label="프로젝트 미리보기"><i class="fas fa-laptop-code"></i> 프로젝트 미리보기</button>
                         <div class="dropdown-separator"></div>
-                        <button id="toggleWordWrapButton" aria-label="자동 줄 바꿈 토글"><i class="fas fa-exchange-alt"></i> 자동 줄 바꿈 토글</button>
+                        <button id="longLineModeMenuButton" aria-label="긴 줄 표시 방식 변경"><i class="fas fa-align-left"></i> 긴 줄 표시: 자동</button>
                         <button id="toggleLineNumbersButton" aria-label="줄 번호 토글"><i class="fas fa-list-ol"></i> 줄 번호 토글</button>
                         <div class="dropdown-separator"></div>
                         <button id="keyboardShortcutsMenuButton" aria-label="키보드 단축키 보기"><i class="fas fa-keyboard"></i> 키보드 단축키</button>
@@ -1886,21 +1976,40 @@
                     <label for="autoSaveIntervalInput">자동 저장 간격 (초):</label>
                     <input type="number" id="autoSaveIntervalInput" min="5" max="300" step="5" value="30">
                 </div>
-                <div class="checkbox-container">
-                    <input type="checkbox" id="lineNumbersCheckbox" checked>
-                    <label for="lineNumbersCheckbox">줄 번호 표시</label>
-                </div>
-                <div class="checkbox-container">
-                    <input type="checkbox" id="wordWrapCheckbox">
-                    <label for="wordWrapCheckbox">자동 줄 바꿈</label>
-                </div>
-                <div>
-                    <label for="mobileLineModeSelect">모바일에서 긴 줄 처리:</label>
-                    <select id="mobileLineModeSelect">
-                        <option value="wrap">줄바꿈 (전체 표시 · 줄번호 숨김)</option>
-                        <option value="scroll">가로 스크롤 (줄번호 유지)</option>
-                    </select>
-                </div>
+                <fieldset id="lineDisplaySettings" class="line-display-settings">
+                    <legend>긴 줄 표시 방식</legend>
+                    <div class="line-mode-options" role="radiogroup" aria-label="긴 줄 표시 방식">
+                        <label class="line-mode-option">
+                            <input type="radio" name="longLineMode" value="auto" checked>
+                            <span class="line-mode-card">
+                                <span class="line-mode-title"><i class="fas fa-wand-magic-sparkles"></i>자동</span>
+                                <span class="line-mode-description">텍스트·Markdown은 화면 맞춤, 코드는 한 줄 유지</span>
+                            </span>
+                        </label>
+                        <label class="line-mode-option">
+                            <input type="radio" name="longLineMode" value="wrap">
+                            <span class="line-mode-card">
+                                <span class="line-mode-title"><i class="fas fa-align-left"></i>화면 너비에 맞춤</span>
+                                <span class="line-mode-description">모든 문서의 긴 줄을 화면 안에서 접어 표시</span>
+                            </span>
+                        </label>
+                        <label class="line-mode-option">
+                            <input type="radio" name="longLineMode" value="scroll">
+                            <span class="line-mode-card">
+                                <span class="line-mode-title"><i class="fas fa-arrows-left-right"></i>한 줄로 유지</span>
+                                <span class="line-mode-description">긴 줄을 유지하고 가로로 스크롤</span>
+                            </span>
+                        </label>
+                    </div>
+                    <p class="line-mode-note"><i class="fas fa-circle-info"></i> 화면 표시만 바뀌며 원본 텍스트에는 줄바꿈 문자가 추가되지 않습니다.</p>
+                    <div class="line-number-row">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="lineNumbersCheckbox" checked>
+                            <label for="lineNumbersCheckbox">줄 번호 표시</label>
+                        </div>
+                        <p id="lineNumbersAvailability" class="line-number-note" aria-live="polite" hidden>현재 문서는 긴 줄이 접혀 표시되어 줄 번호가 자동으로 숨겨집니다.</p>
+                    </div>
+                </fieldset>
                 <div>
                     <label for="defaultNewTabTypeSelect">기본 새 탭 파일 타입:</label>
                     <select id="defaultNewTabTypeSelect">
@@ -2497,8 +2606,7 @@
                 findMatches: [],
                 currentMatchIndex: -1,
                 lastSearchTerm: '',
-                wordWrap: false,
-                mobileLineMode: 'wrap', // mobile long-line handling: 'wrap' | 'scroll'
+                longLineMode: 'auto', // 'auto' | 'wrap' | 'scroll'
                 showLineNumbers: true,
                 fontSize: 16,
                 fontFamily: "'JetBrains Mono', monospace",
@@ -2667,8 +2775,7 @@
                     autoSave: source.autoSave,
                     autoSaveInterval: source.autoSaveInterval,
                     showLineNumbers: source.showLineNumbers,
-                    wordWrap: source.wordWrap,
-                    mobileLineMode: source.mobileLineMode,
+                    longLineMode: normalizeLongLineMode(source.longLineMode),
                     aiModelProvider: source.aiModelProvider,
                     geminiModel: source.geminiModel,
                     openAiModel: source.openAiModel,
@@ -3295,6 +3402,7 @@
                 }
                 
                 editorAutoLang = null; // re-detect language for the newly active buffer
+                applyLongLineMode(); // "auto" follows the newly active file type
                 renderTabs();
                 scrollActiveTabIntoView();
                 updateLineNumbers();
@@ -3304,7 +3412,7 @@
                 // Restore this tab's scroll position AFTER focus() (focus scrolls to the caret).
                 if (newActiveTab && newActiveTab.scrollPos) {
                     textInput.scrollTop = newActiveTab.scrollPos.top;
-                    textInput.scrollLeft = newActiveTab.scrollPos.left;
+                    textInput.scrollLeft = isWrapActive() ? 0 : newActiveTab.scrollPos.left;
                     syncOverlayScroll();
                     if (editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop;
                     updateCurrentLineHighlight();
@@ -5885,6 +5993,10 @@ function createPremiumTemplate(config) {
                 if (tab) {
                     tab.title = newTitle.trim() || `제목 없음.${editorState.defaultNewTabType}`; 
                     renderTabs();
+                    if (tabId === activeTabId) {
+                        applyLongLineMode();
+                        updateLineNumbers();
+                    }
                 }
             }
             
@@ -5979,11 +6091,40 @@ function createPremiumTemplate(config) {
                 _codeInputWrap.classList.toggle('can-scroll-left', sl > 2);
             }
 
-            // Is the editor currently wrapping long lines? (mobile = line-mode setting; desktop = wordWrap)
-            function isWrapActive() {
-                return window.matchMedia('(max-width: 760px)').matches
-                    ? (editorState.mobileLineMode !== 'scroll')
-                    : !!editorState.wordWrap;
+            const LONG_LINE_MODE_LABELS = {
+                auto: '자동',
+                wrap: '화면 너비에 맞춤',
+                scroll: '한 줄로 유지'
+            };
+            const AUTO_WRAP_EXTENSIONS = new Set(['txt', 'md', 'markdown']);
+
+            function normalizeLongLineMode(mode) {
+                return ['auto', 'wrap', 'scroll'].includes(mode) ? mode : 'auto';
+            }
+
+            function migrateLegacyLongLineMode(settings = {}) {
+                if (['auto', 'wrap', 'scroll'].includes(settings.longLineMode)) return settings.longLineMode;
+                if (settings.wordWrap === true) return 'wrap';
+                if (settings.mobileLineMode === 'scroll') return 'scroll';
+                return 'auto';
+            }
+
+            function getActiveDocumentExtension() {
+                const activeTab = tabs.find((tab) => tab.id === activeTabId);
+                const fileName = activeTab ? (activeTab.path || activeTab.title || '') : '';
+                return getFileExtension(fileName).toLowerCase();
+            }
+
+            function isWrapActive(mode = editorState.longLineMode) {
+                const normalizedMode = normalizeLongLineMode(mode);
+                if (normalizedMode === 'wrap') return true;
+                if (normalizedMode === 'scroll') return false;
+                const extension = getActiveDocumentExtension();
+                return !extension || AUTO_WRAP_EXTENSIONS.has(extension);
+            }
+
+            function getResolvedLongLineLabel() {
+                return isWrapActive() ? '화면 너비에 맞춤' : '한 줄로 유지';
             }
 
             // Pixel position (x,y, in the textarea's scroll coordinate space) of a text offset,
@@ -7107,7 +7248,10 @@ function createPremiumTemplate(config) {
                     if (sessionData.editorSettings) {
                         // Merge with existing editorState, ensuring defaults are preserved for new fields
                         const sanitizedSessionSettings = sanitizePersistedEditorSettings(sessionData.editorSettings);
-                        editorState = { ...editorState, ...sanitizedSessionSettings };
+                        const migratedSessionLineMode = migrateLegacyLongLineMode(sanitizedSessionSettings);
+                        delete sanitizedSessionSettings.wordWrap;
+                        delete sanitizedSessionSettings.mobileLineMode;
+                        editorState = { ...editorState, ...sanitizedSessionSettings, longLineMode: migratedSessionLineMode };
 
                         editorState.aiSystemPrompt = editorState.aiSystemPrompt || '';
                         editorState.vibeChatHistory = editorState.vibeChatHistory || []; // Load chat history
@@ -8052,7 +8196,7 @@ function createPremiumTemplate(config) {
                 // stays the single scroll source; overlays follow via syncOverlayScroll.
                 let dragActive = false, dragSX = 0, dragSY = 0, dragSL = 0, dragST = 0;
                 let velX = 0, velY = 0, lastMX = 0, lastMY = 0, lastMT = 0, momentumId = 0;
-                const inScrollMode = () => document.body.classList.contains('mobile-scroll');
+                const inScrollMode = () => document.body.classList.contains('editor-scroll');
                 const stopMomentum = () => { if (momentumId) { cancelAnimationFrame(momentumId); momentumId = 0; } };
                 const syncGutter = () => { if (editorState.showLineNumbers) lineNumberContainer.scrollTop = textInput.scrollTop; };
                 textInput.addEventListener('touchstart', (e) => {
@@ -8249,8 +8393,8 @@ function createPremiumTemplate(config) {
                 if (livePreviewRotateButton) livePreviewRotateButton.addEventListener('click', togglePreviewOrientation);
                 window.addEventListener('resize', debounce(() => {
                     if (editorState.livePreview && previewZoomAuto) applyPreviewDevice();
-                    applyMobileLineMode(); // refresh wrap attribute when crossing the mobile breakpoint
-                    updateLineNumbers();   // gutter visibility depends on wrap state
+                    applyLongLineMode(); // keep the editor layers synchronized
+                    updateLineNumbers();  // gutter visibility depends on the resolved mode
                     updateCurrentLineHighlight();
                 }, 150));
                 const livePreviewCloseBtn = document.getElementById('livePreviewCloseButton');
@@ -8267,15 +8411,20 @@ function createPremiumTemplate(config) {
                         }
                     });
                 }
-                document.getElementById('toggleWordWrapButton').addEventListener('click', () => {
-                    editorState.wordWrap = !editorState.wordWrap;
+                document.getElementById('longLineModeMenuButton').addEventListener('click', () => {
+                    const modes = ['auto', 'wrap', 'scroll'];
+                    const currentIndex = modes.indexOf(normalizeLongLineMode(editorState.longLineMode));
+                    editorState.longLineMode = modes[(currentIndex + 1) % modes.length];
                     applySettingsToUI();
-                    showMessage(`자동 줄 바꿈 ${editorState.wordWrap ? '활성' : '비활성'}.`, 'info');
+                    persistEditorSettings();
+                    const resolved = editorState.longLineMode === 'auto' ? ' · 현재 ' + getResolvedLongLineLabel() : '';
+                    showMessage('긴 줄 표시: ' + LONG_LINE_MODE_LABELS[editorState.longLineMode] + resolved, 'info');
                 });
-                document.getElementById('toggleLineNumbersButton').addEventListener('click', () => { 
-                    editorState.showLineNumbers = !editorState.showLineNumbers; 
-                    applySettingsToUI(); 
-                    showMessage(`줄 번호 ${editorState.showLineNumbers ? '표시' : '숨김'}.`, 'info');
+                document.getElementById('toggleLineNumbersButton').addEventListener('click', () => {
+                    editorState.showLineNumbers = !editorState.showLineNumbers;
+                    applySettingsToUI();
+                    persistEditorSettings();
+                    showMessage('줄 번호 ' + (editorState.showLineNumbers ? '표시' : '숨김') + '.', 'info');
                 });
 
                 document.getElementById('formatJsonButton').addEventListener('click', formatJson);
@@ -8375,6 +8524,21 @@ function createPremiumTemplate(config) {
                     else if (e.key === 'Escape') { e.stopPropagation(); closeTemplateEditor(); }
                 });
                 document.getElementById('saveSettingsButton').addEventListener('click', saveSettings);
+                document.querySelectorAll('input[name="longLineMode"]').forEach((input) => {
+                    input.addEventListener('change', () => {
+                        if (!input.checked) return;
+                        editorState.longLineMode = normalizeLongLineMode(input.value);
+                        applySettingsToUI();
+                        persistEditorSettings();
+                        const resolved = editorState.longLineMode === 'auto' ? ' · 현재 ' + getResolvedLongLineLabel() : '';
+                        showMessage('긴 줄 표시: ' + LONG_LINE_MODE_LABELS[editorState.longLineMode] + resolved, 'info');
+                    });
+                });
+                document.getElementById('lineNumbersCheckbox').addEventListener('change', (event) => {
+                    editorState.showLineNumbers = event.target.checked;
+                    applySettingsToUI();
+                    persistEditorSettings();
+                });
                 aiModelProviderSelect.addEventListener('change', setupAiProviderVisibility);
 
 
@@ -8483,9 +8647,8 @@ function createPremiumTemplate(config) {
                 document.getElementById('tabSizeInput').value = editorState.tabSize;
                 document.getElementById('autoSaveCheckbox').checked = editorState.autoSave;
                 document.getElementById('autoSaveIntervalInput').value = editorState.autoSaveInterval / 1000; 
-                document.getElementById('lineNumbersCheckbox').checked = editorState.showLineNumbers;
-                document.getElementById('wordWrapCheckbox').checked = editorState.wordWrap;
-                document.getElementById('mobileLineModeSelect').value = editorState.mobileLineMode || 'wrap';
+                editorState.longLineMode = normalizeLongLineMode(editorState.longLineMode);
+                syncLongLineSettingsUI();
                 document.getElementById('defaultNewTabTypeSelect').value = editorState.defaultNewTabType; // Set default new tab type
                 
                 // Load AI settings
@@ -8512,8 +8675,8 @@ function createPremiumTemplate(config) {
                 editorState.autoSave = document.getElementById('autoSaveCheckbox').checked;
                 editorState.autoSaveInterval = (parseInt(document.getElementById('autoSaveIntervalInput').value) || 30) * 1000; 
                 editorState.showLineNumbers = document.getElementById('lineNumbersCheckbox').checked;
-                editorState.wordWrap = document.getElementById('wordWrapCheckbox').checked;
-                editorState.mobileLineMode = document.getElementById('mobileLineModeSelect').value === 'scroll' ? 'scroll' : 'wrap';
+                const selectedLongLineMode = document.querySelector('input[name="longLineMode"]:checked');
+                editorState.longLineMode = normalizeLongLineMode(selectedLongLineMode ? selectedLongLineMode.value : editorState.longLineMode);
                 editorState.defaultNewTabType = document.getElementById('defaultNewTabTypeSelect').value; // Save new default tab type
                 
                 // Save AI settings
@@ -8543,6 +8706,8 @@ function createPremiumTemplate(config) {
                 if (savedSettings) {
                     try {
                         const parsed = sanitizePersistedEditorSettings(JSON.parse(savedSettings));
+                        const shouldMigrateLineMode = !['auto', 'wrap', 'scroll'].includes(parsed.longLineMode)
+                            && (Object.prototype.hasOwnProperty.call(parsed, 'wordWrap') || Object.prototype.hasOwnProperty.call(parsed, 'mobileLineMode'));
                         // Using Object.assign to merge, but explicitly setting defaults for new properties if undefined
                         editorState = { ...editorState, ...parsed };
                         
@@ -8552,8 +8717,9 @@ function createPremiumTemplate(config) {
                         editorState.autoSave = typeof parsed.autoSave === 'boolean' ? parsed.autoSave : true;
                         editorState.autoSaveInterval = parsed.autoSaveInterval || 30000;
                         editorState.showLineNumbers = typeof parsed.showLineNumbers === 'boolean' ? parsed.showLineNumbers : true;
-                        editorState.wordWrap = typeof parsed.wordWrap === 'boolean' ? parsed.wordWrap : false;
-                        editorState.mobileLineMode = parsed.mobileLineMode === 'scroll' ? 'scroll' : 'wrap';
+                        editorState.longLineMode = migrateLegacyLongLineMode(parsed);
+                        delete editorState.wordWrap;
+                        delete editorState.mobileLineMode;
                         editorState.defaultNewTabType = parsed.defaultNewTabType || 'txt'; // Load new default tab type
                         
                         // Load AI settings (ensure they are strings, not null if empty)
@@ -8564,42 +8730,88 @@ function createPremiumTemplate(config) {
                         editorState.anthropicModel = normalizeAnthropicModel(parsed.anthropicModel);
                         editorState.aiSystemPrompt = parsed.aiSystemPrompt || '';
                         editorState.vibeChatHistory = parsed.vibeChatHistory || []; // Load chat history
+                        if (shouldMigrateLineMode) persistEditorSettings();
 
                     } catch(e) { console.error("Failed to parse settings:", e); }
                 }
             }
             
-            function applyMobileLineMode() {
-                const scroll = editorState.mobileLineMode === 'scroll';
-                document.body.classList.toggle('mobile-scroll', scroll);
-                document.body.classList.toggle('mobile-wrap', !scroll);
-                // On phones the mode decides wrapping; elsewhere the desktop word-wrap setting does.
-                // wrap="off" turns a non-wrapping textarea into a real horizontally-scrollable element.
-                const isMobile = window.matchMedia('(max-width: 760px)').matches;
-                const shouldWrap = isMobile ? !scroll : editorState.wordWrap;
-                if (textInput) textInput.setAttribute('wrap', shouldWrap ? 'soft' : 'off');
+            function applyLongLineMode() {
+                editorState.longLineMode = normalizeLongLineMode(editorState.longLineMode);
+                const shouldWrap = isWrapActive();
+                document.body.classList.toggle('editor-wrap', shouldWrap);
+                document.body.classList.toggle('editor-scroll', !shouldWrap);
+                document.body.dataset.longLineMode = editorState.longLineMode;
+                if (textInput) {
+                    textInput.setAttribute('wrap', shouldWrap ? 'soft' : 'off');
+                    if (shouldWrap && textInput.scrollLeft !== 0) textInput.scrollLeft = 0;
+                }
+                syncLongLineSettingsUI();
+                return shouldWrap;
+            }
+
+            function syncLongLineSettingsUI() {
+                const mode = normalizeLongLineMode(editorState.longLineMode);
+                const wrapping = isWrapActive(mode);
+                document.querySelectorAll('input[name="longLineMode"]').forEach((input) => {
+                    input.checked = input.value === mode;
+                });
+
+                const lineNumbersCheckbox = document.getElementById('lineNumbersCheckbox');
+                const lineNumbersNote = document.getElementById('lineNumbersAvailability');
+                if (lineNumbersCheckbox) {
+                    lineNumbersCheckbox.checked = !!editorState.showLineNumbers;
+                    lineNumbersCheckbox.disabled = wrapping;
+                    const container = lineNumbersCheckbox.closest('.checkbox-container');
+                    if (container) container.classList.toggle('is-disabled', wrapping);
+                }
+                if (lineNumbersNote) {
+                    lineNumbersNote.hidden = !wrapping;
+                    if (wrapping) lineNumbersNote.textContent = '현재 문서는 긴 줄이 접혀 표시되어 줄 번호가 자동으로 숨겨집니다.';
+                }
+
+                const lineNumbersMenuButton = document.getElementById('toggleLineNumbersButton');
+                if (lineNumbersMenuButton) {
+                    lineNumbersMenuButton.disabled = wrapping;
+                    lineNumbersMenuButton.setAttribute('aria-disabled', wrapping ? 'true' : 'false');
+                    lineNumbersMenuButton.title = wrapping ? '긴 줄을 화면에 맞춰 표시할 때는 줄 번호가 자동으로 숨겨집니다.' : '줄 번호 표시 전환';
+                }
+
+                const longLineMenuButton = document.getElementById('longLineModeMenuButton');
+                if (longLineMenuButton) {
+                    const resolved = mode === 'auto' ? ' (현재 ' + getResolvedLongLineLabel() + ')' : '';
+                    longLineMenuButton.innerHTML = '<i class="fas fa-align-left"></i> 긴 줄 표시: ' + LONG_LINE_MODE_LABELS[mode];
+                    longLineMenuButton.setAttribute('aria-label', '긴 줄 표시 방식 변경. 현재 ' + LONG_LINE_MODE_LABELS[mode] + resolved);
+                    longLineMenuButton.title = '클릭하여 자동 → 화면 너비에 맞춤 → 한 줄로 유지 순서로 변경' + resolved;
+                }
             }
 
             function applySettingsToUI() {
-                applyMobileLineMode();
+                const wrapping = applyLongLineMode();
                 textInput.style.fontSize = `${editorState.fontSize}px`;
                 lineNumberContainer.style.fontSize = `${editorState.fontSize}px`;
                 textInput.style.fontFamily = editorState.fontFamily;
-                lineNumberContainer.style.fontFamily = editorState.fontFamily; 
-                
-                lineNumberContainer.style.display = editorState.showLineNumbers ? 'block' : 'none';
-                textInput.style.whiteSpace = editorState.wordWrap ? 'pre-wrap' : 'pre';
-                textInput.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
+                lineNumberContainer.style.fontFamily = editorState.fontFamily;
+
+                lineNumberContainer.style.display = editorState.showLineNumbers && !wrapping ? 'block' : 'none';
+                const whiteSpace = wrapping ? 'pre-wrap' : 'pre';
+                const overflowWrap = wrapping ? 'anywhere' : 'normal';
+                textInput.style.whiteSpace = whiteSpace;
+                textInput.style.wordBreak = 'normal';
+                textInput.style.overflowWrap = overflowWrap;
 
                 [highlightOverlay, findHighlightLayer].forEach((el) => {
                     if (!el) return;
                     el.style.fontSize = `${editorState.fontSize}px`;
                     el.style.fontFamily = editorState.fontFamily;
-                    el.style.whiteSpace = editorState.wordWrap ? 'pre-wrap' : 'pre';
-                    el.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
+                    el.style.whiteSpace = whiteSpace;
+                    el.style.wordBreak = 'normal';
+                    el.style.overflowWrap = overflowWrap;
                 });
                 if (highlightCode) {
-                    highlightCode.style.wordBreak = editorState.wordWrap ? 'break-word' : 'normal';
+                    highlightCode.style.whiteSpace = whiteSpace;
+                    highlightCode.style.wordBreak = 'normal';
+                    highlightCode.style.overflowWrap = overflowWrap;
                 }
                 if (!['auto', 'html', 'markdown', 'project'].includes(editorState.livePreviewType)) editorState.livePreviewType = 'auto';
                 if (livePreviewTypeSelect) livePreviewTypeSelect.value = editorState.livePreviewType || 'auto';
